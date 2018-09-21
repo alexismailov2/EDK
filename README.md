@@ -95,11 +95,13 @@ For our development we used the cross-platform environment by JetBrains: clion
 Recommend to use clion to load the CMAKE project or generate Eclipse projects and build from there.
 To build from command prompt, follow the lines below:
 
-cd root-of-repo
+```
+cd <root-of-EDK-repo>
 mkdir build
 cd build
 cmake  ..
 make
+```
 
 
 ### Windows Visual Studio
