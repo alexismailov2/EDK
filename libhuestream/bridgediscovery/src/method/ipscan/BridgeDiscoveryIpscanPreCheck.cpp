@@ -21,7 +21,9 @@ namespace huesdk {
 
     class BridgeDiscoveryIpscanPreCheckNoop : public BridgeDiscoveryIpscanPreCheck {
     public:
-        std::vector<std::string> filter_reachable_ips(std::vector<std::string> ips, const std::atomic<bool> /*_stopped_by_user*/&) override {
+        std::vector<std::string> filter_reachable_ips(
+                std::vector<std::string> ips, const std::atomic<bool>&,
+                const std::function<void(const std::string&)>&) override {
             return ips;
         }
     };
@@ -135,7 +137,9 @@ namespace huesdk {
         }
     }
 
-    std::vector<std::string> BridgeDiscoveryIpscanPreCheck::filter_reachable_ips(std::vector<std::string> ips, const std::atomic<bool> &_stopped_by_user) {
+    std::vector<std::string> BridgeDiscoveryIpscanPreCheck::filter_reachable_ips(
+            std::vector<std::string> ips, const std::atomic<bool> &_stopped_by_user,
+            const std::function<void(const std::string&)>& reachable_ip_found) {
         std::vector<socket_unique_ptr> active_sockets;
         std::vector<std::string> return_value;
 
@@ -176,6 +180,7 @@ namespace huesdk {
             for (auto& s : active_sockets) {
                 if (s->_status == SOCKETSTATUS_CONNECTED) {
                     return_value.push_back(s->_ip);
+                    reachable_ip_found(s->_ip);
                 }
             }
 

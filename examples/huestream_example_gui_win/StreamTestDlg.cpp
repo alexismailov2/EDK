@@ -9,6 +9,7 @@
 #include <support/logging/Log.h>
 #include <huestream/config/Config.h>
 #include <huestream/HueStream.h>
+#include <huestream/HueEDK.h>
 #include <huestream/effect/animation/animations/CurveAnimation.h>
 #include <huestream/effect/animation/animations/SequenceAnimation.h>
 #include <huestream/effect/animation/animations/TweenAnimation.h>
@@ -34,7 +35,7 @@
 
 #define ID_TIMER WM_USER + 200
 
-
+constexpr static auto PERSISTENCE_ENCRYPTION_KEY = "encryption_key";
 
 class CAboutDlg : public CDialogEx {
  public:
@@ -59,15 +60,10 @@ class CAboutDlg : public CDialogEx {
     afx_msg void OnBnClickedButtonOFF();
 
     DECLARE_MESSAGE_MAP()
-    HueStreamPtr m_huestream;
     CStreamTestDlg* m_mainDialog;
     BridgeListPtr m_bridges;
 
  public:
-    void SetHueStream(HueStreamPtr huestream) {
-        m_huestream = huestream;
-    }
-
     void SetMainDialog(CStreamTestDlg* dialog) {
         m_mainDialog = dialog;
     }
@@ -93,17 +89,19 @@ END_MESSAGE_MAP()
 BOOL CAboutDlg::OnInitDialog() {
     CDialogEx::OnInitDialog();
 
+    auto huestream = m_mainDialog->GetHueStream();
+
     CWnd *buildfield = GetDlgItem(IDC_BUILD);
     auto buildString = "Build: " + std::string(BUILD_INFO);
     buildfield->SetWindowText(buildString.c_str());
 
     CWnd *framecounterField = GetDlgItem(IDC_FRAMECOUNTER);
     auto framesString =
-        "Frames sent this session: " + std::to_string(m_huestream->GetStreamCounter());
+        "Frames sent this session: " + std::to_string(huestream->GetStreamCounter());
     framecounterField->SetWindowText(framesString.c_str());
 
     CWnd *connectResultField = GetDlgItem(IDC_CONNECTRESULT);
-    auto result = m_huestream->GetConnectionResult();
+    auto result = huestream->GetConnectionResult();
     std::string resultString = "Connection result: ";
     switch (result) {
         case huestream::Uninitialized:
@@ -132,12 +130,12 @@ BOOL CAboutDlg::OnInitDialog() {
     }
     connectResultField->SetWindowText(resultString.c_str());
 
-    m_bridges = m_huestream->GetKnownBridges();
+    m_bridges = huestream->GetKnownBridges();
     auto combo_bridges = (CComboBox*)GetDlgItem(IDC_COMBO_BRIDGES);
     combo_bridges->ResetContent();
     for (auto b = m_bridges->begin(); b != m_bridges->end(); ++b) {
         auto idx = combo_bridges->AddString((*b)->GetName().c_str());
-        if ((*b)->GetId() == m_huestream->GetLoadedBridge()->GetId()) {
+        if ((*b)->GetId() == huestream->GetLoadedBridge()->GetId()) {
             combo_bridges->SetCurSel(idx);
         }
     }
@@ -166,12 +164,13 @@ void CAboutDlg::OnBnClickedNewbridge() {
 }
 
 void CAboutDlg::OnComboChangedBridge() {
+    auto huestream = m_mainDialog->GetHueStream();
     auto combo_bridges = (CComboBox*)GetDlgItem(IDC_COMBO_BRIDGES);
     auto sel = combo_bridges->GetCurSel();
     if (sel >= 0 && sel < m_bridges->size()) {
         auto newBridge = m_bridges->at(sel);
-        if (newBridge->GetId() != m_huestream->GetLoadedBridge()->GetId()) {
-            m_huestream->ConnectManualBridgeInfoAsync(newBridge);
+        if (newBridge->GetId() != huestream->GetLoadedBridge()->GetId()) {
+            huestream->ConnectManualBridgeInfoAsync(newBridge);
         }
     }
 }
@@ -204,6 +203,7 @@ ON_WM_QUERYDRAGICON()
 
 ON_MESSAGE(UWM_HUESTREAM_FEEDBACK, OnHuestreamFeedback)
 ON_MESSAGE(UWM_POST_DEBUGMSG, OnPostDebugMsg)
+ON_MESSAGE(UWM_TIMELINE_EVENT, OnTimelineEvent)
 
 ON_BN_CLICKED(IDC_BUTTON_CONNECT, &CStreamTestDlg::OnBnClickedButtonConnect)
 ON_BN_CLICKED(IDC_BUTTON_MANUAL, &CStreamTestDlg::OnBnClickedButtonManual)
@@ -285,7 +285,6 @@ BOOL CStreamTestDlg::OnInitDialog() {
 void CStreamTestDlg::OnSysCommand(UINT nID, LPARAM lParam) {
     if ((nID & 0xFFF0) == IDM_ABOUTBOX) {
         CAboutDlg dlgAbout;
-        dlgAbout.SetHueStream(m_huestream);
         dlgAbout.SetMainDialog(this);
         dlgAbout.DoModal();
     } else {
@@ -356,7 +355,7 @@ const std::string CStreamTestDlg::GetDeviceName() const {
 
 void CStreamTestDlg::InitializeHueStream(bool useUDP, const std::string language) {
     const std::string applicationName = "HueStreamGUI Windows";
-    auto config = std::make_shared<huestream::Config>(applicationName, GetDeviceName(), language);
+    auto config = std::make_shared<huestream::Config>(applicationName, GetDeviceName(), huestream::PersistenceEncryptionKey(PERSISTENCE_ENCRYPTION_KEY), language);
     if (useUDP) {
         AddDebugMsg("Initialized with UDP");
         config->SetStreamingMode(huestream::STREAMING_MODE_UDP);
@@ -364,8 +363,12 @@ void CStreamTestDlg::InitializeHueStream(bool useUDP, const std::string language
         AddDebugMsg("Initialized with default configuration");
         config->SetStreamingMode(huestream::STREAMING_MODE_DTLS);
     }
+
     //Choose whether to start streaming immediately at bridge connection (default true)
     //config->GetAppSettings()->SetAutoStartAtConnection(false);
+
+    //Choose whether lights retain their color after effects are finished/disabled (default false)
+    //config->GetAppSettings()->SetLightsRetainColor(true);
 
     //  Create HueStream instance ...
     m_huestream = std::make_shared<huestream::HueStream>(config);
@@ -383,23 +386,8 @@ void CStreamTestDlg::InitializeEffectPlayerAndTimeline()
     m_timeline = std::make_shared<huestream::Timeline>(m_huestream->GetTimeManager());
     m_timeline->SetLength(0);
     m_timeline->RegisterTimelineStateChangedCallback([this](huestream::TimelineState state, huestream::ITimeline* timeline) {
-        switch (state) {
-        case huestream::TIMELINE_STATE_STARTED:
-            PostDebugMsg("TIMELINESTATE_START");
-            break;
-        case huestream::TIMELINE_STATE_PAUSED:
-            PostDebugMsg("TIMELINESTATE_PAUSE");
-            break;
-        case huestream::TIMELINE_STATE_RESUMED:
-            PostDebugMsg("TIMELINESTATE_RESUME");
-            break;
-        case huestream::TIMELINE_STATE_STOPPED:
-            PostDebugMsg("TIMELINESTATE_STOP");
-            break;
-        case huestream::TIMELINE_STATE_ENDED:
-            PostDebugMsg("TIMELINESTATE_END");
-            break;
-        }
+        auto event = new huestream::TimelineState(state);
+        PostMessage(UWM_TIMELINE_EVENT, 0, reinterpret_cast< LPARAM >(event));
     });
     m_lightscript = std::make_shared<huestream::LightScript>();
 }
@@ -469,6 +457,38 @@ LRESULT CStreamTestDlg::OnPostDebugMsg(WPARAM wParam, LPARAM lParam)
     delete message;
     return LRESULT();
 }
+
+LRESULT CStreamTestDlg::OnTimelineEvent(WPARAM wParam, LPARAM lParam)
+{
+    auto event = reinterpret_cast<huestream::TimelineState *>(lParam);
+
+    switch (*event) {
+    case huestream::TIMELINE_STATE_STARTED:
+        GetDlgItem(IDC_PLAY)->SetWindowText("Pause");
+        AddDebugMsg("TIMELINESTATE_START");
+        break;
+    case huestream::TIMELINE_STATE_PAUSED:
+        GetDlgItem(IDC_PLAY)->SetWindowText("Play");
+        AddDebugMsg("TIMELINESTATE_PAUSE");
+        break;
+    case huestream::TIMELINE_STATE_RESUMED:
+        GetDlgItem(IDC_PLAY)->SetWindowText("Pause");
+        AddDebugMsg("TIMELINESTATE_RESUME");
+        break;
+    case huestream::TIMELINE_STATE_STOPPED:
+        GetDlgItem(IDC_PLAY)->SetWindowText("Play");
+        AddDebugMsg("TIMELINESTATE_STOP");
+        break;
+    case huestream::TIMELINE_STATE_ENDED:
+        GetDlgItem(IDC_PLAY)->SetWindowText("Play");
+        AddDebugMsg("TIMELINESTATE_END");
+        break;
+    }
+
+    delete event;
+    return LRESULT();
+}
+
 
 void CStreamTestDlg::ChangeMode(bool useUDP) {
     if (m_huestream == nullptr)
@@ -1041,16 +1061,13 @@ void CStreamTestDlg::OnBnClickedLoad() {
 void CStreamTestDlg::OnBnClickedPlay() {
     if (m_timeline->IsRunning()) {
         m_timeline->Pause();
-        GetDlgItem(IDC_PLAY)->SetWindowText("Play");
     } else if (CanPlayEffect()) {
         m_timeline->Resume();
-        GetDlgItem(IDC_PLAY)->SetWindowText("Pause");
     }
 }
 
 void CStreamTestDlg::OnBnClickedStop() {
     m_timeline->Stop();
-    GetDlgItem(IDC_PLAY)->SetWindowText("Play");
 }
 
 LightScriptPtr CStreamTestDlg::CreateExampleScript() {
@@ -1121,6 +1138,9 @@ std::string CStreamTestDlg::GetLanguage() const {
 void CStreamTestDlg::ShutDown() {
     m_huestream->RegisterFeedbackCallback(nullptr);
     m_effectPlayer->Stop();
+    m_effectPlayer = nullptr;
     m_huestream->ShutDown();
+    m_huestream = nullptr;
     delete m_pFont;
+    huestream::HueEDK::deinit();
 }

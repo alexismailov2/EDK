@@ -25,14 +25,24 @@ namespace huestream {
     } StreamingMode;
 
     /**
+     Encryption key wrapper.
+     */
+    struct PersistenceEncryptionKey {
+        explicit PersistenceEncryptionKey(const std::string& key) : data(key) {}
+        std::string data;
+    };
+
+    /**
      configuration settings for the library
      @param appName Name by which users can clearly recognize this application, must be max 20 characters and must not contain a '#'
      @param deviceName Name of device which this application instance is running on, either user configured name or model name
+     @param persistenceEncryptionKey Key which is used to encrypt bridge storage
      */
     class Config {
     public:
         Config(const std::string &appName,
                   const std::string &deviceName,
+                  const PersistenceEncryptionKey& persistenceEncryptionKey,
                   const std::string &language = "en",
                   const std::string &region = "US");
 

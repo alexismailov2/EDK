@@ -14,6 +14,7 @@ namespace huestream {
 
     Config::Config(const std::string &appName,
                               const std::string &deviceName,
+                              const PersistenceEncryptionKey &persistenceEncryptionKey,
                               const std::string &language,
                               const std::string &region) :
             _bridgeSettings(std::make_shared<BridgeSettings>()),
@@ -24,6 +25,7 @@ namespace huestream {
         _appSettings->SetDeviceName(deviceName);
         _appSettings->SetLanguage(language);
         _appSettings->SetRegion(region);
+        _appSettings->SetStorageEncryptionKey(persistenceEncryptionKey.data);
     }
 
     Config::~Config() {

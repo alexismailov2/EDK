@@ -10,7 +10,7 @@
 
 #include "support/network/http/HttpRequestBase.h"
 #include "support/network/http/IHttpClient.h"
-#include "support/std/types/File.h"
+#include "support/util/File.h"
 #include "support/util/StringUtil.h"
 
 namespace support {
@@ -23,6 +23,8 @@ namespace support {
          * Set the http client that will be used for FUTURE requests
          */
         static void set_http_client(const std::shared_ptr<IHttpClient>& client);
+
+        static void reset_http_client();
 
         /**
          Constructor
@@ -75,6 +77,9 @@ namespace support {
 
     private:
         std::shared_ptr<IHttpClient> _http_client;
+
+        static std::shared_ptr<IHttpClient> get_default_http_client();
+        static void reset_http_client_internal();
 
         std::shared_ptr<IHttpClient> get_http_client();
     };

@@ -13,7 +13,7 @@
 
 #include "support/logging/Logger.h"
 
-#include "support/std/types/VectorOperations.h"
+#include "support/util/VectorOperations.h"
 
 using std::map;
 using std::unique_ptr;

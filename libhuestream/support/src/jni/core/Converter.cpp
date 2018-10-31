@@ -5,8 +5,10 @@
 
 #include "support/jni/core/ClassInfo.h"
 #include "support/jni/core/ArrayList.h"
+#include "support/jni/core/HashMap.h"
 
 REGISTER_CLASS(huesdk_jni_core::ArrayList, "java/util/ArrayList");
+REGISTER_CLASS(huesdk_jni_core::HashMap, "java/util/HashMap");
 
 #include "support/jni/core/Converter.h"
 #include "support/jni/core/ContainerConverters.h"

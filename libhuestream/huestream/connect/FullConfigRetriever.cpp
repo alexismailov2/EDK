@@ -9,7 +9,7 @@
 #include <regex>
 
 #include "huestream/connect/FullConfigRetriever.h"
-#include "huestream/common/http/IHttpClient.h"
+#include "huestream/common/http/IBridgeHttpClient.h"
 #include "huestream/common/data/ApiVersion.h"
 #include "support/network/http/HttpRequestError.h"
 #include "support/network/http/IHttpResponse.h"
@@ -19,7 +19,7 @@ namespace huestream {
 
 #define CLIP_ERROR_TYPE_UNAUTHORIZED_USER 1
 
-    ConfigRetriever::ConfigRetriever(const HttpClientPtr http, bool useForcedActivation, ConfigType configType) :
+    ConfigRetriever::ConfigRetriever(const BridgeHttpClientPtr http, bool useForcedActivation, ConfigType configType) :
     _configType(configType), _http(http), _useForcedActivation(useForcedActivation), _busy(false) {
     }
 
@@ -38,10 +38,8 @@ namespace huestream {
 
     void ConfigRetriever::RetrieveConfig() {
         const auto configUrl = _configType == ConfigType::Small ? _bridge->GetSmallConfigUrl() : _bridge->GetBaseUrl();
-        _request = _http->CreateHttpRequest(configUrl);
-        _request->set_verify_ssl(false);
 
-        _request->do_get([&](const support::HttpRequestError &error, const support::IHttpResponse &response) {
+        _http->ExecuteHttpRequest(_bridge, HTTP_REQUEST_GET, configUrl, "", [&](const support::HttpRequestError& error, const support::IHttpResponse& response) {
             if (error.get_code() == support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS) {
                 _response = response.get_body();
                 ParseResponseAndExecuteCallback();

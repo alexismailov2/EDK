@@ -18,10 +18,10 @@ using namespace huestream;
 
 class MockBridgeAuthenticator : public IBridgeAuthenticator {
 public:
-    AutenticateCallbackHandler autenticate_callback;
+    AuthenticateCallbackHandler authenticate_callback;
 
     MOCK_METHOD3(Authenticate, void(
-            BridgePtr i, AppSettingsPtr appSetting, AutenticateCallbackHandler
+            BridgePtr i, AppSettingsPtr appSetting, AuthenticateCallbackHandler
             cb));
 
     MOCK_METHOD0(Abort, void());

@@ -12,7 +12,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_STL=c++_static", "-DCMAKE_BUILD_TYPE=DEBUG", "-DANDROID_DEPRECATED_HEADERS=ON"
+                arguments "-DANDROID_STL=c++_static", "-DCMAKE_BUILD_TYPE=DEBUG", "-DANDROID_DEPRECATED_HEADERS=ON", "-DBUILD_WRAPPERS=ON", "-DBUILD_SWIG=ON"
                 abiFilters "x86"
                 targets "huestream_java_native"
             }

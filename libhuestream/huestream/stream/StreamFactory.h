@@ -7,7 +7,6 @@
 #define HUESTREAM_STREAM_STREAMFACTORY_H_
 
 #include <huestream/stream/IStreamFactory.h>
-#include <huestream/common/http/IHttpClient.h>
 
 namespace huestream {
 

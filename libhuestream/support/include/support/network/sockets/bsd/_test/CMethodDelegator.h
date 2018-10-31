@@ -74,6 +74,8 @@ namespace support {
          @see <arpa/inet.h>
          */
         virtual int inet_pton(int af, const char* src, void* dst) = 0;
+
+        virtual ~CMethodDelegate() = default;
     };
 
 #if !defined(_NX)

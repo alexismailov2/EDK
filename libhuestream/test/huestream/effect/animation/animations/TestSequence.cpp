@@ -59,7 +59,7 @@ protected:
     virtual void TearDown() {
         _tp.reset();
         _player.reset();
-        Serializable::SetObjectBuilder(nullptr);
+        Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
     }
 };
 

@@ -16,9 +16,10 @@ using ::testing::Sequence;
 using ::testing::Property;
 using ::testing::AllOf;
 using ::testing::Pointee;
+using ::testing::Values;
 using namespace huestream;
 
-class TestMixer : public testing::Test {
+class TestMixer : public testing::TestWithParam<bool> {
 protected:
     std::shared_ptr<Mixer> _mixer;
     std::shared_ptr<Group> _group;
@@ -254,4 +255,34 @@ TEST_F(TestMixer, IsRobustAgainstInvalidGroup) {
 
     EXPECT_CALL(*effect, UpdateGroup(_)).Times(0);
     _mixer->SetGroup(nullptr);
+}
+
+INSTANTIATE_TEST_CASE_P(RemoveOrRetainColorAfterEffect, TestMixer, Values(true, false));
+
+TEST_P(TestMixer, RemoveOrRetainColorAfterEffect) {
+    auto appSettings = std::make_shared<AppSettings>();
+    appSettings->SetLightsRetainColor(GetParam());
+    _mixer = std::make_shared<Mixer>(appSettings);
+    _mixer->SetGroup(_group);
+
+    auto color1 = Color(1, 0, 0);
+    auto color2 = Color(0, 1, 0);
+    auto foregroundLayer = EffectLayer0;
+
+    AddEffectWithLayer(0);
+    SetExpectEffectGet(foregroundLayer, Location(0.1, 0.1), color1);
+    SetExpectEffectGet(foregroundLayer, Location(0.5, 0.6), color2);
+    SetExpectionForEffectIsFinished(foregroundLayer, false);
+    _mixer->Render();
+
+    AssertColors(Colors::Create(2, color1, color2));
+
+    _effects[0]->Finish();
+    _mixer->Render();
+    
+    if (GetParam()) {
+        AssertColors(Colors::Create(2, color1, color2));
+    } else {
+        AssertColors(Colors::Create(2, Color(0, 0, 0), Color(0, 0, 0)));
+    }
 }

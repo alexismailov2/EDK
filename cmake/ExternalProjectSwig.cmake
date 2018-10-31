@@ -12,7 +12,7 @@ if(DEFINED Swig_DIR AND NOT EXISTS ${Swig_DIR})
 endif()
 
 if(WIN32)
-    set(SWIGWIN_URL "https://midas3.kitware.com/midas/download/item/321843/swigwin-${SWIG_VERSION}.zip")
+    set(SWIGWIN_URL "https://downloads.sourceforge.net/project/swig/swigwin/swigwin-${SWIG_VERSION}/swigwin-${SWIG_VERSION}.zip?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fswig%2Ffiles%2Fswigwin%2Fswigwin-${SWIG_VERSION}%2Fswigwin-${SWIG_VERSION}.zip%2Fdownload%3Fuse_mirror%3Dnetix&ts=1538981168")
     # binary SWIG for windows
     #------------------------------------------------------------------------------
     set(swig_source_dir ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION})
@@ -27,7 +27,7 @@ if(WIN32)
             INSTALL_COMMAND ""
             )
 
-    set(SWIG_DIR   ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION} CACHE INTERNAL "SWIG_DIR")
+    set(SWIG_DIR   ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}/Lib CACHE INTERNAL "SWIG_DIR")
     set(SWIG_EXECUTABLE   ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}/swig.exe CACHE INTERNAL "SWIG_EXECUTABLE")
 else()
     #todo check dependencies

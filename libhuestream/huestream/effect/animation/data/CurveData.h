@@ -35,8 +35,11 @@ namespace huestream {
 
         explicit CurveData(PointListPtr points, Nullable<CurveOptions> options = Nullable<CurveOptions>());
 
-        PointPtr GetInterpolated(double x) const;
-        double GetStepValue(double x) const;
+        PointPtr GetInterpolated(double x);
+
+        double GetInterpolatedValue(double x);
+
+        double GetStepValue(double x);
 
         double GetLength() const;
 
@@ -48,12 +51,22 @@ namespace huestream {
 
         const CurveData &Append(const CurveData &other) const;
 
+        void AppendPoint(const PointPtr Point);
+
+        void AppendPointLinearized(const PointPtr Point, double delta = 0.000015);
+
     private:
-        void CorrectPoint(PointPtr p) const;
+        double CorrectValue(double v) const;
 
-        bool GetStartAndEndPoint(double x, PointPtr* start, PointPtr* end) const;
+        bool GetStartAndEndPoint(double x, PointPtr* start, PointPtr* end);
 
-        bool GetStartPointIndex(double position, unsigned int* index) const;
+        PointList::iterator GetStartPoint(double x);
+
+        bool IsClosestLower(PointList::iterator it, double x);
+
+        double Interpolate(PointPtr start, PointPtr end, double x);
+
+        unsigned int _lastIndex;
     };
 }  // namespace huestream
 

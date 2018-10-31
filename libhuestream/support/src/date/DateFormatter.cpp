@@ -340,8 +340,6 @@ namespace support {
                 // No error occurred, so create the date object
                 date = new Date(system_clock::from_time_t(time));
             }
-        } else {
-            date = new Date(system_clock::from_time_t(0));
         }
         return date;
     }

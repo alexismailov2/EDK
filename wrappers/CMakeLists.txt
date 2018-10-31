@@ -13,4 +13,5 @@ if(BUILD_WITH_RTTI)
         add_subdirectory(csharp)
     endif()    
     add_subdirectory(java)
+    #add_subdirectory(python) #not actively supported
 endif()

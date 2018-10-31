@@ -30,7 +30,7 @@ namespace support {
     };
 
     // Definition of the socket callback lambda
-    typedef function<void (const SocketError& error, unsigned int bytes)> SocketCallback;
+    typedef std::function<void (const SocketError& error, unsigned int bytes)> SocketCallback;
     
     class Socket {
     public:

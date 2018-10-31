@@ -13,6 +13,10 @@ public class NativeTools {
         return new ArrayList<T>(Arrays.asList(array));
     }
 
+    private static <T> Object[] listToArray(List<T> list) {
+        return list.toArray();
+    }
+
     public static String BytesToString(byte[] bytes) {
         if (bytes != null) {
             try {

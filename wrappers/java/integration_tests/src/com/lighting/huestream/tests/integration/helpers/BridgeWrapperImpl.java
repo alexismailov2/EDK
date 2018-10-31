@@ -140,7 +140,11 @@ class BridgeWrapperImpl implements IBridgeWrapper {
     }
 
     @Override
-    public void cleanUpUser() {
+    public void cleanupUser() {
+        if (_userName.isEmpty()) {
+            return;
+        }
+
         JSONArray response = Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName));
         getSuccessNode(response);
     }

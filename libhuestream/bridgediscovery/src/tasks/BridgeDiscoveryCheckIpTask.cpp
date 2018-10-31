@@ -39,16 +39,18 @@ namespace {
 
 namespace huesdk {
     BridgeDiscoveryCheckIpTask::BridgeDiscoveryCheckIpTask(const string &ip) : _ip(ip) {
-        // support the format `ip_address:http_port:https_port`
-        auto ip_with_ports = support::split(ip, { ":" });
-        if (ip_with_ports.size() > 1) {
-            // we're only interested in the http port
-            _ip = ip_with_ports[0] + ":" + ip_with_ports[1];
-        }
     }
 
     void BridgeDiscoveryCheckIpTask::execute(Task::CompletionHandler done) {
-        const auto bridge_config_url = "http://" + _ip + bridge_discovery_const::IPCHECK_BRIDGE_CONFIG_HTTP_URL_PATH;
+        // support the format `ip_address:http_port:https_port`
+        auto ip = _ip;
+        auto ip_with_ports = support::split(_ip, { ":" });
+        if (ip_with_ports.size() > 1) {
+            // we're only interested in the http port here
+            ip = ip_with_ports[0] + ":" + ip_with_ports[1];
+        }
+
+        const auto bridge_config_url = "http://" + ip + bridge_discovery_const::IPCHECK_BRIDGE_CONFIG_HTTP_URL_PATH;
 
         create_job<HttpRequestTask>(bridge_config_url, http_options_ipcheck())->run([this, done](HttpRequestTask *task) {
             parse_config_response(task->get_error(), task->get_response());

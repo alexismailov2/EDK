@@ -6,6 +6,8 @@
 #include <regex>
 #include <string>
 
+#include <boost/range/algorithm/partition.hpp>
+
 #include "support/network/NetworkInterface.h"
 
 using std::regex;
@@ -16,17 +18,27 @@ using std::string;
 namespace support {
 
     NetworkInterface::NetworkInterface() {
-        _inet_type = NetworkInetType ::INET_IPV4;
+        _inet_type = NetworkInetType::INET_IPV4;
         _up = false;
         _loopback = false;
+        _adapter_type = NetworkAdapterType::NETWORK_ADAPTER_TYPE_UNKNOWN;
+        _is_connected = false;
     }
 
-    NetworkInterface::NetworkInterface(const string& ip, NetworkInetType inet_type, const string& name, bool up, bool loopback) :
-                                                                                                                _name(string(name)),
-                                                                                                                _ip(string(ip)),
-                                                                                                                _inet_type(inet_type),
-                                                                                                                _up(up),
-                                                                                                                _loopback(loopback) { }
+    NetworkInterface::NetworkInterface(const string& ip,
+                                       NetworkInetType inet_type,
+                                       const string& name,
+                                       bool up,
+                                       bool loopback,
+                                       NetworkAdapterType adapter_type,
+                                       bool is_connected) :
+        _name(name),
+        _ip(ip),
+        _inet_type(inet_type),
+        _up(up),
+        _loopback(loopback),
+        _adapter_type(adapter_type),
+        _is_connected(is_connected) {}
 
     const string& NetworkInterface::get_name() const {
         return _name;
@@ -67,7 +79,7 @@ namespace support {
     void NetworkInterface::set_loopback(bool loopback) {
         _loopback = loopback;
     }
-    
+
     bool NetworkInterface::is_private() const {
         if (_inet_type != INET_IPV4) {
             // Only IPV4 supported for now
@@ -103,6 +115,32 @@ namespace support {
             return true;
 
         return false;
+    }
+
+    NetworkAdapterType NetworkInterface::get_adapter_type() const {
+        return _adapter_type;
+    }
+
+    void NetworkInterface::set_adapter_type(NetworkAdapterType adapter_type) {
+        _adapter_type = adapter_type;
+    }
+
+    void NetworkInterface::set_is_connected(bool is_connected) {
+        _is_connected = is_connected;
+    }
+
+    bool NetworkInterface::get_is_connected() const {
+        return _is_connected;
+    }
+
+    std::vector<NetworkInterface> prioritize(
+            std::vector<NetworkInterface> network_interfaces) {
+        boost::range::partition(network_interfaces, [](NetworkInterface interface) {
+            return interface.get_adapter_type() == NetworkAdapterType::NETWORK_ADAPTER_TYPE_WIRELESS
+                   && interface.get_is_connected();
+        });
+
+        return network_interfaces;
     }
 
 }  // namespace support

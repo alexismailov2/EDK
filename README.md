@@ -63,7 +63,7 @@ Option | Description
 `BUILD_EXAMPLES`           | toggles building of examples
 `BUILD_CURL`               | toggles building of CURL
 `BUILD_WRAPPERS`           | toggles building of wrappers, currently only C# and Java (requires RTTI and Exceptions enabled)
-`BUILD_SWIG`               | toggles building of SWIG, when switched to off make sure to use latest SWIG version 3.0.10
+`BUILD_SWIG`               | toggles building of SWIG, when switched to off make sure to use latest SWIG version 3.0.12
 `BUILD_WITH_RTTI`          | toggles RTTI (libary does not require RTTI when using it without wrappers)
 `BUILD_WITH_EXCEPTIONS`    | toggles exceptions (library does not require exceptions when using it without wrappers)
 
@@ -96,13 +96,12 @@ Recommend to use clion to load the CMAKE project or generate Eclipse projects an
 To build from command prompt, follow the lines below:
 
 ```
-cd <root-of-EDK-repo>
+cd root-of-repo
 mkdir build
 cd build
 cmake  ..
 make
 ```
-
 
 ### Windows Visual Studio
 Make sure to install cmake and be able to execute it from command line. Since cmake needs to access git from the
@@ -113,15 +112,31 @@ Tested development environment is VS2015 with both 32 and 64 bit compilers.
 
 Open command prompt and execute the following to generate VS projects.
 
+```
 cd root-of-repo
 mkdir build
 cd build
-cmake -G "Visual Studio 14 2015" ..
+cmake -G "Visual Studio 14 2015 Win64" ..
+```
 
-Open the generated VS solution and build
+Open the generated VS solution and build.
+
+(Visual Studio 2017 should work too but you may have to silence TR1 namespace warnings until googletest releases a fix for that, i.e.
+`cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS=/D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING ..`)
 
 ### Windows CLION
-Secondary development environment is clion. We used MINGW-w64 as both 32 and 64 bit compiler in clion.
+Secondary development environment is clion. We used MINGW-w64 as both 32 and 64 bit compiler in clion. Works with cmake files directly.
+
+### Mac
+Install Xcode
+
+```
+cd root-of-repo
+mkdir build
+cd build
+cmake  ..
+cmake --build .
+```
 
 ## Getting Started
 Getting started is easy, it just takes 4 steps. In these 4 steps we will create a very basic application which only connects to the Hue bridge and plays an explosion effect.
@@ -154,14 +169,14 @@ auto huestream = std::make_shared<HueStream>(config);
 
 //Register feedback callback
 huestream->RegisterFeedbackCallback([](const FeedbackMessage &message) {
-//Handle connection flow feedback messages here to guide user to connect to the HUE bridge
-//Here we just write to stdout
-if (message.GetType() == FeedbackMessage::ID_FEEDBACK_TYPE_USER) {
-std::cout << message.GetUserMessage() << std::endl;
-}
-if (message.GetId() == FeedbackMessage::ID_DONE_COMPLETED) {
-std::cout << "Connected to bridge with ip: " << message.GetBridge()->GetIpAddress() << std::endl;
-}
+    //Handle connection flow feedback messages here to guide user to connect to the HUE bridge
+    //Here we just write to stdout
+    if (message.GetType() == FeedbackMessage::ID_FEEDBACK_TYPE_USER) {
+        std::cout << message.GetUserMessage() << std::endl;
+    }
+    if (message.GetId() == FeedbackMessage::ID_DONE_COMPLETED) {
+        std::cout << "Connected to bridge with ip: " << message.GetBridge()->GetIpAddress() << std::endl;
+    }
 });
 ```
 
@@ -188,15 +203,15 @@ More info on the ConnectionFlow: `doc/ApplicationNote_HueEDK_ConnectionFlow.pdf`
 huestream->ConnectBridge();
 
 while (!huestream->IsStreamableBridgeLoaded()) {
-auto bridge = huestream->GetLoadedBridge();
-if (bridge->GetStatus() == BRIDGE_INVALID_GROUP_SELECTED) {
-//A choice should be made between multiple groups
-//Here we just pick the first one in the list
-huestream->SelectGroup(bridge->GetGroups()->at(0));
-} else {
-PressAnyKeyToRetry();
-huestream->ConnectBridge();
-}
+    auto bridge = huestream->GetLoadedBridge();
+    if (bridge->GetStatus() == BRIDGE_INVALID_GROUP_SELECTED) {
+        //A choice should be made between multiple groups
+        //Here we just pick the first one in the list
+        huestream->SelectGroup(bridge->GetGroups()->at(0));
+    } else {
+        PressAnyKeyToRetry();
+        huestream->ConnectBridge();
+    }
 }
 ```
 
@@ -261,20 +276,28 @@ Many parts of the library can be customized. Some common examples are explained 
 
 ## Important security notice
 
-During first time connection to the bridge, if the user authorizates the application, the EDK will receive a username and clientkey. When releasing an application to the public, the developer is responsible to store this information safely. The default implementation in the EDK just saves it to a file. This is not acceptable for releasing a production application, unless it is on a platform where files are be stored in a sandbox unaccessible by other applications.
+During first time connection to the bridge, if the user authorizes the application, the EDK will receive a username and clientkey. When releasing an application to the public, the developer is responsible to store this information safely. The default implementation in the EDK just saves it to a file. This is not acceptable for releasing a production application, unless it is on a platform where files are be stored in a sandbox inaccessible by other applications.
 
 Like most key classes in the EDK, the default implementation `BridgeFileStorageAccessor` can be replaced by a custom implementation without making changes to the library. To do this, inject your own implementation of `IBridgeStorageAccessor` before creating the huestream instance.
 
 ```c++
-support::Factory<huestream::BridgeStorageAccessorPtr, const std::string &, huestream::BridgeSettingsPtr>::SetFactoryMethod(
+support::Factory<std::unique_ptr<huestream::BridgeStorageAccessor>(const std::string &, huestream::BridgeSettingsPtr)>::SetFactoryMethod(
 [this](const std::string &fileName, huestream::BridgeSettingsPtr bridgeSettings) {
-return std::make_shared<MyCustomBridgeStorageAccessor>(fileName, bridgeSettings);
+    return std::make_shared<MyCustomBridgeStorageAccessor>(fileName, bridgeSettings);
 }
 );
 
 auto huestream = std::make_shared<HueStream>(config);
 ```
 
+The library supports file encryption. The developer is responsible for creating and storing the key. Key should be injected in `Config` object before creating the `HueStream` instance, although it is possible to change the key during the runtime. The key is stored in `AppConfig` object.
+
+```c++
+auto config = make_shared<Config>(_appName, _deviceName, PersistenceEncryptionKey("EncryptionKey"), _language, _region);
+auto huestream = make_shared<HueStream>(config);
+```
+
+Default `IBridgeStorageAccessor` implementation, `BridgeFileStorageAccessor`, will use the key to encrypt/decrypt bridge data. Should the empty key be provided, no encryption/decryption will be performed. Data is encrypted using AES256 algorithm.
 
 ## `tools`
 The EDK has a small simulator for the HUE streaming interface. It is based on nodejs.
@@ -316,9 +339,11 @@ http://localhost
 The simulator allows you visualize incomming streaming messages on the location grid. In the client app specify ip address of the
 machine running the simulator (or localhost if this is the same machine). Any username is accepted. To work with the simulator, the transport layer security (DTLS) should be disabled: in your app simply make sure you set StreamingMode to `STREAMING_MODE_UDP` in the Config instance:
 
+```c++
 auto config = make_shared<huestream::Config>("my-app", "pc");
 config->SetStreamingMode(STREAMING_MODE_UDP);
 auto huestream = make_shared<huestream::HueStream>(config);
+```
 
 ### configure the entertainment area used by the simulator
 By default there are 4 different areas available in the simulator defined in `tools/simulator/server/config/default_groups.json`
@@ -326,8 +351,13 @@ The simulator creates a file `tools/simulator/server/config/current_groups.json`
 Simply removing this file will reset to the default groups.
 
 ## `wrappers`
-For C# and Java support SWIG is used to generate the bindings. This is experimental still. Objective-C, Python and Javascript may follow later (or you could set this up yourself following the Java/C# examples).
-By having cmake option BUILD_WRAPPERS=ON and running the huestream_csharp or huestream_java target, the wrappers will be generated together with an example project.
+For C# and Java support SWIG is used to generate the bindings. This is experimental still. A Python example is also available but not actively supported. Other languages can be added by following the Java/C#/Python examples.
+By setting cmake option BUILD_WRAPPERS=ON and running the huestream_csharp or huestream_java target, the wrappers will be generated together with an example project.
+
+On **Android** we need to pass the application context to the EDK on intialisation:
+```
+InitSdk.setApplicationContext(getApplicationContext());
+```
 
 ## `doxygen`
 Doxygen API documentation can be generated by running `doxygen Doxyfile`
@@ -366,10 +396,19 @@ The following external libraries are used in certain build variants:
   * Package is part of this repository and can be found in `3rd_party/boost`
 
 ### Changelog
+1.29.0
+- Performance optimization for supporting large scripts
+- Ability to provide EventNotifier object to subscribe to bridge discovery event notifications 
+- Various fixes and improvements
+
+1.27.0
+- Introduced https
+- Introduced persistence encryption
+- Various fixes and improvements
+
 1.24.3
 - Temporary disabled https support
 
 1.24.2
 - Fixed certificate pinning for meethue
 - Introduced https
-

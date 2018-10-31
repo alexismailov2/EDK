@@ -30,9 +30,6 @@ namespace support {
         void stop_request(Handle handle) override;
 
     private:
-        /* share handle that shares the tls session information for all http requests */
-        CURLSH* _curlsh;
-
         /* multi handle that shares the connection pool for all http requests */
         CURLM* _curlm;
 

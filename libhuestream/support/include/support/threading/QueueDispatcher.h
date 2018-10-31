@@ -14,10 +14,12 @@ All Rights Reserved.
 #include <future>
 #include <queue>
 
-#include "hueutilities/Operation.h"
+#include "support/util/Operation.h"
+#include "support/util/Provider.h"
+#include "support/threading/OperationalQueue.h"
+#include "support/threading/ThreadPool.h"
 
 namespace support {
-    class OperationalQueue;
     class QueueExecutor;
 
     /**
@@ -25,6 +27,13 @@ namespace support {
      */
     class QueueDispatcher final {
     public:
+        /**
+         * Constructor using global operational queue
+         * @param queue Dispatch queue used to execute given requests
+         * @param wait_all specifies if the dispatcher should wait posted invocations on shutdown.
+         */
+        explicit QueueDispatcher(bool wait_all = true);
+
         /**
          * Constructor.
          * @param queue Dispatch queue used to execute given requests
@@ -41,16 +50,10 @@ namespace support {
         QueueDispatcher& operator=(const QueueDispatcher&) = delete;
 
         /**
-         * Gets global dispatcher
-         * @return global dispatcher instance pointer
-         */
-        static std::shared_ptr<QueueDispatcher> global();
-
-        /**
          * Requests invocation to be performed on the dispatcher thread.
          * @param invocation Function to be executed
          */
-        huesdk::Operation post(std::function<void()> invocation);
+        support::Operation post(std::function<void()> invocation);
 
         /**
          * Stops all incoming requests processing, waits for posted invocations to be discarded or finished.
@@ -58,12 +61,25 @@ namespace support {
          */
         void shutdown();
 
+        /**
+         * Retrieve operation queue that is used for executing dispatching tasks
+         */
+        std::shared_ptr<OperationalQueue> get_operational_queue() const;
+
     private:
         std::unique_ptr<QueueExecutor> _executor;
         bool _wait_all = true;
     };
 
-    std::shared_ptr<OperationalQueue> global_dispatch_queue();
-
+    using GlobalQueueDispatcher = Provider<std::shared_ptr<QueueDispatcher>>;
 }  // namespace support
+
+template<>
+struct default_object<std::shared_ptr<support::QueueDispatcher>> {
+    static std::shared_ptr<support::QueueDispatcher> get() {
+        return std::make_shared<support::QueueDispatcher>(
+                std::make_shared<support::OperationalQueue>(
+                        std::make_shared<support::ThreadPool>(1, true, "dispatcher")));
+    }
+};
 

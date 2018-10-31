@@ -6,7 +6,6 @@
 #include <huestream/stream/StreamStarter.h>
 #include <libjson/libjson.h>
 #include <huestream/config/Config.h>
-#include <huestream/common/http/HttpClientProvider.h>
 
 #include <sstream>
 #include <string>
@@ -23,7 +22,7 @@ std::string SerializeJson(const JSONNode &j) {
         return j.write();
     }
 
-    StreamStarter::StreamStarter(BridgePtr bridge, HttpClientPtr http) : _bridge(bridge), _http(http) {}
+    StreamStarter::StreamStarter(BridgePtr bridge, BridgeHttpClientPtr http) : _bridge(bridge), _http(http) {}
 
     StreamStarter::~StreamStarter() {}
 
@@ -89,11 +88,10 @@ std::string SerializeJson(const JSONNode &j) {
         JSONNode groupNode;
         groupNode.push_back(streamNode);
         auto data = SerializeJson(groupNode);
-        auto req = std::make_shared<HttpRequestInfo>(HTTP_REQUEST_PUT, url, data);
-        req->SetEnableSslVerification(false);
-        _http->Execute(req);
+        auto request = _http->ExecuteHttpRequest(_bridge, HTTP_REQUEST_PUT, url, data);
 
-        return CheckForErrors(req);
+
+        return CheckForErrors(request);
     }
 
     bool StreamStarter::CheckForErrors(HttpRequestPtr req) {

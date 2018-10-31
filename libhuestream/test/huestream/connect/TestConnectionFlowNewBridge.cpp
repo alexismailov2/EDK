@@ -15,6 +15,7 @@
 using namespace testing;
 using namespace huestream;
 
+constexpr static auto PUSHLINK_INVALID_IP_MAX_RETRIES = 3;
 
 class TestConnectionFlow_NewBridge : public TestConnectionFlowBase {
 public:
@@ -25,7 +26,7 @@ public:
         expect_on_searcher_search_new(false);
         expect_message(FeedbackMessage::ID_FINISH_LOADING_NO_BRIDGE_CONFIGURED, FeedbackMessage::FEEDBACK_TYPE_INFO, std::make_shared<Bridge>(std::make_shared<BridgeSettings>()));
         expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-        _storageAccesser->load_callback(OPERATION_FAILED, std::make_shared<HueStreamData>(std::make_shared<BridgeSettings>()));
+        _storageAccessor->load_callback(OPERATION_FAILED, std::make_shared<HueStreamData>(std::make_shared<BridgeSettings>()));
         _messageDispatcher->ExecutePendingActions();
     }
 
@@ -42,14 +43,14 @@ public:
     void connect_background_with_no_bridge_configured_starts_new_bridge_search() {
         expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
         expect_message(FeedbackMessage::ID_START_LOADING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-        expect_on_storage_accesser_load();
+        expect_on_storage_accessor_load();
         _connectionFlow->ConnectToBridge();
         _messageDispatcher->ExecutePendingActions();
 
         expect_on_searcher_search_new(false);
         expect_message(FeedbackMessage::ID_FINISH_LOADING_NO_BRIDGE_CONFIGURED, FeedbackMessage::FEEDBACK_TYPE_INFO, std::make_shared<Bridge>(std::make_shared<BridgeSettings>()));
         expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-        _storageAccesser->load_callback(OPERATION_FAILED, std::make_shared<HueStreamData>(std::make_shared<BridgeSettings>()));
+        _storageAccessor->load_callback(OPERATION_FAILED, std::make_shared<HueStreamData>(std::make_shared<BridgeSettings>()));
         _messageDispatcher->ExecutePendingActions();
     }
 
@@ -65,34 +66,72 @@ public:
     void finish_authorization_unsuccessfully_start_new_authentication(int index) {
         auto authenticator = _authenticators->at(index);
         expect_on_authenticator_authenticate(index);
-        authenticator->autenticate_callback(_bridges->at(index));
+        authenticator->authenticate_callback(_bridges->at(index));
+        // Process authorization completed event
+        _messageDispatcher->ExecutePendingActions();
+        // Execute delayed authorization retry attempt
+        _scheduler->execute_scheduled_callback();
         _messageDispatcher->ExecutePendingActions();
     }
 
-    void authenticate_connection_failure(int index) {
+    void authenticate_connection_failure_once(int index) {
         auto callback = _authenticators->at(index);
+
+        // Invalidate bridge and trigger authorization complete event
         _bridges->at(index)->SetIsValidIp(false);
-        callback->autenticate_callback(_bridges->at(index));
+        callback->authenticate_callback(_bridges->at(index));
         _messageDispatcher->ExecutePendingActions();
+
+        // Execute delayed authorization retry attempt
+        _scheduler->execute_scheduled_callback();
+        _messageDispatcher->ExecutePendingActions();
+
+        _scheduler->add_task({});
+    }
+
+    void authenticate_connection_failure_with_retries(int index) {
+        auto callback = _authenticators->at(index);
+
+        for (int i = 0; i < PUSHLINK_INVALID_IP_MAX_RETRIES + 1; ++i) {
+            // Execute delayed authorization retry attempt
+            _scheduler->execute_scheduled_callback();
+            _messageDispatcher->ExecutePendingActions();
+
+            // Invalidate bridge and trigger authorization complete event
+            _bridges->at(index)->SetIsValidIp(false);
+            callback->authenticate_callback(_bridges->at(index));
+            _messageDispatcher->ExecutePendingActions();
+        }
+
+        _scheduler->add_task({});
+    }
+
+    void trigger_authorization_failure(int index) {
+        expect_on_authenticator_authenticate(index);
+
+        authenticate_connection_failure_once(index);
     }
 
     void finish_authorization_with_connection_failure_ignores_bridge(int index) {
-        expect_no_actions();
-        authenticate_connection_failure(index);
+        expect_on_authenticator_authenticate(index, PUSHLINK_INVALID_IP_MAX_RETRIES);
+
+        authenticate_connection_failure_with_retries(index);
     }
 
     void finish_authorization_with_connection_failure_ignores_bridge_and_starts_new_search(int index) {
+        expect_on_authenticator_authenticate(index, PUSHLINK_INVALID_IP_MAX_RETRIES);
+
         auto callback = _authenticators->at(index);
         expect_on_searcher_search_new(false);
         expect_message(FeedbackMessage::ID_FINISH_AUTHORIZING_FAILED, FeedbackMessage::FEEDBACK_TYPE_INFO);
         expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-        authenticate_connection_failure(index);
+        authenticate_connection_failure_with_retries(index);
     }
 
     void finish_authorization_when_another_bridge_already_authorized_ignores_bridge(int index) {
         authorize_bridge(index);
         expect_no_actions();
-        _authenticators->at(index)->autenticate_callback(_bridges->at(index));
+        _authenticators->at(index)->authenticate_callback(_bridges->at(index));
         _messageDispatcher->ExecutePendingActions();
     }
 
@@ -117,7 +156,7 @@ public:
         _messageDispatcher->ExecutePendingActions();
 
         expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_READY_TO_START, FeedbackMessage::FEEDBACK_TYPE_INFO, _bridges->at(0), BRIDGE_READY);
-        expect_on_storage_accesser_save();
+        expect_on_storage_accessor_save();
         _fullConfigRetriever->RetrieveCallback(OPERATION_SUCCESS, _fullConfigRetriever->Bridge);
         _messageDispatcher->ExecutePendingActions();
     }
@@ -190,7 +229,7 @@ TEST_F(TestConnectionFlow_NewBridge, search_twice_finish_with_no_bridges_found) 
     searching_twice_with_no_bridges_found_finalizes();
 }
 
-TEST_F(TestConnectionFlow_NewBridge, authentication_repeats_until_autenticated) {
+TEST_F(TestConnectionFlow_NewBridge, authentication_repeats_until_authenticated) {
     connect_with_no_bridge_configured_starts_new_bridge_search();
     searching_with_one_bridge_found_starts_pushlink(0);
 
@@ -216,13 +255,13 @@ TEST_F(TestConnectionFlow_NewBridge, authentication_repeats_until_abort_multiple
     abort_finalizes();
 }
 
-TEST_F(TestConnectionFlow_NewBridge, authentication_connection_failure_triggers_new_search) {
+TEST_F(TestConnectionFlow_NewBridge, authentication_connection_failure_triggers_new_search_after_several_attempts) {
     connect_with_no_bridge_configured_starts_new_bridge_search();
     searching_with_one_bridge_found_starts_pushlink(0);
     finish_authorization_with_connection_failure_ignores_bridge_and_starts_new_search(0);
 }
 
-TEST_F(TestConnectionFlow_NewBridge, authentication_connection_failure_multiple_bridges_triggers_new_search) {
+TEST_F(TestConnectionFlow_NewBridge, authentication_connection_failure_multiple_bridges_triggers_new_search_after_several_attempts) {
     connect_with_no_bridge_configured_starts_new_bridge_search();
     searching_with_three_bridges_found_starts_pushlink_on_all_three_bridges();
     finish_authorization_with_connection_failure_ignores_bridge(0);
@@ -333,7 +372,7 @@ TEST_F(TestConnectionFlow_NewBridge, start_fail) {
     expect_message(FeedbackMessage::ID_USERPROCEDURE_FINISHED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     EXPECT_CALL(*_stream, StartWithRenderThread(_)).WillOnce(Invoke(FailActivateBridgeBusy));
 
-    _storageAccesser->save_callback(OPERATION_SUCCESS);
+    _storageAccessor->save_callback(OPERATION_SUCCESS);
     _messageDispatcher->ExecutePendingActions();
 }
 
@@ -419,4 +458,51 @@ TEST_F(TestConnectionFlow_NewBridge, connect_to_new_bridge_stops_streaming_bridg
 
 TEST_P(TestConnectionFlow_NewBridge, connect_stores_bridgelist) {
     connect_to_bridge_successfully(0);
+}
+
+TEST_F(TestConnectionFlow_NewBridge, connect_to_new_bridge_succeedes_after_several_failed_attempts) {
+    connect_with_no_bridge_configured_starts_new_bridge_search(true);
+    searching_background_with_one_bridge_found_finishes(0);
+    connect_with_background_result_starts_pushlink(0);
+
+    trigger_authorization_failure(0);
+    trigger_authorization_failure(0);
+    trigger_authorization_failure(0);
+    finish_authorization_successfully_and_retrieve_full_config(0, 1);
+
+    finish(_bridges->at(0));
+}
+
+TEST_F(TestConnectionFlow_NewBridge, connect_to_new_bridge_fails_after_several_failed_attempts) {
+    connect_with_no_bridge_configured_starts_new_bridge_search(true);
+    searching_background_with_one_bridge_found_finishes(0);
+    connect_with_background_result_starts_pushlink(0);
+
+    trigger_authorization_failure(0);
+    trigger_authorization_failure(0);
+    trigger_authorization_failure(0);
+
+    // Next authorization will fail and start new search
+    expect_message(FeedbackMessage::ID_FINISH_AUTHORIZING_FAILED, FeedbackMessage::FEEDBACK_TYPE_INFO);
+    expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
+    EXPECT_CALL(*_factory, CreateSearcher()).Times(1).WillOnce(Return(std::make_shared<NiceMock<MockBridgeSearcher>>()));
+    authenticate_connection_failure_once(0);
+    abort_finalizes();
+}
+
+INSTANTIATE_TEST_CASE_P(new_bridge_https, TestConnectionFlow_NewBridge, Values(true, false));
+
+TEST_P(TestConnectionFlow_NewBridge, new_bridge_https) {
+    EXPECT_FALSE(_bridges->at(4)->GetIsUsingSsl());
+
+    connect_with_no_bridge_configured_starts_new_bridge_search(GetParam());
+
+    if (GetParam()) {
+        searching_background_with_one_bridge_found_finishes(4);
+    }
+    else {
+        searching_with_one_bridge_found_starts_pushlink(4);
+    }
+
+    EXPECT_TRUE(_bridges->at(4)->GetIsUsingSsl());
 }

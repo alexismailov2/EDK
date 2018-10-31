@@ -86,7 +86,7 @@ namespace huestream {
 
     class Connect : public IConnect {
     public:
-        Connect(HttpClientPtr http, MessageDispatcherPtr dispatcher, BridgeSettingsPtr bridgeSettings, AppSettingsPtr appSettings, StreamPtr stream, BridgeStorageAccessorPtr storageAccessor);
+        Connect(BridgeHttpClientPtr http, MessageDispatcherPtr dispatcher, BridgeSettingsPtr bridgeSettings, AppSettingsPtr appSettings, StreamPtr stream, BridgeStorageAccessorPtr storageAccessor);
 
         void SetFeedbackMessageCallback(FeedbackMessageCallback callback) override;
 

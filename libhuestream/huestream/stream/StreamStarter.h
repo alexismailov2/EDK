@@ -8,14 +8,14 @@
 
 #include <huestream/common/data/Bridge.h>
 #include <huestream/stream/IStreamStarter.h>
-#include <huestream/common/http/IHttpClient.h>
+#include <huestream/common/http/IBridgeHttpClient.h>
 
 namespace huestream {
 
     class StreamStarter : public IStreamStarter {
     public:
-        StreamStarter(BridgePtr bridge, HttpClientPtr _http);
-        ~StreamStarter();
+        StreamStarter(BridgePtr bridge, BridgeHttpClientPtr _http);
+        ~StreamStarter() override;
 
         bool StartStream(ActivationOverrideLevel overrideLevel) override;
         bool Start(bool force) override;
@@ -32,7 +32,7 @@ namespace huestream {
         static bool IsNotExistingOrInvalidGroup(int errorCode);
 
         BridgePtr _bridge;
-        HttpClientPtr _http;
+        BridgeHttpClientPtr _http;
     };
 
 }  // namespace huestream

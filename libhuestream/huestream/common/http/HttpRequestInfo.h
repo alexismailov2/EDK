@@ -14,6 +14,9 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "support/network/http/HttpRequestBase.h"
+#include "huestream/common/data/Bridge.h"
+
 namespace huestream {
 
 #define HTTP_REQUEST_PUT "PUT"
@@ -33,13 +36,13 @@ class HttpRequestInfo {
 
     virtual ~HttpRequestInfo() = default;
 
-    virtual void StartRequest();
-
     virtual void FinishRequest();
 
     virtual void WaitUntilReady();
 
     virtual bool IsReady();
+
+    virtual bool StartRequest();
 
  PROP_DEFINE(HttpRequestInfo, std::string, url, Url);
  PROP_DEFINE(HttpRequestInfo, std::string, method, Method);
@@ -50,14 +53,21 @@ class HttpRequestInfo {
  PROP_DEFINE(HttpRequestInfo, std::string, token, Token);
  PROP_DEFINE(HttpRequestInfo, HttpRequestInfoCallback, callback, Callback);
  PROP_DEFINE(HttpRequestInfo, uint32_t, roundTripTime, RoundTripTime)
- PROP_DEFINE(HttpRequestInfo, bool, enableSslVerification, EnableSslVerification);
+ PROP_DEFINE(HttpRequestInfo, int, connectTimeout, ConnectTimeout);
+ PROP_DEFINE(HttpRequestInfo, int, receiveTimeout, ReceiveTimeout);
+ PROP_DEFINE(HttpRequestInfo, int, requestTimeout, RequestTimeout);
+ PROP_DEFINE_BOOL(HttpRequestInfo, bool, enableLogging, LoggingEnabled);
+ PROP_DEFINE(HttpRequestInfo, support::HttpRequestSecurityLevel, securityLevel, SecurityLevel);
+ PROP_DEFINE_BOOL(HttpRequestInfo, bool, enableSslVerification, SslVerificationEnabled);
+ PROP_DEFINE(HttpRequestInfo, std::string, expectedCommonName, ExpectedCommonName);
+ PROP_DEFINE(HttpRequestInfo, std::vector<std::string>, trustedCertificates, TrustedCertificates);
 
  protected:
     std::mutex _mutex;
     std::condition_variable _condition;
-    bool _isFinished;
+    bool _isReady;
+    bool _isRunning;
 };
-
 
 }  // namespace huestream
 

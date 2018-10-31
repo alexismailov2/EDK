@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "support/std/types/VectorOperations.h"
+#include "support/util/VectorOperations.h"
 #include "support/jni/JNIToNative.h"
 
 namespace support {

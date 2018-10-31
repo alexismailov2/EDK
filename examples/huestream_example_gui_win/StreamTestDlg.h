@@ -213,6 +213,8 @@ public:
 
     afx_msg LRESULT OnPostDebugMsg(WPARAM wParam, LPARAM lParam);
 
+    afx_msg LRESULT OnTimelineEvent(WPARAM wParam, LPARAM lParam);
+
     std::string GetLanguage() const;
 
     void ShutDown();

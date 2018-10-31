@@ -25,8 +25,11 @@ public:
 };
 
 std::shared_ptr<Serializable> MockActionBuilder::ConstructInstanceOf(std::string type) {
-    auto action = std::make_shared<MockAction>();
-    return action;
+    if (type == Location::type) {
+        return std::make_shared<Location>();
+    }
+    
+    return std::make_shared<MockAction>();
 }
 
 class TestLightScript : public testing::Test {
@@ -44,7 +47,7 @@ protected:
             effect.reset();
         }
         _effects.clear();
-        Serializable::SetObjectBuilder(nullptr);
+        Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
     }
 
     virtual void AddAction(std::string name, unsigned int layer, long long int startPosition) {

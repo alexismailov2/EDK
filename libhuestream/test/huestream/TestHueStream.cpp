@@ -12,9 +12,8 @@
 #include <test/huestream/_stub/StubMessageDispatcher.h>
 #include <huestream/common/time/TimeManager.h>
 #include <huestream/common/time/TimeProviderProvider.h>
-#include <huestream/common/http/HttpClient.h>
 #include <test/huestream/_mock/MockTimeManager.h>
-#include <test/huestream/_mock/MockHttpClient.h>
+#include <test/huestream/_mock/MockBridgeHttpClient.h>
 #include <test/huestream/_mock/MockConnector.h>
 #include <test/huestream/_mock/MockMixer.h>
 #include "gtest/gtest.h"
@@ -49,62 +48,60 @@ class TestHuestream : public testing::Test {
         Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
         _handler = std::make_shared<LightStateChangedHandler>();
 
-        auto config = std::make_shared<Config>("test", "pc");
+        auto config = std::make_shared<Config>("test", "pc", PersistenceEncryptionKey{"encryption_key"});
 
-        _mockHttpClient = std::make_shared<MockHttpClient>();
-        Factory<IHttpClient>::set_factory_method([this](){
-            return support::make_unique<MockWrapperHttpClient>(_mockHttpClient);});
+        _mockHttpClient = std::make_shared<MockBridgeHttpClient>();
+        Factory<std::unique_ptr<IBridgeHttpClient>()>::set_factory_method([this](){
+            return support::make_unique<MockWrapperBridgeHttpClient>(_mockHttpClient);});
 
         _mockTimeManager = std::make_shared<MockTimeManager>();
-        Factory<ITimeManager>::set_factory_method(
+        Factory<std::unique_ptr<ITimeManager>()>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperTimeManager>(_mockTimeManager); });
 
         _mockConnectionMonitor = std::make_shared<MockConnectionMonitor>();
         EXPECT_CALL(*_mockConnectionMonitor, SetFeedbackMessageCallback(_)).Times(1).WillOnce(SaveArg<0>(&_mockConnectionMonitor->callback));
 
-        Factory<IConnectionMonitor, HttpClientPtr, AppSettingsPtr>::set_factory_method(
+        Factory<std::unique_ptr<IConnectionMonitor>(BridgeHttpClientPtr, AppSettingsPtr)>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperConnectionMonitor>(_mockConnectionMonitor); });
 
         _mockMixer = std::make_shared<MockMixer>();
-        Factory<IMixer>::set_factory_method([this](){ return support::make_unique<MockWrapperMixer>(_mockMixer); });
+        Factory<std::unique_ptr<IMixer>(AppSettingsPtr)>::set_factory_method([this](){ return support::make_unique<MockWrapperMixer>(_mockMixer); });
 
         _mockBridgeStorageAccesser = std::make_shared<MockBridgeStorageAccessor>();
-        Factory<IBridgeStorageAccessor, const std::string &,BridgeSettingsPtr>::set_factory_method(
+        Factory<std::unique_ptr<IBridgeStorageAccessor>(const std::string &,BridgeSettingsPtr)>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperBridgeStorageAccessor>(_mockBridgeStorageAccesser); });
 
-        Factory<IMessageDispatcher>::set_factory_method(
+        Factory<std::unique_ptr<IMessageDispatcher>()>::set_factory_method(
                 [this](){ return support::make_unique<StubMessageDispatcher>(); });
 
         _mockMessageTranslator = std::make_shared<MockMessageTranslator>();
-        Factory<IMessageTranslator, std::string>::set_factory_method(
+        Factory<std::unique_ptr<IMessageTranslator>(std::string)>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperMessageTranslator>(_mockMessageTranslator); });
 
         _mockConnector = std::make_shared<MockConnector>();
-        Factory<IConnector, ConfigPtr>::set_factory_method(
+        Factory<std::unique_ptr<IConnector>(ConfigPtr)>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperConnector>(_mockConnector); });
 
         _mockStream = std::make_shared<MockStream>();
         Factory<
-            IStream,
-            StreamSettingsPtr,
-            AppSettingsPtr,
-            TimeManagerPtr,
-            ConnectorPtr>::set_factory_method(
+            std::unique_ptr<IStream>(StreamSettingsPtr,
+                    AppSettingsPtr,
+                    TimeManagerPtr,
+                    ConnectorPtr)>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperStream>(_mockStream); });
 
         _mockConnect = std::make_shared<MockConnect>();
-        Factory<IConnect,
-                               HttpClientPtr,
-                               MessageDispatcherPtr,
-                               BridgeSettingsPtr,
-                               AppSettingsPtr,
-                               StreamPtr,
-                               BridgeStorageAccessorPtr>::set_factory_method(
+        Factory<std::unique_ptr<IConnect>(BridgeHttpClientPtr,
+                         MessageDispatcherPtr,
+                         BridgeSettingsPtr,
+                         AppSettingsPtr,
+                         StreamPtr,
+                         BridgeStorageAccessorPtr)>::set_factory_method(
                 [this](){ return support::make_unique<MockWrapperConnect>(_mockConnect); });
         EXPECT_CALL(*_mockConnect, SetFeedbackMessageCallback(_)).Times(1).WillOnce(SaveArg<0>(&_mockConnect->callback));
 
         _mockGroupController = std::make_shared<MockBasicGroupLightController>();
-        Factory<IBasicGroupLightController, HttpClientPtr>::set_factory_method(
+        Factory<std::unique_ptr<IBasicGroupLightController>(BridgeHttpClientPtr)>::set_factory_method(
                 [this]() { return support::make_unique<MockWrapperBasicGroupLightController>(_mockGroupController); });
 
         huestream = std::make_shared<HueStream>(config);
@@ -126,9 +123,7 @@ class TestHuestream : public testing::Test {
         }
 
         huestream->ShutDown();
-        Serializable::SetObjectBuilder(nullptr);
-
-        TimeProviderProvider::set(nullptr);
+        Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
     }
 
  protected:
@@ -138,7 +133,7 @@ class TestHuestream : public testing::Test {
     std::shared_ptr<MockConnect> _mockConnect;
     std::shared_ptr<MockConnectionMonitor> _mockConnectionMonitor;
     std::shared_ptr<MockConnector> _mockConnector;
-    std::shared_ptr<MockHttpClient> _mockHttpClient;
+    std::shared_ptr<MockBridgeHttpClient> _mockHttpClient;
     std::shared_ptr<MockTimeManager> _mockTimeManager;
     std::shared_ptr<MockMixer> _mockMixer;
     std::shared_ptr<MockBridgeStorageAccessor> _mockBridgeStorageAccesser;

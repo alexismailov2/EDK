@@ -17,7 +17,7 @@
 #include "support/network/http/IHttpResponse.h"
 #include "support/network/http/IHttpRequest.h"
 #include "support/network/http/HttpRequestExecutor.h"
-#include "support/std/types/File.h"
+#include "support/util/File.h"
 #include "support/util/StringUtil.h"
 #include "support/logging/Log.h"
 
@@ -36,7 +36,7 @@ namespace support {
         HTTP_REQUEST_STATE_CANCELLED
     };
     
-    typedef function<void (const support::HttpRequestError& error, const IHttpResponse& response)> HttpRequestCallback;
+    typedef std::function<void (const support::HttpRequestError& error, const IHttpResponse& response)> HttpRequestCallback;
 
     class HttpRequestBase : public IHttpRequest {
     public:

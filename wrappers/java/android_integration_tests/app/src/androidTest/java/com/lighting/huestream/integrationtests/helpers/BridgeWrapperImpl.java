@@ -81,9 +81,10 @@ class BridgeWrapperImpl implements IBridgeWrapper {
     }
 
     @Override
-    public void cleanUpUser() {
+    public void cleanupUser() {
         try {
-            cleanUpUser_internal();
+            JSONArray response = Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName));
+            getSuccessNode(response);
         } catch (JSONException e) {
             Assert.fail("JSONException popped up");
         }
@@ -207,12 +208,6 @@ class BridgeWrapperImpl implements IBridgeWrapper {
             JSONObject successNode = (JSONObject) lightNode.get("success");
             Assert.assertNotNull("Creating group was not successful", successNode);
         }
-    }
-
-
-    private void cleanUpUser_internal() throws JSONException {
-        JSONArray response = Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName));
-        getSuccessNode(response);
     }
 
     Integer createEntertainmentGroup() throws JSONException {

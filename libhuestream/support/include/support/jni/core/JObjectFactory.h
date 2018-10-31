@@ -28,6 +28,10 @@ namespace huesdk_jni_core {
 
     template <typename T>
     jobject create_jobject(T* value, bool takeOwnership) {
+        if (value == nullptr) {
+            return NULL;
+        }
+
         auto return_value = create_jobject<T>();
         if (return_value) {
             set_reference(return_value, value, takeOwnership);
@@ -37,6 +41,10 @@ namespace huesdk_jni_core {
 
     template <typename T>
     jobject create_jobject(std::shared_ptr<T> value) {
+        if (value == nullptr) {
+            return NULL;
+        }
+
         auto return_value = create_jobject<T>();
         if (return_value) {
             set_reference(return_value, value);
@@ -46,6 +54,10 @@ namespace huesdk_jni_core {
 
     template <typename T>
     jobject create_jobject(std::unique_ptr<T> value) {
+        if (value == nullptr) {
+            return NULL;
+        }
+
         auto return_value = create_jobject<T>();
         if (return_value) {
             set_reference(return_value, std::move(value));

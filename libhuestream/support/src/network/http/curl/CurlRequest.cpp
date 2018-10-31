@@ -24,23 +24,28 @@ namespace support {
     static const char  HEADER_FIELD_NAME_VALUE_SEPERATOR = ':';
     static const char* HEADER_FIELD_EMPTY                = "\r";
 
-    CurlRequest::CurlRequest(const HttpRequestParams& data, HttpRequestCallback callback)
-        : _dispatcher(global_dispatch_queue()) {
+    CurlRequest::CurlRequest(const HttpRequestParams& data, HttpRequestCallback callback) {
         _curl = curl_easy_init();
         _header_list = nullptr;
         _form_post = nullptr;
         _resolve_list = nullptr;
-        _callback = callback;
+        _callback = std::move(callback);
         _verify_ssl = data.verify_ssl;
+        _verify_common_name_manually = false;
+        _common_name = data.common_name;
+        _trusted_certs = data.trusted_certs;
 
         _callback_posted_future = _callback_posted.get_future();
         _is_complete_future = _is_complete.get_future();
+
+        _error_buffer[0] = '\0';
 
         setup_options(data);
         setup_tls(data);
         setup_tls_common_name(data);
         setup_proxy(data);
-        setup_request_headers(data);
+        append_user_request_headers(data);
+        setup_request_headers();
         setup_post_body(data);
     }
 
@@ -57,7 +62,11 @@ namespace support {
         _response.set_certificate_chain(_certificate_chain);
         process_response_headers();
 
-        _error.set_message(std::string("request finished with curl code ") + to_string(curl_code));
+        if (curl_code != CURLE_OK) {
+            HUE_LOG << HUE_NETWORK << HUE_DEBUG << "CurlRequest: curl error: " << _error_buffer << HUE_ENDL;
+        }
+
+        _error.set_message(std::string("request finished with curl code ") + to_string(curl_code) + " (" + curl_easy_strerror(curl_code) + ")");
         _error.set_code(parse_error_code(curl_code));
 
         cleanup();
@@ -92,7 +101,7 @@ namespace support {
         return size;
     }
 
-#if defined(VERBOSE_HTTP_LOGGING) || defined(SDK_DEBUG)
+#ifdef VERBOSE_HTTP_LOGGING
     static int log_callback(CURL*, curl_infotype type, char *data, size_t size, void*)  {
         std::string text = "CURL";
 
@@ -128,35 +137,56 @@ namespace support {
         curl_easy_setopt(_curl, CURLOPT_TIMEOUT, data.request_timeout);
         curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
-#if defined(VERBOSE_HTTP_LOGGING) || defined(SDK_DEBUG)
+        curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, _error_buffer);
+
+#ifdef VERBOSE_HTTP_LOGGING
         curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
         curl_easy_setopt(_curl, CURLOPT_DEBUGFUNCTION, log_callback);
 #endif
+
         if (!NetworkConfiguration::get_reuse_connections()) {
             curl_easy_setopt(_curl, CURLOPT_FORBID_REUSE, 1L);
         }
     }
 
-    int CurlRequest::mbedtls_x509parse_verify(void* data, mbedtls_x509_crt* cert, int /*path_cnt*/, uint32_t* flags) {
-/*
-        char buf[1024];
-
-        printf("\nVerifying certificate at depth %d:\n", path_cnt);
-        mbedtls_x509_crt_info(buf, sizeof(buf) - 1, "  ", cert);
-        printf("%s", buf);
-
-        if (*flags == 0)
-            printf("No verification issue for this certificate\n");
-        else {
-            mbedtls_x509_crt_verify_info(buf, sizeof(buf), "  ! ", *flags);
-            printf("%s\n", buf);
-        }
-*/
+    int CurlRequest::mbedtls_x509parse_verify(void* data, mbedtls_x509_crt* cert, int path_cnt, uint32_t* flags) {
         auto request = static_cast<CurlRequest*>(data);
-        request->_certificate_chain.push_back(X509Certificate::der_to_pem(cert->raw.p, cert->raw.len));
+        auto pem = X509Certificate::der_to_pem(cert->raw.p, cert->raw.len);
+        request->_certificate_chain.push_back(pem);
+
+        // only verify the common name of the leaf certificate
+        if (request->_verify_common_name_manually && path_cnt == 0) {
+            if (X509Certificate::check_common_name(cert, request->_common_name)) {
+                *flags &= ~MBEDTLS_X509_BADCERT_CN_MISMATCH;
+            } else {
+                *flags |= MBEDTLS_X509_BADCERT_CN_MISMATCH;
+            }
+        }
 
         if (!request->_verify_ssl) {
             *flags = 0;
+        }
+
+        if (*flags != 0) {
+            char buf[1024];
+
+            if (mbedtls_x509_crt_verify_info(buf, sizeof(buf), "", *flags) < 0) {
+                HUE_LOG << HUE_NETWORK << HUE_DEBUG << "SSL: certificate at depth " << path_cnt << " verification result: " << *flags << HUE_ENDL;
+            } else {
+                HUE_LOG << HUE_NETWORK << HUE_DEBUG << "SSL: certificate at depth " << path_cnt << " verification result: " << buf << HUE_ENDL;
+            }
+
+            if (path_cnt == 0 && (*flags & MBEDTLS_X509_BADCERT_CN_MISMATCH) && !request->_common_name.empty()) {
+                HUE_LOG << HUE_NETWORK << HUE_DEBUG << "SSL: expected common name: " << request->_common_name << HUE_ENDL;
+            }
+
+            HUE_LOG << HUE_NETWORK << HUE_DEBUG << "SSL: certificate provided by the server: " << pem << HUE_ENDL;
+
+            HUE_LOG << HUE_NETWORK << HUE_DEBUG << "SSL: trusted certificates (" << request->_trusted_certs.size() << "):" << HUE_ENDL;
+
+            for (const auto& trusted_cert : request->_trusted_certs) {
+                HUE_LOG << HUE_NETWORK << HUE_DEBUG << trusted_cert << HUE_ENDL;
+            }
         }
 
         return 0;
@@ -219,13 +249,19 @@ namespace support {
             if (std::regex_search(data.url, m, url_regex)) {
                 if (!data.proxy_address.empty()) {
                     // disable url rewriting when using proxies
-                    // the common name won't be correctly verified
+                    // verify the common name manually by checking the
+                    // certificate subject during the ssl handshake
+                    _verify_common_name_manually = true;
                     return;
                 }
 
                 auto ip_address = m[1].str();
                 auto port = m[2].str().empty() ? ":443" : m[2].str();
                 auto rest = m[3].str();
+
+                // set the Host header to the original host instead of the common name
+                auto host_header = std::string("Host: ") + m[1].str() + m[2].str();
+                _header_list = curl_slist_append(_header_list, host_header.c_str());
 
                 // replace the address part of the url with the common name
                 auto new_url = std::string("https://") + data.common_name + port + rest;
@@ -234,7 +270,8 @@ namespace support {
                 // instruct curl to resolve the common name back to the address
                 auto resolve_str = data.common_name + port + ":" + ip_address;
                 _resolve_list = curl_slist_append(nullptr, resolve_str.c_str());
-                curl_easy_setopt(_curl, CURLOPT_RESOLVE, _resolve_list);
+                // CURLOPT_CONNECT_TO is used because it does not populate DNS cache related to curl's multi handle
+                curl_easy_setopt(_curl, CURLOPT_CONNECT_TO, _resolve_list);
             }
         }
     }
@@ -246,11 +283,14 @@ namespace support {
         }
     }
 
-    void CurlRequest::setup_request_headers(const HttpRequestParams& data) {
+    void CurlRequest::append_user_request_headers(const HttpRequestParams& data) {
         for (auto iter : data.headers) {
             std::string header_str = iter.first + ": " + iter.second;
             _header_list = curl_slist_append(_header_list, header_str.c_str());
         }
+    }
+
+    void CurlRequest::setup_request_headers() {
         if (_header_list != nullptr) {
             curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _header_list);
         }
@@ -315,7 +355,10 @@ namespace support {
         std::istringstream response_stream(_header_buffer);
         std::string field;
 
-        while (std::getline(response_stream, field) && field != HEADER_FIELD_EMPTY) {
+        while (std::getline(response_stream, field)) {
+            if (field == HEADER_FIELD_EMPTY) {
+                continue;
+            }
             auto seperator_pos = field.find(HEADER_FIELD_NAME_VALUE_SEPERATOR, 0);
             if (seperator_pos != std::string::npos) {
                 auto key = field.substr(0, seperator_pos);

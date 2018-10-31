@@ -13,13 +13,13 @@
 
 namespace huestream {
 
-        using AutenticateCallbackHandler = std::function<void(BridgePtr)>;
+        using AuthenticateCallbackHandler = std::function<void(BridgePtr)>;
 
         class IBridgeAuthenticator {
         public:
             virtual ~IBridgeAuthenticator() = default;
 
-            virtual void Authenticate(BridgePtr bridge, AppSettingsPtr appSetting, AutenticateCallbackHandler cb) = 0;
+            virtual void Authenticate(BridgePtr bridge, AppSettingsPtr appSetting, AuthenticateCallbackHandler cb) = 0;
 
         protected:
         };

@@ -11,7 +11,7 @@ using namespace huestream;
 using std::string;
 
 void TestConnectionFlowBase::SetUp() {
-    _config = std::make_shared<Config>("name", "platform");
+    _config = std::make_shared<Config>("name", "platform", PersistenceEncryptionKey{"encryption_key"});
     _settings = std::make_shared<AppSettings>();
     _settings->SetUseRenderThread(true);
     _config->SetAppSettings(_settings);
@@ -41,14 +41,18 @@ void TestConnectionFlowBase::SetUp() {
     _searchers = std::make_shared<vector<shared_ptr<MockBridgeSearcher>>>();
     _authenticators = std::make_shared<vector<shared_ptr<MockBridgeAuthenticator>>>(6);
     _factory = std::make_shared<MockConnectionFlowFactory>();
+    _scheduler = std::make_shared<NiceMock<MockScheduler>>();
+    support::SchedulerFactory::set_factory_method([this](unsigned int interval) {
+        return std::unique_ptr<MockWrapperScheduler>(new MockWrapperScheduler(interval, _scheduler));
+    });
     _messageDispatcher = std::make_shared<StubMessageDispatcher>();
     EXPECT_CALL(*_factory, GetMessageDispatcher()).WillRepeatedly(Return(_messageDispatcher));
-    _storageAccesser = std::make_shared<MockBridgeStorageAccessor>();
+    _storageAccessor = std::make_shared<MockBridgeStorageAccessor>();
     _smallConfigRetriever = std::make_shared<MockConfigRetriever>();
     _fullConfigRetriever = std::make_shared<MockConfigRetriever>();
     EXPECT_CALL(*_factory, CreateConfigRetriever(_, ConfigType::Small)).WillRepeatedly(Return(_smallConfigRetriever));
     EXPECT_CALL(*_factory, CreateConfigRetriever(_, ConfigType::Full)).WillRepeatedly(Return(_fullConfigRetriever));
-    _connectionFlow = std::make_shared<TestableConnectionFlow>(_factory, _stream, std::make_shared<BridgeSettings>(), _settings, _storageAccesser);
+    _connectionFlow = std::make_shared<TestableConnectionFlow>(_factory, _stream, std::make_shared<BridgeSettings>(), _settings, _storageAccessor);
     ON_CALL(*_connectionFlow, NewMessage(_)).WillByDefault(Invoke(PrintDebugMsg));
     
     //No need to verify ID_LIGHTS_UPDATED and ID_GROUP_LIGHTSTATE_UPDATED messages in connectionflow test
@@ -125,40 +129,46 @@ void TestConnectionFlowBase::expect_on_searcher_abort() {
     EXPECT_CALL(*get_last_searcher(), Abort()).Times(1);
 }
 
-void TestConnectionFlowBase::expect_on_authenticator_authenticate(int index) {
-    auto x = std::make_shared<MockBridgeAuthenticator>();
+void TestConnectionFlowBase::expect_on_authenticator_authenticate(int index, int times) {
+    if (_authenticators->at(index) == nullptr) {
+        _authenticators->at(index) = std::make_shared<MockBridgeAuthenticator>();
+    }
 
-    _authenticators->at(index) = x;
-    EXPECT_CALL(*_factory, CreateAuthenticator()).InSequence(s).WillOnce(Return(x));
-    EXPECT_CALL(*x, Authenticate(BridgeIpAddress(_bridges->at(index)->GetIpAddress()), _, _)).Times(1).WillOnce(
-            SaveArg<2>(&x->autenticate_callback));
+    auto x = _authenticators->at(index);
+
+    for (int i = 0; i < times; ++i) {
+        EXPECT_CALL(*_factory, CreateAuthenticator()).InSequence(s).WillOnce(Return(x));
+
+        EXPECT_CALL(*x, Authenticate(BridgeIpAddress(_bridges->at(index)->GetIpAddress()), _, _)).WillOnce(
+            SaveArg<2>(&x->authenticate_callback)).RetiresOnSaturation();
+    }
 }
 
-void TestConnectionFlowBase::expect_on_storage_accesser_load() {
-    EXPECT_CALL(*_storageAccesser, Load(_)).Times(1).WillOnce(SaveArg<0>(&_storageAccesser->load_callback));
+void TestConnectionFlowBase::expect_on_storage_accessor_load() {
+    EXPECT_CALL(*_storageAccessor, Load(_)).Times(1).WillOnce(SaveArg<0>(&_storageAccessor->load_callback));
 }
 
-void TestConnectionFlowBase::expect_on_storage_accesser_save() {
+void TestConnectionFlowBase::expect_on_storage_accessor_save() {
     expect_message(FeedbackMessage::ID_START_SAVING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    EXPECT_CALL(*_storageAccesser, Save(_, _)).Times(1).WillOnce(SaveArg<1>(&_storageAccesser->save_callback));
+    EXPECT_CALL(*_storageAccessor, Save(_, _)).Times(1).WillOnce(SaveArg<1>(&_storageAccessor->save_callback));
 }
 
-void TestConnectionFlowBase::expect_on_storage_accesser_save(BridgePtr bridge) {
+void TestConnectionFlowBase::expect_on_storage_accessor_save(BridgePtr bridge) {
     expect_message(FeedbackMessage::ID_START_SAVING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    EXPECT_CALL(*_storageAccesser, Save(ActiveBridgeAttributes(bridge), _)).Times(1).WillOnce(
-            SaveArg<1>(&_storageAccesser->save_callback));
+    EXPECT_CALL(*_storageAccessor, Save(ActiveBridgeAttributes(bridge), _)).Times(1).WillOnce(
+            SaveArg<1>(&_storageAccessor->save_callback));
 }
 
-void TestConnectionFlowBase::expect_on_storage_accesser_save(int numberOfBridges, std::string activeBridgeId) {
+void TestConnectionFlowBase::expect_on_storage_accessor_save(int numberOfBridges, std::string activeBridgeId) {
     expect_message(FeedbackMessage::ID_START_SAVING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    EXPECT_CALL(*_storageAccesser, Save(NumberOfBridgesAndActiveBridgeId(numberOfBridges, activeBridgeId), _)).Times(1).WillOnce(
-        SaveArg<1>(&_storageAccesser->save_callback));
+    EXPECT_CALL(*_storageAccessor, Save(NumberOfBridgesAndActiveBridgeId(numberOfBridges, activeBridgeId), _)).Times(1).WillOnce(
+        SaveArg<1>(&_storageAccessor->save_callback));
 }
 
 void TestConnectionFlowBase::connect_starts_bridge_loading(bool background) {
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_START_LOADING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    expect_on_storage_accesser_load();
+    expect_on_storage_accessor_load();
     if (background) {
         _connectionFlow->ConnectToBridgeBackground();
     } else {
@@ -200,9 +210,11 @@ void TestConnectionFlowBase::searching_with_three_bridges_found_starts_pushlink_
     expect_message(FeedbackMessage::ID_FINISH_SEARCH_BRIDGES_FOUND, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_START_AUTHORIZING, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_PRESS_PUSH_LINK, FeedbackMessage::FEEDBACK_TYPE_USER);
+
     expect_on_authenticator_authenticate(0);
     expect_on_authenticator_authenticate(1);
     expect_on_authenticator_authenticate(2);
+
     finish_search_with_three_bridges(get_last_searcher());
 }
 
@@ -262,7 +274,7 @@ void TestConnectionFlowBase::searching_twice_with_no_bridges_found_finalizes(Bri
     expect_message(FeedbackMessage::ID_FINISH_SEARCHING_NO_BRIDGES_FOUND, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_DONE_ACTION_REQUIRED, FeedbackMessage::FEEDBACK_TYPE_INFO, bridge, status);
     expect_message(messageId, FeedbackMessage::FEEDBACK_TYPE_USER, bridge);
-    expect_on_storage_accesser_save(bridge);
+    expect_on_storage_accessor_save(bridge);
     finish_search_with_no_bridges(searcher);
     _messageDispatcher->ExecutePendingActions();
 }
@@ -285,14 +297,14 @@ void TestConnectionFlowBase::finish_authorization_successfully(int index) {
     expect_message(FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_initiate_full_config_retrieval();
 
-    _authenticators->at(index)->autenticate_callback(_bridges->at(index));
+    _authenticators->at(index)->authenticate_callback(_bridges->at(index));
     _messageDispatcher->ExecutePendingActions();
 }
 
 void TestConnectionFlowBase::expect_storage_accessor_load_return_data() {
     expect_message(FeedbackMessage::ID_START_LOADING, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_FINISH_LOADING_BRIDGE_CONFIGURED, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    EXPECT_CALL(*_storageAccesser, Load(_)).Times(1).WillOnce(InvokeArgument<0>(OPERATION_SUCCESS, _persistentData));
+    EXPECT_CALL(*_storageAccessor, Load(_)).Times(1).WillOnce(InvokeArgument<0>(OPERATION_SUCCESS, _persistentData));
 }
 
 void TestConnectionFlowBase::expect_small_config_retrieval_return_data(int bridge_index) {
@@ -330,7 +342,7 @@ void TestConnectionFlowBase::retrieve_full_config(int index, unsigned int numGro
         expect_message(FeedbackMessage::ID_SELECT_GROUP, FeedbackMessage::FEEDBACK_TYPE_USER, _bridges->at(index), BRIDGE_INVALID_GROUP_SELECTED);
     }
 
-    expect_on_storage_accesser_save(numBridges, _bridges->at(index)->GetId());
+    expect_on_storage_accessor_save(numBridges, _bridges->at(index)->GetId());
 
     _fullConfigRetriever->RetrieveCallback(OPERATION_SUCCESS, _fullConfigRetriever->Bridge);
     _messageDispatcher->ExecutePendingActions();
@@ -364,7 +376,7 @@ void TestConnectionFlowBase::finish_with_stream_start(BridgePtr bridge, bool con
     } else {
         EXPECT_CALL(*_stream, Start(bridge)).WillOnce(Invoke(ActivateBridge));
     }
-    _storageAccesser->save_callback(OPERATION_SUCCESS);
+    _storageAccessor->save_callback(OPERATION_SUCCESS);
     _messageDispatcher->ExecutePendingActions();
 }
 
@@ -375,7 +387,7 @@ void TestConnectionFlowBase::finish_without_stream_start(bool completed, bool co
     }
     checkUpdateMessages(connected, groupsUpdated, bridgeChanged);
     expect_message(FeedbackMessage::ID_USERPROCEDURE_FINISHED, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    _storageAccesser->save_callback(OPERATION_SUCCESS);
+    _storageAccessor->save_callback(OPERATION_SUCCESS);
     _messageDispatcher->ExecutePendingActions();
 }
 
@@ -401,7 +413,7 @@ void TestConnectionFlowBase::searching_with_abort_finalizes() {
 
 void TestConnectionFlowBase::select_group_existing(int bridgeindex, string groupid) {
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    expect_on_storage_accesser_save();
+    expect_on_storage_accessor_save();
     _connectionFlow->SelectGroup(groupid);
     _messageDispatcher->ExecutePendingActions();
 }

@@ -16,6 +16,7 @@
 #include "support/network/http/objc/ObjcHttpClient.h"
 #include "support/network/http/HttpResponse.h"
 #include "support/network/http/util/X509Certificate.h"
+#include "support/threading/Thread.h"
 
 using std::atomic;
 using std::condition_variable;

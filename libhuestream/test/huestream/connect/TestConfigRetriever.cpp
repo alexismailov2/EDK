@@ -8,8 +8,8 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "test/huestream/_mock/MockHttpRequest.h"
-#include "test/huestream/_mock/MockHttpClient.h"
+#include "test/huestream/_mock/MockBridgeHttpClient.h"
+
 #include "support/network/http/HttpResponse.h"
 
 using ::testing::Invoke;
@@ -18,23 +18,23 @@ using ::testing::StrNe;
 using ::testing::DoubleEq;
 using ::testing::_;
 using ::testing::Return;
+using ::testing::WithArg;
+using ::testing::NiceMock;
 
 namespace huestream {
 
-    typedef int(*http_exec_function)(support::HttpRequestCallback);
+    using http_exec_function = std::function<void(support::HttpRequestCallback)>;
 
     class TestConfigRetriever : public testing::TestWithParam<http_exec_function> {
     public:
         BridgePtr _bridge;
-        std::shared_ptr<MockHttpClient> _mockHttpClientPtr;
-        std::shared_ptr<MockHttpRequest> _mockHttpRequestPtr;
+        std::shared_ptr<MockBridgeHttpClient> _mockHttpClientPtr;
         std::shared_ptr<ConfigRetriever> _configRetriever;
         std::string _configUrl;
 
         TestConfigRetriever() {
             _bridge = std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
-            _mockHttpClientPtr = std::make_shared<MockHttpClient>();
-            _mockHttpRequestPtr = std::make_shared<MockHttpRequest>("", 0);
+            _mockHttpClientPtr = std::make_shared<MockBridgeHttpClient>();
         }
 
         virtual void SetUp() {
@@ -46,9 +46,6 @@ namespace huestream {
             group1->SetId("1");
             _bridge->GetGroups()->push_back(group1);
             _bridge->SetSelectedGroup("1");
-
-            EXPECT_CALL(*_mockHttpClientPtr, CreateHttpRequest(_configUrl,_,_,_,_,_)).WillRepeatedly(
-                    Return(_mockHttpRequestPtr));
         }
 
         void expect_retrieve_succesful(OperationResult result, BridgePtr bridge) {
@@ -166,10 +163,6 @@ namespace huestream {
             EXPECT_THAT(group->GetProxyNode().name, Eq("Philips hue unittest"));
             EXPECT_THAT(group->GetProxyNode().isReachable, Eq(true));
         }
-
-        virtual void TearDown() {
-        }
-
     };
 
     class TestFullConfigRetriever : public TestConfigRetriever {
@@ -182,7 +175,7 @@ namespace huestream {
 
     static int groups = 0;
 
-    static int SetHttpFullConfigResponseSuccess(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseSuccess(support::HttpRequestCallback callback) {
         const std::string eGroupTV = "\"1\":{\"name\":\"XBOX\",\"type\":\"Entertainment\",\"class\":\"TV\","
                 "\"lights\":[\"1\",\"2\",\"3\"],\"locations\":{\"1\":[-1,1,0],\"2\":[0.5,-0.99,0],\"3\":[0.1,-0.1,0.2]},"
                 "\"stream\":{\"proxymode\":\"auto\",\"proxynode\":\"/lights/3\",\"active\":false,\"owner\":null},"
@@ -237,9 +230,7 @@ namespace huestream {
                 ",\"groups\":{" + eGroupTV + "," + lightGroup + "},\"lights\":" + lights + ",\"scenes\":" + scenes + "}";
         } else if (groups == 2) {
             fullConfigResponse = "{\"capabilities\":" + capabilitiesActiveStreaming + ",\"config\":" + config +
-                ",\"groups\":{" + lightGroup + "," + eGroupFree + "," + eGroupOther + "},\"lights\":" + lights + ",\"scenes\":" + scenes + "}";
-        } else {
-            return support::HTTP_REQUEST_STATUS_FAILED;
+                                 ",\"groups\":{" + lightGroup + "," + eGroupFree + "," + eGroupOther + "},\"lights\":" + lights + ",\"scenes\":" + scenes + "}";
         }
 
         support::HttpResponse response;
@@ -247,10 +238,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(fullConfigResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseSuccessOldBridge(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseSuccessOldBridge(support::HttpRequestCallback callback) {
         const std::string config =
             "{\"name\":\"old\",\"zigbeechannel\":11,\"bridgeid\":\"0017DEADBEEF\","
             "\"mac\":\"00:17:DE:ED:BE:EF\",\"dhcp\":true,\"ipaddress\":\"127.0.0.1\",\"netmask\":\"255.255.255.0\","
@@ -269,10 +259,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(fullConfigResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseNotAuthorized(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseNotAuthorized(support::HttpRequestCallback callback) {
 
         const std::string notAuthenticatedResponse = "[{\"error\":{\"type\":1,\"address\":\"/\",\"description\":\"unauthorized user\"}}]";
 
@@ -281,10 +270,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(notAuthenticatedResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseUnknownError(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseUnknownError(support::HttpRequestCallback callback) {
         const std::string unknownErrorResponse = "[{\"error\":{\"type\":4,\"address\":\"\",\"description\":\"method, GET, not available for resource\"}}]";
 
         support::HttpResponse response;
@@ -292,10 +280,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(unknownErrorResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseNoConfigResource(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseNoConfigResource(support::HttpRequestCallback callback) {
         const std::string noConfigResponse = "{\"lights\":{},\"groups\":{}}";
 
         support::HttpResponse response;
@@ -303,10 +290,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(noConfigResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseNoGroupsResource(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseNoGroupsResource(support::HttpRequestCallback callback) {
         const std::string noGroupsResponse = "{\"capabilities\":{},\"config\":{},\"lights\":{}}";
 
         support::HttpResponse response;
@@ -314,10 +300,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(noGroupsResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseNoLightsResource(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseNoLightsResource(support::HttpRequestCallback callback) {
         const std::string noLightsResponse = "{\"capabilities\":{},\"config\":{},\"groups\":{}}";
 
         support::HttpResponse response;
@@ -325,10 +310,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(noLightsResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseNoCapabilitiesResource(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseNoCapabilitiesResource(support::HttpRequestCallback callback) {
         const std::string noCapabilitiesResponse = "{\"config\":{},\"groups\":{},\"lights\":{}}";
 
         support::HttpResponse response;
@@ -336,10 +320,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(noCapabilitiesResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseGroupCorrupted(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseGroupCorrupted(support::HttpRequestCallback callback) {
         const std::string eGroupCorrupted = "\"3\":{\"nameeeeeeeeeeee\":\"Mancave\",\"type\":\"Entertainment\",\"class\":\"TV\","
                 "\"lights\":[\"4\"],\"looooooooocations\":{\"4\":[0.1,0.2,0.3]},\"action\":{\"on\":false}}";
         const std::string config =
@@ -361,21 +344,19 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(groupCorruptedResponse);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpFullConfigResponseTimeout(support::HttpRequestCallback callback) {
+    static void SetHttpFullConfigResponseTimeout(support::HttpRequestCallback callback) {
         support::HttpResponse response;
         support::HttpRequestError error;
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_TIMEOUT);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessNoGroups) {
         groups = 0;
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseSuccess));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_succesful(result, bridge);
@@ -388,8 +369,8 @@ namespace huestream {
     TEST_F(TestFullConfigRetriever, RetrieveSuccessOneGroup) {
         groups = 1;
         _bridge->SetIsValidIp(false);
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseSuccess));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_succesful(result, bridge);
@@ -404,8 +385,8 @@ namespace huestream {
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessTwoGroups) {
         groups = 2;
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseSuccess));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_succesful(result, bridge);
@@ -422,8 +403,8 @@ namespace huestream {
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessOldBridge) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-            Invoke(SetHttpFullConfigResponseSuccessOldBridge));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccessOldBridge)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_oldversion_succesful(result, bridge);
@@ -434,8 +415,8 @@ namespace huestream {
         _bridge->GetGroup()->SetActive(true);
         _bridge->GetGroup()->SetOwner(_bridge->GetUser());
 
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseNotAuthorized));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseNotAuthorized)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
@@ -449,8 +430,8 @@ namespace huestream {
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveFailUnknownError) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseUnknownError));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseUnknownError)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
@@ -464,8 +445,8 @@ namespace huestream {
         _bridge->GetGroup()->SetActive(true);
         _bridge->GetGroup()->SetOwner(_bridge->GetUser());
 
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseTimeout));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseTimeout)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
@@ -482,8 +463,8 @@ namespace huestream {
         ::testing::Values(SetHttpFullConfigResponseNoConfigResource, SetHttpFullConfigResponseNoGroupsResource, SetHttpFullConfigResponseNoLightsResource));
 
     TEST_P(TestFullConfigRetriever, RetrieveFailMissingResource) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-            Invoke(GetParam()));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(GetParam())));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
@@ -494,8 +475,8 @@ namespace huestream {
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveCorruptedGroupHandledGracefully) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseGroupCorrupted));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseGroupCorrupted)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
 
@@ -503,8 +484,8 @@ namespace huestream {
     }
 
     TEST_P(TestFullConfigRetriever, RetrieveSuccessMissingCapabilitiesResource) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpFullConfigResponseNoCapabilitiesResource));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpFullConfigResponseNoCapabilitiesResource)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_SUCCESS));
@@ -514,7 +495,7 @@ namespace huestream {
         });
     }
 
-    static int SetHttpSmallConfigResponseSuccess(support::HttpRequestCallback callback) {
+    static void SetHttpSmallConfigResponseSuccess(support::HttpRequestCallback callback) {
         const std::string config =
                 "{\"name\":\"Philips hue\",\"datastoreversion\":\"68\",\"swversion\":\"1712010717\",\"apiversion\":\"1.23.0\",\"mac\":\"08:00:27:04:be:37\",\"bridgeid\":\"FFFFFFFFFFFFFFFF\",\"factorynew\":false,\"replacesbridgeid\":null,\"modelid\":\"BSB002D\",\"starterkitid\":\"\"}";
 
@@ -523,10 +504,9 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(config);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
-    static int SetHttpSmallConfigResponseFailure(support::HttpRequestCallback callback) {
+    static void SetHttpSmallConfigResponseFailure(support::HttpRequestCallback callback) {
         const std::string config =
                 "not_a_config";
 
@@ -535,7 +515,6 @@ namespace huestream {
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
         response.set_body(config);
         callback(error, response);
-        return support::HTTP_REQUEST_STATUS_OK;
     }
 
     class TestSmallConfigRetriever : public TestConfigRetriever {
@@ -547,8 +526,8 @@ namespace huestream {
     };
 
     TEST_F(TestSmallConfigRetriever, RetrieveSmallConfigSuccess) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpSmallConfigResponseSuccess));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpSmallConfigResponseSuccess)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_SUCCESS));
@@ -556,8 +535,8 @@ namespace huestream {
     }
 
     TEST_F(TestSmallConfigRetriever, RetrieveSmallConfigFailure) {
-        EXPECT_CALL(*_mockHttpRequestPtr, do_get(_)).Times(1).WillOnce(
-                Invoke(SetHttpSmallConfigResponseFailure));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
+                WithArg<4>(Invoke(SetHttpSmallConfigResponseFailure)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));

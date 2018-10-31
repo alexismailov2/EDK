@@ -13,7 +13,6 @@ All Rights Reserved.
 #include <type_traits>
 #include <utility>
 
-#include "support/threading/OperationalQueue.h"
 #include "support/threading/QueueExecutor.h"
 
 namespace support {
@@ -242,20 +241,20 @@ namespace support {
     template<typename TTask, typename... TArgs>
     std::unique_ptr<Job<TTask>> create_job(TArgs&&... args) {
         auto task = std::make_shared<TTask>(std::forward<TArgs>(args)...);
-        return std::unique_ptr<Job<TTask>>(new Job<TTask>(task, global_execution_queue()));
+        return std::unique_ptr<Job<TTask>>(new Job<TTask>(task, GlobalQueueExecutor::get()->get_operational_queue()));
     }
 
     template<typename TTask>
     std::unique_ptr<Job<TTask>> create_job(std::unique_ptr<TTask> task) {
         std::shared_ptr<TTask> shared_task = std::move(task);
-        return std::unique_ptr<Job<TTask>>(new Job<TTask>(shared_task, global_execution_queue()));
+        return std::unique_ptr<Job<TTask>>(new Job<TTask>(shared_task, GlobalQueueExecutor::get()->get_operational_queue()));
     }
 
     template<typename TTask, typename TTaskOut, typename... TArgs>
     std::unique_ptr<Job<TTaskOut>> create_job(TArgs&&... args) {
         static_assert(std::is_base_of<TTaskOut, TTask>::value, "Job result task type should derive from worker task type");
         auto task = std::make_shared<TTask>(std::forward<TArgs>(args)...);
-        return std::unique_ptr<Job<TTaskOut>>(new Job<TTaskOut>(task, global_execution_queue()));
+        return std::unique_ptr<Job<TTaskOut>>(new Job<TTaskOut>(task, GlobalQueueExecutor::get()->get_operational_queue()));
     }
 
     template<typename TTask>
@@ -372,7 +371,7 @@ namespace support {
                 return (_state->job_state != JobState::Running && _state->job_state != JobState::Canceling && _state->job_state != JobState::Dispatching);
             };
 
-            auto queue = _executor->queue();
+            auto queue = _executor->get_operational_queue();
 
             bool recursion_denied = !queue->run_recursive_process_tickets_loop([this, is_idle] () -> bool {
                 std::lock_guard<decltype(_state->mutex)> state_lock(_state->mutex);
@@ -483,7 +482,7 @@ namespace support {
             if (state->job_state == JobState::Running || state->job_state == JobState::Dispatching) {
                 auto executor = weak_executor.lock();
                 if (executor) {
-                    // using not cancelable execute here allows all the posted 'done' to be processed before the cancelation
+                    // using not cancelable execute here allows all the posted 'done' to be processed before the cancellation
                     // and avoid calling stop on tasks, that posted done before Job::cancel was requested
                     executor->execute([notify_done, state] {
                         notify_done();

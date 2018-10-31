@@ -14,6 +14,7 @@
 #include "support/network/http/IHttpResponse.h"
 #include "support/network/http/HttpRequestError.h"
 
+#include "support/network/NetworkInterface.h"
 #include "support/network/_test/NetworkDelegator.h"
 #include "support/network/http/_test/HttpRequestDelegator.h"
 
@@ -38,6 +39,7 @@ using support::IHttpResponse;
 using support::HttpRequestError;
 using support::INET_IPV4;
 using support::NetworkInterface;
+using support::prioritize;
 
 namespace huesdk {
 
@@ -52,13 +54,19 @@ using IpCheckFutureVector = std::vector<std::future<BridgeDiscoveryIpCheckResult
         const std::vector<NetworkInterface>& network_interfaces = NETWORK::get_network_interfaces();
         
         HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscoveryMethodUtil: network interfaces retrieved; check results" << HUE_ENDL;
-        
-        for (NetworkInterface network_interface_it : network_interfaces) {
-            HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscoveryMethodUtil: ip: " << network_interface_it.get_ip() << ", name: " << network_interface_it.get_name() << HUE_ENDL;
-        
+
+        for (NetworkInterface network_interface_it : prioritize(network_interfaces)) {
+            HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscoveryMethodUtil: ip: "
+                    << network_interface_it.get_ip() << ", name: " << network_interface_it.get_name()
+                    << " isWifi " << (network_interface_it.get_adapter_type() == support::NetworkAdapterType::NETWORK_ADAPTER_TYPE_WIRELESS)
+                    << " isConnected " << network_interface_it.get_is_connected()
+                    << HUE_ENDL;
+        }
+
+        for (NetworkInterface network_interface_it : prioritize(network_interfaces)) {
             if (network_interface_it.get_inet_type() == INET_IPV4
                 && !network_interface_it.is_loopback()
-                &&  network_interface_it.is_up()
+                && network_interface_it.is_up()
 #ifdef __APPLE__
                 &&  network_interface_it.get_name().find("en") != string::npos
 #endif

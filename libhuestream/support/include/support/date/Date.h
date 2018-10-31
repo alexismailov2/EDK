@@ -34,6 +34,7 @@ namespace support {
          @return Whether the objects match the operator
          */
         bool operator==(const Date& date) const;
+        bool operator!=(const Date& date) const;
         bool operator< (const Date& date) const;
         bool operator> (const Date& date) const;
         bool operator>=(const Date& date) const;

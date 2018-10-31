@@ -8,14 +8,16 @@
 #include <memory>
 #include <utility>
 
+#include "support/threading/OperationalQueue.h"
 #include "support/threading/QueueExecutor.h"
 
 namespace support {
 
     template <typename T>
     void delete_later(T* object) {
-        QueueExecutor::global()->execute([object] {
-            delete object;
+        static QueueExecutor delete_executor(std::make_shared<OperationalQueue>());
+        delete_executor.execute([object] {
+                delete object;
         });
     }
 

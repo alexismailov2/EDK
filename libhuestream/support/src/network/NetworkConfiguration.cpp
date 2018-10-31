@@ -16,6 +16,46 @@
 
 #include QUOTE(CERTIFICATE_MAP_FILE)
 
+namespace {
+    const std::vector<std::string> root_certificates = {
+            /* root-bridge.cert.prime256v1.sha256.pem */
+            R"(-----BEGIN CERTIFICATE-----
+MIICMjCCAdigAwIBAgIUO7FSLbaxikuXAljzVaurLXWmFw4wCgYIKoZIzj0EAwIw
+OTELMAkGA1UEBhMCTkwxFDASBgNVBAoMC1BoaWxpcHMgSHVlMRQwEgYDVQQDDAty
+b290LWJyaWRnZTAiGA8yMDE3MDEwMTAwMDAwMFoYDzIwMzgwMTE5MDMxNDA3WjA5
+MQswCQYDVQQGEwJOTDEUMBIGA1UECgwLUGhpbGlwcyBIdWUxFDASBgNVBAMMC3Jv
+b3QtYnJpZGdlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjNw2tx2AplOf9x86
+aTdvEcL1FU65QDxziKvBpW9XXSIcibAeQiKxegpq8Exbr9v6LBnYbna2VcaK0G22
+jOKkTqOBuTCBtjAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNV
+HQ4EFgQUZ2ONTFrDT6o8ItRnKfqWKnHFGmQwdAYDVR0jBG0wa4AUZ2ONTFrDT6o8
+ItRnKfqWKnHFGmShPaQ7MDkxCzAJBgNVBAYTAk5MMRQwEgYDVQQKDAtQaGlsaXBz
+IEh1ZTEUMBIGA1UEAwwLcm9vdC1icmlkZ2WCFDuxUi22sYpLlwJY81Wrqy11phcO
+MAoGCCqGSM49BAMCA0gAMEUCIEBYYEOsa07TH7E5MJnGw557lVkORgit2Rm1h3B2
+sFgDAiEA1Fj/C3AN5psFMjo0//mrQebo0eKd3aWRx+pQY08mk48=
+-----END CERTIFICATE-----
+)",
+            /* root-bridge.cert.secp521r1.sha512.pem */
+            R"(-----BEGIN CERTIFICATE-----
+MIICujCCAhugAwIBAgIUdLy1sTLm3TonVy03yWmRwxOo/kEwCgYIKoZIzj0EAwQw
+OTELMAkGA1UEBhMCTkwxFDASBgNVBAoMC1BoaWxpcHMgSHVlMRQwEgYDVQQDDAty
+b290LWJyaWRnZTAiGA8yMDE3MDEwMTAwMDAwMFoYDzIwMzgwMTE5MDMxNDA3WjA5
+MQswCQYDVQQGEwJOTDEUMBIGA1UECgwLUGhpbGlwcyBIdWUxFDASBgNVBAMMC3Jv
+b3QtYnJpZGdlMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQBXLIYniVZ+kPMf2Vh
+jOB18bSHYSjrn9YhU1gSxcd9opSMKkV34Ps4B93nQlNbN7k0WbD7X5KNG/nSBm2T
+NHB2BucB/NfA77vo7KYVdK9nenui2iAS4GIqYcXClG1l/8QTI1gOfRJUOAB6X2tw
+bdgtb+KU9JtgInXvv2pUTlWs1qlLf7CjgbkwgbYwDwYDVR0TAQH/BAUwAwEB/zAO
+BgNVHQ8BAf8EBAMCAYYwHQYDVR0OBBYEFDJ80OxBgte8rayRGJ7MtvJwBgvRMHQG
+A1UdIwRtMGuAFDJ80OxBgte8rayRGJ7MtvJwBgvRoT2kOzA5MQswCQYDVQQGEwJO
+TDEUMBIGA1UECgwLUGhpbGlwcyBIdWUxFDASBgNVBAMMC3Jvb3QtYnJpZGdlghR0
+vLWxMubdOidXLTfJaZHDE6j+QTAKBggqhkjOPQQDBAOBjAAwgYgCQgF3HCwff4oR
+3wObFZTXkLNeGSvISaHmrb1oJJfdl067YONc4OQ+z4/eJ/Ttdzduc45EK2+MXcYy
+ilr+1jcqTJTzhwJCAeE7OE2k8SkznDcYAUljLE37vO3r9XCGJbqvkRgzWN4aI0fD
+EiL8pLBintfYMdTpN1gQdAdecVKlysfs70A55vhh
+-----END CERTIFICATE-----
+)"
+    };
+}  // namespace
+
 namespace support {
     std::mutex NetworkConfiguration::_mutex;
 
@@ -55,6 +95,10 @@ namespace support {
         }
 
         return {};
+    }
+
+    const std::vector<std::string>& NetworkConfiguration::get_root_certificates() {
+        return root_certificates;
     }
 
 }  // namespace support

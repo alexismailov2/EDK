@@ -22,6 +22,7 @@ namespace huesdk_jni_core {
         auto env = JNIEnvFactory::Create();
         auto jclass = env->GetObjectClass(instance);
         jmethodID methodId = env->GetMethodID(jclass, method, signature);
+        env->DeleteLocalRef(jclass);
         return (env.get()->*api)(instance, methodId, args.value()...);
     }
 

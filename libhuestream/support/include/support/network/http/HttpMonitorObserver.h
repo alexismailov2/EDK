@@ -26,6 +26,8 @@ namespace support {
          @param error    error information about received response.
          */
         virtual void on_response_received(const IHttpResponse& response, const HttpRequestError& error) = 0;
+
+        virtual ~HttpMonitorObserver() = default;
     };
 
 }  // namespace support

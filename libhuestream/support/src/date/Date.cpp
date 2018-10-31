@@ -23,6 +23,10 @@ namespace support {
     bool Date::operator==(const Date& date) const {
         return _time == date._time;
     }
+
+    bool Date::operator!=(const Date& date) const {
+        return _time != date._time;
+    }
     
     bool Date::operator< (const Date& date) const {
         return _time < date._time;

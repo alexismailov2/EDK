@@ -39,8 +39,8 @@ public class BridgeWrapperBuilder {
         return this;
     }
 
-    public BridgeWrapperBuilder withTcpPort(final Integer port) {
-        _tcpPort = port.toString();
+    public BridgeWrapperBuilder withTcpPort(final String port) {
+        _tcpPort = port;
         return this;
     }
 

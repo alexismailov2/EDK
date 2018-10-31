@@ -28,16 +28,31 @@ namespace support {
         curl_mutex->unlock();
     }
 
+    static void share_cleanup(CURLSH* handle) {
+        if (handle) {
+            curl_share_cleanup(handle);
+        }
+    }
+
+    /* share handle that shares the tls session information for all http requests */
+    static std::unique_ptr<CURLSH, decltype(&share_cleanup)> _curlsh{nullptr, share_cleanup};
+
     CurlHttpClient::Message::Message(MessageType _type, CurlRequest* _request) :
             type(_type), request(_request) { }
 
     CurlHttpClient::CurlHttpClient() : _mutex{curl_mutex} {
         curl_global_init(CURL_GLOBAL_ALL);
 
-        _curlsh = curl_share_init();
-        curl_share_setopt(_curlsh, CURLSHOPT_LOCKFUNC, share_lock);
-        curl_share_setopt(_curlsh, CURLSHOPT_UNLOCKFUNC, share_unlock);
-        curl_share_setopt(_curlsh, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
+        {
+            std::lock_guard<std::mutex> lock(*_mutex);
+            if (!_curlsh) {
+                _curlsh.reset(curl_share_init());
+
+                curl_share_setopt(_curlsh.get(), CURLSHOPT_LOCKFUNC, share_lock);
+                curl_share_setopt(_curlsh.get(), CURLSHOPT_UNLOCKFUNC, share_unlock);
+                curl_share_setopt(_curlsh.get(), CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
+            }
+        }
 
         _curlm = curl_multi_init();
         curl_multi_setopt(_curlm, CURLMOPT_PIPELINING, CURLPIPE_HTTP1);
@@ -58,7 +73,6 @@ namespace support {
         _thread.join();
 
         curl_multi_cleanup(_curlm);
-        curl_share_cleanup(_curlsh);
 
         for (auto fd : _signal_fds) {
             if (fd != INVALID_SOCKET) {
@@ -71,7 +85,7 @@ namespace support {
         CurlRequest *request = new CurlRequest(data, callback);
 
         // make this request use the shared tls data
-        curl_easy_setopt(request->get_handle(), CURLOPT_SHARE, _curlsh);
+        curl_easy_setopt(request->get_handle(), CURLOPT_SHARE, _curlsh.get());
 
         // back reference from the curl handle to the request object
         curl_easy_setopt(request->get_handle(), CURLOPT_PRIVATE, request);

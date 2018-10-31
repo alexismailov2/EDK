@@ -20,7 +20,7 @@ using huestream::ConnectionFlowFactory;
 
 namespace huestream {
 
-Connect::Connect(HttpClientPtr http, MessageDispatcherPtr dispatcher, BridgeSettingsPtr bridgeSettings, AppSettingsPtr appSettings, StreamPtr stream, BridgeStorageAccessorPtr storageAccessor) :
+Connect::Connect(BridgeHttpClientPtr http, MessageDispatcherPtr dispatcher, BridgeSettingsPtr bridgeSettings, AppSettingsPtr appSettings, StreamPtr stream, BridgeStorageAccessorPtr storageAccessor) :
     _isIdle(true),
     _result(Uninitialized),
     _connectionFlow(std::make_shared<ConnectionFlow>(
@@ -101,7 +101,7 @@ void Connect::ResetBridge() {
 void Connect::ResetAllData() {
     unique_lock<mutex> lock(_mutex);
     _isIdle = false;
-    _connectionFlow->ResetBridge();
+    _connectionFlow->ResetAll();
 }
 
 void Connect::SelectGroup(std::string id) {

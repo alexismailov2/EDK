@@ -66,6 +66,12 @@ namespace support {
         std::vector<std::string> _certificate_chain;
 
         bool _verify_ssl;
+        bool _verify_common_name_manually;
+        std::string _common_name;
+        std::vector<std::string> _trusted_certs;
+
+        /* curl will write error messages here */
+        char _error_buffer[CURL_ERROR_SIZE];
 
         void setup_options(const HttpRequestParams &data);
 
@@ -75,7 +81,9 @@ namespace support {
 
         void setup_proxy(const HttpRequestParams &data);
 
-        void setup_request_headers(const HttpRequestParams &data);
+        void append_user_request_headers(const HttpRequestParams &data);
+
+        void setup_request_headers();
 
         void setup_post_body(const HttpRequestParams &data);
 

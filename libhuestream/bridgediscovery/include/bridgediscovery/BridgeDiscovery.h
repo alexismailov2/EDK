@@ -5,21 +5,27 @@
 
 #pragma once
 
-#include <vector>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <type_traits>
+#include <utility>
+#include <vector>
+
+#include <boost/optional.hpp>
 
 #include "bridgediscovery/IBridgeDiscoveryCallback.h"
 #include "bridgediscovery/BridgeDiscoveryReturnCode.h"
 #include "support/threading/Job.h"
 #include "support/threading/QueueDispatcher.h"
-#include "hueutilities/EnumSet.h"
+#include "support/util/EnumSet.h"
+#include "support/util/Uuid.h"
 
 namespace huesdk {
 
     class IBridgeDiscoveryMethod;
     class BridgeDiscoveryTask;
+    class IBridgeDiscoveryEventNotifier;
 
     class BridgeDiscovery {
     public:
@@ -64,9 +70,9 @@ namespace huesdk {
          @param  callback The callback which will be called when the search is finished and provides
                           all the found results. The callback will only be called once
          */
-        void search(EnumSet<Option> options, IBridgeDiscoveryCallback *callback);
+        void search(support::EnumSet<Option> options, IBridgeDiscoveryCallback *callback);
 
-        void search(EnumSet<Option> options, Callback);
+        void search(support::EnumSet<Option> options, Callback);
 
         /**
          Whether a search is in progress
@@ -80,16 +86,26 @@ namespace huesdk {
          */
         void stop();
 
-    private:
-        std::vector<std::unique_ptr<IBridgeDiscoveryMethod>> get_discovery_methods(EnumSet<Option> options);
+    protected:
+        explicit BridgeDiscovery(const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier);
 
+    private:
         std::recursive_mutex _mutex;
         std::shared_ptr<support::Job<BridgeDiscoveryTask>> _discovery_job;
         Callback _callback;
         support::QueueDispatcher _dispatcher;
+        std::shared_ptr<IBridgeDiscoveryEventNotifier> _bridge_discovery_event_notifier;
+
+        using InfoForCurrentSearch
+            = boost::optional<std::pair<boost::uuids::uuid, std::chrono::time_point<std::chrono::system_clock>>>;
+
+        InfoForCurrentSearch _current_search_info;
+
+        std::vector<std::unique_ptr<IBridgeDiscoveryMethod>> get_discovery_methods(support::EnumSet<Option> options);
+        InfoForCurrentSearch create_current_search_info();
     };
 
-    inline EnumSet<BridgeDiscovery::Option> operator|(BridgeDiscovery::Option lhs, BridgeDiscovery::Option rhs) {
+    inline support::EnumSet<BridgeDiscovery::Option> operator|(BridgeDiscovery::Option lhs, BridgeDiscovery::Option rhs) {
         return {lhs, rhs};
     }
 

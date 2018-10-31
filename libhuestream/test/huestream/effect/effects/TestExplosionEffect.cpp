@@ -19,16 +19,22 @@ namespace huestream {
         LightPtr _lightInRadius;
         LightPtr _lightOutRadius;
         std::shared_ptr<MockTimeManager> _mockTimeManager;
+        ScopedTimeProviderProvider _timeProvider;
         long long int _currentTime;
+        std::shared_ptr<Mixer> _engine;
+
+        TestExplosionEffect() :
+                _effect(std::make_shared<ExplosionEffect>("ExplosionEffect", 4)),
+                _lightInRadius(std::make_shared<Light>("1", Location(0.0, 0.0))),
+                _lightOutRadius(std::make_shared<Light>("2", Location(1.0, 0.0))),
+                _mockTimeManager(std::make_shared<MockTimeManager>()),
+                _timeProvider(_mockTimeManager),
+                _currentTime(0),
+                _engine(std::make_shared<Mixer>()) {
+        }
 
         virtual void SetUp() {
-            _mockTimeManager = std::make_shared<MockTimeManager>();
-            TimeProviderProvider::set(_mockTimeManager);
             IncreaseTime(0);
-            _engine = std::make_shared<Mixer>();
-            _lightInRadius = std::make_shared<Light>("1", Location(0.0, 0.0));
-            _lightOutRadius = std::make_shared<Light>("2", Location(1.0, 0.0));
-            _effect = std::make_shared<ExplosionEffect>("ExplosionEffect", 4);
         }
 
         void IncreaseTime(int ms) {
@@ -46,7 +52,6 @@ namespace huestream {
             return !::testing::Test::HasFailure();
         }
 
-        std::shared_ptr<Mixer> _engine;
     };
 
     TEST_F(TestExplosionEffect, IntensityAtTheCenterOfTheExplosion) {

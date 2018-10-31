@@ -12,8 +12,12 @@
 
 namespace huestream {
 
-    Mixer::Mixer()
-            : _effects(std::make_shared<EffectList>()), _group(std::make_shared<Group>()) {
+    Mixer::Mixer() : _effects(std::make_shared<EffectList>()),
+                _group(std::make_shared<Group>()), _retain_color(false) {
+    }
+
+    Mixer::Mixer(AppSettingsPtr appSettings) : _effects(std::make_shared<EffectList>()),
+                _group(std::make_shared<Group>()), _retain_color(appSettings->LightsRetainColor()) {
     }
 
     Mixer::~Mixer() {
@@ -97,6 +101,12 @@ namespace huestream {
         auto r = 0.0;
         auto g = 0.0;
         auto b = 0.0;
+
+        if (_retain_color) {
+            r = light->GetColor().GetR();
+            g = light->GetColor().GetG();
+            b = light->GetColor().GetB();
+        }
 
         for (auto effect : *_effects) {
             if (effect->IsEnabled()) {

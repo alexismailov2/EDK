@@ -20,10 +20,17 @@ namespace support {
     static shared_ptr<HttpRequestDelegateProvider> _delegate_provider = shared_ptr<HttpRequestDelegateProvider>(new HttpRequestDelegateProviderImpl());
     static mutex _delegate_provider_mutex;
 
-    void HttpRequestDelegator::set_delegate_provider(shared_ptr<HttpRequestDelegateProvider> delegate_provider) {
+    shared_ptr<HttpRequestDelegateProvider> HttpRequestDelegator::set_delegate_provider(shared_ptr<HttpRequestDelegateProvider> delegate_provider) {
         unique_lock<mutex> _delegate_provider_lock(_delegate_provider_mutex);
-        _delegate_provider = delegate_provider;
+        _delegate_provider.swap(delegate_provider);
+        return delegate_provider;
     }
+
+    shared_ptr<HttpRequestDelegateProvider> HttpRequestDelegator::get_delegate_provider() {
+        unique_lock<mutex> _delegate_provider_lock(_delegate_provider_mutex);
+        return _delegate_provider;
+    }
+
 
 
     /* delegator */
@@ -32,7 +39,6 @@ namespace support {
         : HttpRequest(url, connect_timeout, receive_timeout, request_timeout, enable_logging, security_level) {
         unique_lock<mutex> _delegate_provider_lock(_delegate_provider_mutex);
         _delegate = _delegate_provider->get_delegate(url, connect_timeout, receive_timeout, request_timeout, enable_logging, security_level);
-        HUE_LOG << HUE_TEST << HUE_INFO << url << " delegate has been set" << HUE_ENDL;
         assert(_delegate != nullptr);
     }
                                                                     

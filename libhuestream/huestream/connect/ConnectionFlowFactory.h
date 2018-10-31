@@ -7,7 +7,7 @@
 #define HUESTREAM_CONNECT_CONNECTIONFLOWFACTORY_H_
 
 #include <huestream/connect/IConnectionFlowFactory.h>
-#include <huestream/common/http/IHttpClient.h>
+#include <huestream/common/http/IBridgeHttpClient.h>
 #include <huestream/connect/FullConfigRetriever.h>
 #include <huestream/connect/BridgeSearcher.h>
 #include <huestream/connect/Authenticator.h>
@@ -18,9 +18,9 @@ namespace huestream {
 class ConnectionFlowFactory : public IConnectionFlowFactory {
  public:
     ConnectionFlowFactory(BridgeSettingsPtr bridgeSettings,
-                                 HttpClientPtr http,
-                                 MessageDispatcherPtr messageDispatcher,
-                                 BridgeStorageAccessorPtr storageAccessor);
+                          BridgeHttpClientPtr http,
+                          MessageDispatcherPtr messageDispatcher,
+                          BridgeStorageAccessorPtr storageAccessor);
 
     BridgeSearcherPtr CreateSearcher() override;
 
@@ -34,7 +34,7 @@ class ConnectionFlowFactory : public IConnectionFlowFactory {
 
  private:
     BridgeSettingsPtr _bridgeSettings;
-    HttpClientPtr _http;
+    BridgeHttpClientPtr _http;
     MessageDispatcherPtr _messageDispatcher;
     BridgeStorageAccessorPtr _storageAccessor;
 };

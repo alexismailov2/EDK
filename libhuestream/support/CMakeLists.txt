@@ -17,6 +17,7 @@ file(GLOB_RECURSE SUPPORT_SOURCE_FILES
         "src/util/*.cpp" "include/support/util/*.h"
         "src/scheduler/*.cpp" "include/support/scheduler/*.h"
         "src/persistence/*.cpp" "include/support/persistence/*.h"
+        "src/os/*.cpp" "include/support/os/*.h"
 )
 
 list(APPEND SUPPORT_SOURCES ${SUPPORT_SOURCE_FILES})
@@ -135,3 +136,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED YES)
 treat_warning_as_error(${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME} boost)
+
+add_subdirectory(mock)

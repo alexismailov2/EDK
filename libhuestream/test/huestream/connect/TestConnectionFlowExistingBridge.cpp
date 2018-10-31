@@ -49,7 +49,7 @@ public:
         expect_message(FeedbackMessage::ID_FINISH_LOADING_BRIDGE_CONFIGURED, FeedbackMessage::FEEDBACK_TYPE_INFO, _existingBridgeData->GetActiveBridge());
         expect_initiate_full_config_retrieval();
 
-        _storageAccesser->load_callback(OPERATION_SUCCESS, _existingBridgeData);
+        _storageAccessor->load_callback(OPERATION_SUCCESS, _existingBridgeData);
         _messageDispatcher->ExecutePendingActions();
     }
 
@@ -58,7 +58,7 @@ public:
         finish_loading();
 
         set_bridge_in_full_config(numGroups);
-        expect_on_storage_accesser_save();
+        expect_on_storage_accessor_save();
         expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_READY_TO_START, FeedbackMessage::FEEDBACK_TYPE_INFO, _existingBridgeData->GetActiveBridge(), BRIDGE_READY);
 
         _fullConfigRetriever->RetrieveCallback(OPERATION_SUCCESS, _fullConfigRetriever->Bridge);
@@ -71,7 +71,7 @@ public:
         finish_loading();
 
         set_bridge_in_full_config(0);
-        expect_on_storage_accesser_save();
+        expect_on_storage_accessor_save();
         expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_ACTION_REQUIRED, FeedbackMessage::FEEDBACK_TYPE_INFO, _existingBridgeData->GetActiveBridge(), BRIDGE_NO_GROUP_AVAILABLE);
         expect_message(FeedbackMessage::ID_DONE_ACTION_REQUIRED, FeedbackMessage::FEEDBACK_TYPE_INFO, _existingBridgeData->GetActiveBridge(), BRIDGE_NO_GROUP_AVAILABLE);
         expect_message(FeedbackMessage::ID_NO_GROUP_AVAILABLE, FeedbackMessage::FEEDBACK_TYPE_USER, _existingBridgeData->GetActiveBridge());
@@ -121,7 +121,7 @@ public:
         expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
         expect_on_searcher_search_new(false);
 
-        _storageAccesser->load_callback(OPERATION_SUCCESS, _existingBridgeData);
+        _storageAccessor->load_callback(OPERATION_SUCCESS, _existingBridgeData);
         _messageDispatcher->ExecutePendingActions();
     }
 
@@ -294,7 +294,7 @@ TEST_F(TestConnectionFlow_ExistingBridge, load_only) {
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_START_LOADING, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    expect_on_storage_accesser_load();
+    expect_on_storage_accessor_load();
     _connectionFlow->Load();
     _messageDispatcher->ExecutePendingActions();
 
@@ -302,6 +302,63 @@ TEST_F(TestConnectionFlow_ExistingBridge, load_only) {
     expect_message(FeedbackMessage::ID_BRIDGE_CHANGED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_USERPROCEDURE_FINISHED, FeedbackMessage::FEEDBACK_TYPE_INFO);
 
-    _storageAccesser->load_callback(OPERATION_SUCCESS, _existingBridgeData);
+    _storageAccessor->load_callback(OPERATION_SUCCESS, _existingBridgeData);
     _messageDispatcher->ExecutePendingActions();
+}
+
+INSTANTIATE_TEST_CASE_P(existing_https_bridge, TestConnectionFlow_ExistingBridge, Values(true, false));
+
+TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SslDisabled__SmallConfigHasNewApi__SslEnabled) {
+    _persistentData->SetActiveBridge(_bridges->at(4));
+    EXPECT_FALSE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
+
+    expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
+    expect_storage_accessor_load_return_data();
+    expect_small_config_retrieval_return_data(4);
+
+    if (GetParam()) {
+        _connectionFlow->ConnectToBridgeBackground();
+    }
+    else {
+        _connectionFlow->ConnectToBridge();
+    }
+
+    expect_message(FeedbackMessage::ID_START_AUTHORIZING, FeedbackMessage::FEEDBACK_TYPE_INFO);
+    expect_message(FeedbackMessage::ID_PRESS_PUSH_LINK, FeedbackMessage::FEEDBACK_TYPE_USER);
+    expect_on_authenticator_authenticate(4);
+    _messageDispatcher->ExecutePendingActions();
+
+    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
+}
+
+TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SslEnabled__SmallConfigHasOldApi__SslStillEnabled) {
+    auto bridge_with_old_api = std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
+    bridge_with_old_api->SetModelId("BSB002");
+    bridge_with_old_api->SetApiversion("1.22.0");
+    bridge_with_old_api->SetId(_bridges->at(4)->GetId());
+    EXPECT_FALSE(bridge_with_old_api->GetIsUsingSsl());
+
+    _persistentData->SetActiveBridge(_bridges->at(4));
+    _persistentData->GetActiveBridge()->EnableSsl();
+    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
+
+    expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
+    expect_storage_accessor_load_return_data();
+    // return bridge with old api from small config
+    expect_small_config_retrieval_return_data(bridge_with_old_api);
+
+    if (GetParam()) {
+        _connectionFlow->ConnectToBridgeBackground();
+    }
+    else {
+        _connectionFlow->ConnectToBridge();
+    }
+
+    expect_message(FeedbackMessage::ID_START_AUTHORIZING, FeedbackMessage::FEEDBACK_TYPE_INFO);
+    expect_message(FeedbackMessage::ID_PRESS_PUSH_LINK, FeedbackMessage::FEEDBACK_TYPE_USER);
+    expect_on_authenticator_authenticate(4);
+    _messageDispatcher->ExecutePendingActions();
+
+    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.22.0");
+    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 }

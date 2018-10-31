@@ -8,16 +8,20 @@
 #include <memory>
 #include <string>
 
-#include "support/threading/Job.h"
-
+#include "events/IBridgeDiscoveryEventNotifier.h"
 #include "method/upnp/tasks/BridgeDiscoveryUpnpTask.h"
 #include "method/BridgeDiscoveryMethodBase.h"
+#include "support/util/Uuid.h"
 
 namespace huesdk {
 
     class BridgeDiscoveryUpnp : public BridgeDiscoveryMethodBase<BridgeDiscoveryUpnpTask> {
     public:
         using BridgeDiscoveryMethodBase::MethodResultCallback;
+
+        explicit BridgeDiscoveryUpnp(
+                const boost::uuids::uuid& request_id,
+                const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier);
 
         /**
         @see IBridgeDiscoveryMethod.h

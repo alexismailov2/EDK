@@ -17,16 +17,18 @@
 #include <type_traits>
 #include <utility>
 
-#include "support/threading/Thread.h"
-#include "support/std/types/VectorOperations.h"
+#include "support/util/VectorOperations.h"
+#include "support/util/Provider.h"
 
 #define FUNCTION_RETURN_TYPE(Function, Args) typename std::result_of<Function(Args...)>::type
 
-namespace support {
+    namespace support {
 
-    using ThreadPoolTask = std::function<void ()>;
+    class Thread;
 
-    class ThreadPool {
+    using ThreadPoolTask = std::function<void()>;
+
+    class ThreadPool final {
     public:
         /**
          @param finish_tasks_on_close on close, all tasks are executed before exiting
@@ -37,7 +39,7 @@ namespace support {
         /**
          Will block until the thread pool is closed
          */
-        ~ThreadPool();
+        virtual ~ThreadPool();
 
         template<typename Function, typename... Args>
         std::future<FUNCTION_RETURN_TYPE(Function, Args)> add_task(Function&& function, Args&&... args) {
@@ -46,12 +48,10 @@ namespace support {
             typedef std::packaged_task<FUNCTION_RETURN_TYPE(Function, Args)()> TaskAsync;
 
             std::unique_lock<std::mutex> tasks_lock(_tasks_mutex);
-            
+
             if (!_close) {
-                auto task = std::bind(std::forward<Function>(function), std::forward<Args>(args)...);
-
-                std::shared_ptr<TaskAsync> task_async = std::make_shared<TaskAsync>(task);
-
+                std::shared_ptr<TaskAsync> task_async = std::make_shared<TaskAsync>(
+                        std::bind(std::forward<Function>(function), std::forward<Args>(args)...));
                 future = task_async->get_future();
 
                 _tasks.push([task_async] () -> void {
@@ -60,40 +60,47 @@ namespace support {
 
                 _tasks_condition.notify_one();
             }
-            
+
             return future;
         }
-        
-        /**
-         Close the thread pool, which will block until the thread pool is closed
-         @param  cancel_tasks_delegate      The delegate that should be used for canceling of the tasks.
-                                            all tasks are cancelled by caller thread.
-         */
-        void close(std::function<void()> cancel_tasks_delegate = std::function<void()>());
 
-        size_t number_of_threads() const;
-        
-    private:
+    protected:
+        /**
+         thread pool thread main even_loop
+         */
         void event_loop();
 
-        std::vector<Thread>        _threads;
+        /**
+        Check whether tasks should be executed.
+        Conditions:
+        - close() or destructor has not been called
+        OR:
+        - threadpool is configured that all tasks should be executed on closing
+        - tasks list is not empty
+        */
+        bool should_execute_tasks() const;
 
+        /**
+         Shutdown thread pool. After calling this method object is in invalid state,
+         so it must be called just from the class destructor.
+         */
+        void shutdown();
+
+    private:
         std::queue<ThreadPoolTask> _tasks;
+        std::vector<std::unique_ptr<Thread>>        _threads;
         std::mutex                 _tasks_mutex;
         std::condition_variable    _tasks_condition;
         std::atomic<bool>          _close;
         bool                       _should_finish_tasks_on_close;
-        
-        /**
-         Check whether tasks should be executed. 
-         Conditions:
-         - close() or destructor has not been called
-         OR:
-         - threadpool is configured that all tasks should be executed on closing
-         - tasks list is not empty
-         */
-        bool should_execute_tasks() const;
     };
 
+    using GlobalThreadPool = Provider<std::shared_ptr<ThreadPool>>;
 }  // namespace support
 
+template<>
+struct default_object<std::shared_ptr<support::ThreadPool>> {
+    static std::shared_ptr<support::ThreadPool> get() {
+        return std::make_shared<support::ThreadPool>(4, false, "global-tp");
+    }
+};

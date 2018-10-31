@@ -61,6 +61,19 @@ namespace huestream {
          */
         void Append(const CurveAnimation &other);
 
+        /**
+         append another point to this curve
+         */
+        void AppendPoint(const PointPtr point);
+
+        /**
+         append another curve to this curve with linearization enabled
+         this means if the original last point varies less than delta from
+         the linear interpolation between the original second to last point and new point
+         the new point will replace the original last point
+         */
+        void AppendPointLinearized(const PointPtr point, double delta = 0.000015);
+
         const PointListPtr &GetPoints() const;
     };
 }  // namespace huestream

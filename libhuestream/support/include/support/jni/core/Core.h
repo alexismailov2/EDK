@@ -11,6 +11,7 @@
 #include "ObjectConverters.h"
 #include "SmartPointerConverters.h"
 #include "ContainerConverters.h"
+#include "HashMapConverters.h"
 #include "Callback.h"
 #include "EnumSetConverter.h"
 #include "OptionalConverter.h"

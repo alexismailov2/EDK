@@ -19,7 +19,7 @@ class StubMessageDispatcher : public IMessageDispatcher {
       _queue(), _isProcessingQueue(false) {
   }
 
-  void Execute(bool useThisTread) override {
+  void Execute(bool) override {
 
   }
 

@@ -24,8 +24,13 @@ using support::JobState;
 
 namespace huesdk {
 
+    BridgeDiscoveryIpscan::BridgeDiscoveryIpscan(
+            const boost::uuids::uuid& request_id,
+            const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier)
+       : BridgeDiscoveryMethodBase<BridgeDiscoveryIpscanTask>(request_id, notifier) {}
+
     bool BridgeDiscoveryIpscan::method_search(const MethodResultCallback &callback) {
-        _job = support::create_job<TaskType>();
+        _job = support::create_job<TaskType>(_request_id, _bridge_discovery_event_notifier);
 
         return _job->run([callback](TaskType *task) {
             callback(task->get_result());

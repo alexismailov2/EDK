@@ -5,20 +5,40 @@
 
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <vector>
-#include <memory>
 
-#include "support/logging/Log.h"
-
-#include "support/std/types/VectorOperations.h"
-#include "support/threading/Job.h"
-#include "support/threading/QueueDispatcher.h"
-#include "support/threading/DetachingOperationalQueue.h"
+#include <boost/optional.hpp>
 
 #include "bridgediscovery/BridgeDiscoveryResult.h"
-
+#include "events/BridgeDiscoveryEventNotifier.h"
+#include "events/BridgeDiscoveryEvents.h"
 #include "method/IBridgeDiscoveryMethod.h"
+
+#include "support/logging/Log.h"
+#include "support/threading/Job.h"
+#include "support/threading/QueueDispatcher.h"
+#include "support/util/EventNotifierProvider.h"
+#include "support/util/VectorOperations.h"
+#include "support/util/Uuid.h"
+
+namespace huesdk {
+    inline BridgeDiscovery::Option convert(const BridgeDiscoveryClassType t) {
+        switch (t) {
+            case BRIDGE_DISCOVERY_CLASS_TYPE_UPNP :
+                return BridgeDiscovery::Option::UPNP;
+            case BRIDGE_DISCOVERY_CLASS_TYPE_IPSCAN :
+                return BridgeDiscovery::Option::IPSCAN;
+            case BRIDGE_DISCOVERY_CLASS_TYPE_NUPNP :
+                return BridgeDiscovery::Option::NUPNP;
+            default :
+                HUE_LOG << HUE_ERROR
+                        << "BridgeDiscoveryClassType can't be converted to BridgeDiscovery::Option" << HUE_ENDL;
+        }
+        return {};
+    }
+}  // namespace huesdk
 
 namespace huesdk {
     template<typename TaskT>
@@ -27,8 +47,9 @@ namespace huesdk {
         using TaskType = TaskT;
         using MethodResultCallback = std::function<void(const std::vector<std::shared_ptr<BridgeDiscoveryResult>> &)>;
 
-        BridgeDiscoveryMethodBase() : _callback(nullptr), _dispatcher(support::global_dispatch_queue()) {
-        }
+        BridgeDiscoveryMethodBase(
+                const boost::uuids::uuid& request_id,
+                const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier);
 
         /**
          @see IBridgeDiscoveryMethod.h
@@ -60,11 +81,23 @@ namespace huesdk {
 
         std::unique_ptr<support::Job<TaskType>> _job;
 
+    protected:
+        boost::uuids::uuid _request_id;
+        std::shared_ptr<IBridgeDiscoveryEventNotifier> _bridge_discovery_event_notifier;
+
     private:
         std::mutex _mutex;
         std::shared_ptr<IBridgeDiscoveryCallback> _callback;
         support::QueueDispatcher _dispatcher;
+        boost::optional<std::chrono::time_point<std::chrono::system_clock>> _start_of_search;
     };
+
+    template <typename TaskType>
+    BridgeDiscoveryMethodBase<TaskType>::BridgeDiscoveryMethodBase(
+            const boost::uuids::uuid& request_id,
+            const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier)
+            : _request_id(request_id), _bridge_discovery_event_notifier(notifier), _callback(nullptr)
+    {}
 
     template<typename TaskType>
     bool BridgeDiscoveryMethodBase<TaskType>::is_searching() {
@@ -90,16 +123,37 @@ namespace huesdk {
             return;
         }
 
-        auto search_started = method_search([this, callback](const std::vector<std::shared_ptr<BridgeDiscoveryResult>> &results) {
-            _dispatcher.post([callback, results]() {
-                (*callback)(results, BRIDGE_DISCOVERY_RETURN_CODE_SUCCESS);
-            });
-        });
+        auto search_started = method_search(
+                [this, callback](const std::vector<std::shared_ptr<BridgeDiscoveryResult>> &results) {
+                    if (_bridge_discovery_event_notifier != nullptr) {
+                        bridge_discovery_events::DiscoveryMethodFinished discovery_method_finished_event {
+                                _request_id,
+                                convert(get_type()),
+                                std::chrono::system_clock::now() - _start_of_search.value(),
+                                bridge_discovery_events::Status::SUCCESSFULLY_COMPLETED
+                        };
+
+                        _bridge_discovery_event_notifier->on_event(discovery_method_finished_event);
+                    }
+
+                    _dispatcher.post([callback, results]() {
+                        (*callback)(results, BRIDGE_DISCOVERY_RETURN_CODE_SUCCESS);
+                    });
+                });
 
         if (!search_started) {
             _dispatcher.post([callback]() {
                 (*callback)({}, BRIDGE_DISCOVERY_RETURN_CODE_BUSY);
             });
+        } else {
+            _start_of_search = {std::chrono::system_clock::now()};
+
+            if (_bridge_discovery_event_notifier != nullptr) {
+                bridge_discovery_events::DiscoveryMethodStarted discovery_method_started_event {
+                        _request_id, convert(get_type())
+                };
+                _bridge_discovery_event_notifier->on_event(discovery_method_started_event);
+            }
         }
     }
 
@@ -107,10 +161,21 @@ namespace huesdk {
     void BridgeDiscoveryMethodBase<TaskType>::stop() {
         std::lock_guard<std::mutex> lock_guard{_mutex};
         if (_job != nullptr && _job->cancel()) {
+            if (_bridge_discovery_event_notifier != nullptr) {
+                bridge_discovery_events::DiscoveryMethodFinished discovery_method_finished_event {
+                        _request_id,
+                        convert(get_type()),
+                        std::chrono::system_clock::now() - _start_of_search.value(),
+                        bridge_discovery_events::Status::CANCELLED
+                };
+                _bridge_discovery_event_notifier->on_event(discovery_method_finished_event);
+            }
+
             _dispatcher.post([this] {
                 (*_callback)(_job->get()->get_result(), BRIDGE_DISCOVERY_RETURN_CODE_STOPPED);
             });
         }
     }
+
 }  // namespace huesdk
 

@@ -26,7 +26,7 @@ namespace huestream {
         }
 
         virtual void TearDown() {
-            Serializable::SetObjectBuilder(nullptr);
+            Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
         }
 
         void assert_colors_matching(std::shared_ptr<LightSourceEffect> effect) {

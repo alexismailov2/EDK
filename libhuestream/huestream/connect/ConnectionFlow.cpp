@@ -3,13 +3,20 @@
  All Rights Reserved.
  ********************************************************************************/
 
+
 #include <huestream/connect/ConnectionFlow.h>
-#include <huestream/connect/BridgeStreamingChecker.h>
-#include <huestream/config/Config.h>
 
 #include <algorithm>
 #include <memory>
 #include <string>
+
+#include "huestream/connect/BridgeStreamingChecker.h"
+#include "huestream/config/Config.h"
+#include "support/scheduler/SchedulerFactory.h"
+
+constexpr static auto SCHEDULER_INTERVAL_MS = 250;
+constexpr static auto PUSHLINK_RETRY_INTERVAL_MS = 1000;
+constexpr static auto PUSHLINK_INVALID_IP_MAX_RETRIES = 3;
 
 namespace huestream {
 
@@ -26,17 +33,18 @@ namespace huestream {
   MESSAGE_DISPATCH_P3(_factory->GetMessageDispatcher(), ConnectionFlow::method, value1, value2, value3);
 
 ConnectionFlow::ConnectionFlow(ConnectionFlowFactoryPtr factory, StreamPtr stream, BridgeSettingsPtr bridgeSettings, AppSettingsPtr appSettings, BridgeStorageAccessorPtr storageAccessor) :
-    _appSettings(appSettings),
+    _appSettings(std::move(appSettings)),
     _bridgeSettings(bridgeSettings),
-    _storageAccessor(storageAccessor),
+    _storageAccessor(std::move(storageAccessor)),
     _state(Idle),
     _request(FeedbackMessage::REQUEST_TYPE_INTERNAL),
     _ongoingAuthenticationCount(0),
     _backgroundDiscoveredBridges(std::make_shared<BridgeList>()),
-    _stream(stream),
+    _stream(std::move(stream)),
     _persistentData(std::make_shared<HueStreamData>(bridgeSettings)),
-    _bridgeStartState(std::make_shared<Bridge>(bridgeSettings)) {
-    _factory = factory;
+    _bridgeStartState(std::make_shared<Bridge>(bridgeSettings)),
+    _scheduler(support::SchedulerFactory::create(SCHEDULER_INTERVAL_MS)) {
+    _factory = std::move(factory);
     _persistentData->Clear();
     _backgroundDiscoveredBridges->clear();
 }
@@ -74,8 +82,7 @@ void ConnectionFlow::DoConnectToBridge() {
         StartLoading([this](){
             if (_persistentData->GetActiveBridge()->IsEmpty()) {
                 StartBridgeSearch();
-            }
-            else {
+            } else {
                 StartRetrieveSmallConfig(_persistentData->GetActiveBridge());
             }
         });
@@ -93,8 +100,7 @@ void ConnectionFlow::DoConnectToBridgeBackground() {
     StartLoading([this](){
         if (_persistentData->GetActiveBridge()->IsEmpty()) {
             StartBridgeSearch();
-        }
-        else {
+        } else {
             StartRetrieveSmallConfig(_persistentData->GetActiveBridge());
         }
     });
@@ -417,8 +423,12 @@ void ConnectionFlow::StartAuthentication(BridgeListPtr bridges) {
     NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_PRESS_PUSH_LINK, _persistentData->GetActiveBridge(), bridges));
     _state = Authenticating;
     _ongoingAuthenticationCount = bridges->size();
+    _authenticationProcessesInfo.clear();
+    _scheduler->start();
+    auto i = 0;
+    for (auto&& bridge : *bridges) {
+        _authenticationProcessesInfo.emplace(bridge, AuthenticationProcessInfo{i++});
 
-    for (auto bridge : *bridges) {
         PushLinkBridge(bridge);
     }
 }
@@ -427,23 +437,46 @@ void ConnectionFlow::AuthenticationCompleted(BridgePtr bridge) {
     if (_state != Authenticating)
         return;
 
+    auto& authenticationProcessInfo = _authenticationProcessesInfo[bridge];
+
     if (!bridge->IsValidIp()) {
-        _ongoingAuthenticationCount--;
-        if (_ongoingAuthenticationCount == 0) {
-            NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_AUTHORIZING_FAILED, _persistentData->GetActiveBridge()));
-            StartBridgeSearch();
+        if (++authenticationProcessInfo.failedTries > PUSHLINK_INVALID_IP_MAX_RETRIES) {
+            _ongoingAuthenticationCount--;
+            if (_ongoingAuthenticationCount == 0) {
+                NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_AUTHORIZING_FAILED, _persistentData->GetActiveBridge()));
+                StartBridgeSearch();
+                _scheduler->remove_all_tasks();
+                _scheduler->stop();
+            }
+
+            return;
+        } else {
+            bridge->SetIsValidIp(true);
         }
-        return;
     }
 
     if (bridge->IsAuthorized()) {
         _ongoingAuthenticationCount--;
         _persistentData->SetActiveBridge(bridge);
         NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, _persistentData->GetActiveBridge(), _persistentData->GetAllKnownBridges()));
+        _scheduler->remove_all_tasks();
+        _scheduler->stop();
         StartRetrieveFullConfig();
     } else {
-        PushLinkBridge(bridge);
+        support::SchedulerTask scheduler_task;
+        scheduler_task.set_id(authenticationProcessInfo.bridgeNumber);
+        scheduler_task.set_interval_ms(PUSHLINK_RETRY_INTERVAL_MS);
+        scheduler_task.set_recurring(false);
+
+        // Set the method which need to be executed by the scheduler
+        scheduler_task.set_method(std::bind(&ConnectionFlow::SchedulerPushlinkTimedOut, this, bridge));
+
+        // Add task to the scheduler, if task already exists with the same id it will be updated automatically
+        _scheduler->add_task(scheduler_task);
     }
+}
+void ConnectionFlow::SchedulerPushlinkTimedOut(BridgePtr bridge) {
+    DISPATCH_P1(PushLinkBridge, bridge);
 }
 
 void ConnectionFlow::PushLinkBridge(BridgePtr bridge) {
@@ -485,8 +518,7 @@ void ConnectionFlow::RetrieveSmallConfigCompleted(OperationResult result, Bridge
 
         if (bridge->IsAuthorized() || bridge->HasEverBeenAuthorizedForStreaming()) {
             StartRetrieveFullConfig();
-        }
-        else {
+        } else {
             StartAuthentication(bridge);
         }
     }
@@ -538,7 +570,12 @@ void ConnectionFlow::RetrieveFailed(BridgePtr bridge) {
         return;
     }
     if (bridge->IsValidIp() && !bridge->IsAuthorized()) {
-        StartAuthentication(bridge);
+        if (_request == FeedbackMessage::REQUEST_TYPE_CONNECT_BACKGROUND) {
+            NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_DONE_BRIDGE_FOUND, _persistentData->GetActiveBridge()));
+            Finish();
+        } else {
+            StartAuthentication(bridge);
+        }
         return;
     }
     bridge->SetIsValidIp(false);
@@ -631,8 +668,31 @@ void ConnectionFlow::SavingCompleted(OperationResult r) {
     }
 }
 
-bool ConnectionFlow::EvaluateBridgesSecurity(BridgeList /* bridges */) {
-    return false;
+bool ConnectionFlow::EvaluateBridgesSecurity(BridgeList bridges) {
+    bool changed = false;
+    for (auto&& bridge : bridges) {
+        if (bridge->GetIsUsingSsl()) {
+            // if ssl is already enabled, there's nothing to do
+            continue;
+        }
+
+        bool bridge_used_ssl = false;
+        for (auto&& existing_bridge : *_persistentData->GetBridges()) {
+            if (existing_bridge->GetId() == bridge->GetId() && existing_bridge->GetIsUsingSsl()) {
+                bridge_used_ssl = true;
+                break;
+            }
+        }
+
+        if (bridge_used_ssl || bridge->IsSupportingHttps()) {
+            bridge->EnableSsl();
+            if (!bridge_used_ssl) {
+                changed = true;
+            }
+        }
+    }
+
+    return changed;
 }
 
 void ConnectionFlow::ActivateStreaming() {

@@ -42,9 +42,9 @@ namespace huestream_tests
             return this;
         }
 
-        public BridgeWrapperBuilder WithTcpPort(int tcpPort)
+        public BridgeWrapperBuilder WithTcpPort(String tcpPort)
         {
-            _tcpPort = tcpPort.ToString();
+            _tcpPort = tcpPort;
             return this;
         }
 

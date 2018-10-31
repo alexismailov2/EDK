@@ -25,8 +25,8 @@ namespace huestream {
     class MockHttpClient : public IHttpClient {
     public:
         MOCK_METHOD1(Execute, void(HttpRequestPtr request));
-        MOCK_METHOD1(ExecuteAsync, void(HttpRequestPtr request));
-        MOCK_METHOD6(CreateHttpRequest, shared_ptr<support::HttpRequest>(const std::string& url,
+        MOCK_METHOD2(ExecuteAsync, void(HttpRequestPtr request, HttpRequestCallback callback));
+        MOCK_METHOD6(CreateHttpRequest, shared_ptr<HttpRequest>(const std::string& url,
             int connect_timeout,
             int receive_timeout,
             int request_timeout,
@@ -39,21 +39,21 @@ namespace huestream {
         explicit MockWrapperHttpClient(const std::shared_ptr<MockHttpClient>& mock)
           : _mock(mock) {}
 
-        void Execute(HttpRequestPtr request) {
+        void Execute(HttpRequestPtr request) override {
             _mock->Execute(request);
         }
 
-        void ExecuteAsync(HttpRequestPtr request) {
-            _mock->ExecuteAsync(request);
+        void ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback) override {
+            _mock->ExecuteAsync(request, callback);
         }
 
-        std::shared_ptr<support::HttpRequest> CreateHttpRequest(
+        std::shared_ptr<HttpRequest> CreateHttpRequest(
            const std::string& url,
            int connect_timeout,
            int receive_timeout,
            int request_timeout,
            bool enable_logging,
-           support::HttpRequestSecurityLevel security_level) {
+           support::HttpRequestSecurityLevel security_level) override {
             return _mock->CreateHttpRequest(
                     url, connect_timeout, receive_timeout,
                     request_timeout, enable_logging, security_level);

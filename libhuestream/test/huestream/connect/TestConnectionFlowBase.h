@@ -16,6 +16,8 @@
 #include "test/huestream/_stub/StubMessageDispatcher.h"
 #include "test/huestream/_mock/MockConfigRetriever.h"
 #include "test/huestream/_mock/MockStream.h"
+#include "test/huestream/_mock/MockScheduler.h"
+#include "support/scheduler/SchedulerFactory.h"
 
 using namespace testing;
 using namespace huestream;
@@ -27,12 +29,14 @@ public:
     shared_ptr<BridgeList> _bridges;
     std::shared_ptr<TestableConnectionFlow> _connectionFlow;
     shared_ptr<MockConnectionFlowFactory> _factory;
+    std::shared_ptr<MockScheduler> _scheduler;
     shared_ptr<vector<shared_ptr<MockBridgeSearcher>>> _searchers;
     shared_ptr<vector<shared_ptr<MockBridgeAuthenticator>>> _authenticators;
     shared_ptr<StubMessageDispatcher> _messageDispatcher;
-    shared_ptr<MockBridgeStorageAccessor> _storageAccesser;
+    shared_ptr<MockBridgeStorageAccessor> _storageAccessor;
     shared_ptr<MockStream> _stream;
     shared_ptr<HueStreamData> _persistentData;
+
     Sequence s;
 
     void SetUp() override;
@@ -55,9 +59,9 @@ public:
 
     void expect_on_searcher_abort();
 
-    void expect_on_authenticator_authenticate(int index);
+    void expect_on_authenticator_authenticate(int index, int times = 1);
 
-    void expect_on_storage_accesser_load();
+    void expect_on_storage_accessor_load();
 
     void connect_starts_bridge_loading(bool background = false);
 
@@ -125,11 +129,11 @@ public:
 
     shared_ptr<MockConfigRetriever> _fullConfigRetriever;
 
-    void expect_on_storage_accesser_save();
+    void expect_on_storage_accessor_save();
 
-    void expect_on_storage_accesser_save(BridgePtr bridge);
+    void expect_on_storage_accessor_save(BridgePtr bridge);
 
-    void expect_on_storage_accesser_save(int numberOfBridges, std::string activeBridgeId);
+    void expect_on_storage_accessor_save(int numberOfBridges, std::string activeBridgeId);
 
     void expect_on_small_config_retriever_execute() const {
         EXPECT_CALL(*_smallConfigRetriever, Execute(_, _))

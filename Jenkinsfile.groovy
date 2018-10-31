@@ -307,7 +307,7 @@ stage('checkout') {
             tasks = [
                 new BuildTask(job_info: job_info, platform: "windows", compiler: "VS2015_32",   option: "min"),
                 new BuildTask(job_info: job_info, platform: "windows", compiler: "VS2015_64",   option: "wrap"),
-                new BuildTask(job_info: job_info, platform: "windows", compiler: "MINGW",       option: "min"),
+                //new BuildTask(job_info: job_info, platform: "windows", compiler: "MINGW",       option: "min"),
                 new BuildTask(job_info: job_info, platform: "linux",   compiler: "gcc-release", option: "min"),
                 new BuildTask(job_info: job_info, platform: "linux",   compiler: "gcc-debug",   option: "cov"),
                 new BuildTask(job_info: job_info, platform: "mac",     compiler: "clang-debug", option: "wrap"),

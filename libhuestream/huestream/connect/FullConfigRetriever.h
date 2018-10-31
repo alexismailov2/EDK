@@ -12,9 +12,8 @@
 #include "huestream/connect/IFullConfigRetriever.h"
 #include "huestream/common/data/Bridge.h"
 #include "libjson/libjson.h"
-#include "huestream/common/http/IHttpClient.h"
+#include "huestream/common/http/IBridgeHttpClient.h"
 #include "support/network/http/HttpRequest.h"
-
 
 namespace huestream {
     class LightInfo : public Light {
@@ -27,17 +26,16 @@ namespace huestream {
 
     class ConfigRetriever : public IConfigRetriever {
     public:
-        explicit ConfigRetriever(const HttpClientPtr http, bool useForcedActivation = true, ConfigType configType = ConfigType::Full);
+        explicit ConfigRetriever(const BridgeHttpClientPtr http, bool useForcedActivation = true, ConfigType configType = ConfigType::Full);
 
         bool Execute(BridgePtr bridge, RetrieveCallbackHandler cb) override;
 
     protected:
         ConfigType _configType;
-        HttpClientPtr _http;
+        BridgeHttpClientPtr _http;
         bool _useForcedActivation;
         std::mutex _mutex;
         bool _busy;
-        shared_ptr<support::HttpRequestBase> _request;
         std::string _response;
         BridgePtr _bridge;
         RetrieveCallbackHandler _cb;

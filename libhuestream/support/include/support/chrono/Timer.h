@@ -9,17 +9,16 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
-
-#include "support/threading/Thread.h"
+#include <memory>
 
 using std::atomic;
 using std::condition_variable;
 using std::mutex;
-using support::Thread;
 
 namespace support {
-    
-    typedef function<void ()> TimerEvent;
+
+    class Thread;
+    typedef std::function<void ()> TimerEvent;
     
     class Timer {
     public:
@@ -73,7 +72,7 @@ namespace support {
         
     private:
         /** the timer will be handled in a seperate thread */
-        Thread             _ticker_thread;
+        std::unique_ptr<Thread>             _ticker_thread;
         /** ensure thread safe way of stopping the timer */
         mutex              _ticker_mutex;
         /** condition variable will be used to block until the interval elapsed */

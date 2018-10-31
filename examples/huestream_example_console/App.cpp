@@ -24,6 +24,8 @@ using std::string;
 #define STREAMING_MODE_UDP_STRING "udp"
 #define STREAMING_MODE_DTLS_STRING "dtls"
 
+constexpr static auto PERSISTENCE_ENCRYPTION_KEY = "encryption_key";
+
 App::App(const string &_appName, const string &_deviceName) : _appName(_appName), _deviceName(_deviceName) {}
 
 void App::Main(int argc, char **argv) {
@@ -193,7 +195,7 @@ void App::ExecuteConnectionModeReset() const {
 }
 
 void App::InitializeHueStream() {
-    auto config = make_shared<huestream::Config>(_appName, _deviceName);
+    auto config = make_shared<huestream::Config>(_appName, _deviceName, huestream::PersistenceEncryptionKey(PERSISTENCE_ENCRYPTION_KEY));
     cout << "Initializing with streaming mode ";
     config->SetStreamingMode(_command.streamingMode);
     switch (_command.streamingMode) {

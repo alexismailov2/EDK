@@ -12,7 +12,7 @@ All Rights Reserved.
 
 #include "support/threading/OperationalQueue.h"
 
-using huesdk::Operation;
+using support::Operation;
 
 namespace support {
 
@@ -33,7 +33,7 @@ namespace support {
         }
     };
 
-    class QueueExecutorOperation : public huesdk::IOperation {
+    class QueueExecutorOperation : public support::IOperation {
     public:
         QueueExecutorOperation() = default;
         QueueExecutorOperation(std::weak_ptr<OperationalQueue> queue,
@@ -69,6 +69,9 @@ namespace support {
         QueueExecutor::OperationType _operation_type;
     };
 
+    QueueExecutor::QueueExecutor()
+            : QueueExecutor{GlobalQueueExecutor::get()->get_operational_queue()} {}
+
     QueueExecutor::QueueExecutor(std::shared_ptr<OperationalQueue> queue)
             : _impl(std::make_shared<Impl>(queue)) {
     }
@@ -94,7 +97,7 @@ namespace support {
         clear(OperationType::CANCELABLE);
     }
 
-    huesdk::Operation QueueExecutor::execute(std::function<void()> invocable, OperationType operation_type /* = OperationType::CANCELABLE */) {
+    support::Operation QueueExecutor::execute(std::function<void()> invocable, OperationType operation_type /* = OperationType::CANCELABLE */) {
         {
             std::lock_guard<std::mutex> lock(_impl->sync);
             if (_impl->closing) {
@@ -141,38 +144,38 @@ namespace support {
     void QueueExecutor::clear(QueueExecutor::OperationType policy) {
         std::list<Impl::TicketInfo> tickets;
         std::list<OperationalQueue::TicketHandle> closed_tickets;
-        std::shared_ptr<OperationalQueue> queue;
 
         do {
             {
                 std::lock_guard<std::mutex> lock(_impl->sync);
-
-                if (!closed_tickets.empty()) {
-                    _impl->tickets.remove_if([&closed_tickets](const Impl::TicketInfo& info) {
-                        return std::find(std::begin(closed_tickets), std::end(closed_tickets), info.ticket) != std::end(closed_tickets);
-                    });
-                }
+                _impl->tickets.remove_if([this](const Impl::TicketInfo& info) {
+                    return !_impl->queue->has_ticket(info.ticket);
+                });
 
                 tickets = _impl->tickets;
-                queue = _impl->queue;
             }
 
-            if (!queue) {
-                return;
-            }
+            // If `clear` is called from the same queue, which is processing the tickets,
+            // call to `discard_ticket` or `wait_ticket` will not remove the ticket from the queue.
+            // Note, that `_impl->tickets` should still contain those "incomplete" tickets. In this way, calls to
+            // `QueueExecutor::clear` will be correctly handled in case of being invoked from any other thread.
+
+            tickets.remove_if([&closed_tickets](const Impl::TicketInfo& info) {
+                return std::find(std::begin(closed_tickets), std::end(closed_tickets), info.ticket) != std::end(closed_tickets);
+            });
 
             // reverse order to discard tickets that are not yet posted since we are not blocking queue here
             for (auto it = tickets.rbegin(); it != tickets.rend(); ++it) {
                 if (!it->wait_on_cleanup && policy == OperationType::CANCELABLE) {
-                    queue->discard_ticket(it->ticket);
+                    _impl->queue->discard_ticket(it->ticket);
                     closed_tickets.push_back(it->ticket);
                 }
             }
 
-            // forward order for execution
+            // forward order for wait
             for (auto it = std::begin(tickets); it != std::end(tickets); ++it) {
                 if (it->wait_on_cleanup || policy == OperationType::NON_CANCELABLE) {
-                    queue->wait_ticket(it->ticket);
+                    _impl->queue->wait_ticket(it->ticket);
                     closed_tickets.push_back(it->ticket);
                 }
             }
@@ -181,18 +184,7 @@ namespace support {
         } while (!tickets.empty());
     }
 
-    std::shared_ptr<OperationalQueue> QueueExecutor::queue() const {
+    std::shared_ptr<OperationalQueue> QueueExecutor::get_operational_queue() const {
         return _impl->queue;
-    }
-
-    std::shared_ptr<QueueExecutor> QueueExecutor::global() {
-        auto global_queue = global_execution_queue();
-        static auto s_global_instance = std::make_shared<QueueExecutor>(global_queue);
-        return s_global_instance;
-    }
-
-    std::shared_ptr<OperationalQueue> global_execution_queue() {
-        static auto s_instance = std::make_shared<OperationalQueue>("glob-execute");
-        return s_instance;
     }
 }  // namespace support

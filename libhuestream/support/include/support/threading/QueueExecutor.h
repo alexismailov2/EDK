@@ -7,21 +7,22 @@ All Rights Reserved.
 #include <functional>
 #include <memory>
 
-#include "hueutilities/Operation.h"
+#include "support/util/Operation.h"
+#include "support/util/Provider.h"
+#include "support/threading/Executor.h"
+#include "support/threading/OperationalQueue.h"
 
 namespace support {
-
-    class OperationalQueue;
 
     /**
      * Provides functionality for executing functions withing an operational queue.
      */
-    class QueueExecutor final {
+    class QueueExecutor final : public Executor {
     public:
-        enum class OperationType {
-            CANCELABLE,
-            NON_CANCELABLE
-        };
+        /**
+         * Construct an executor that operates on global operational queue
+         */
+        QueueExecutor();
 
         /**
          * Constructor.
@@ -32,49 +33,43 @@ namespace support {
          * Destructor.
          * Cancels all posted calls and waits for non cancelable executions to complete.
          */
-        ~QueueExecutor();
+        ~QueueExecutor() override;
 
         QueueExecutor(const QueueExecutor&) = delete;
         QueueExecutor& operator=(const QueueExecutor&) = delete;
 
         /**
-         * Gets global executor working on the global OperationalQueue
-         * @return global executor instance pointer
-         */
-        static std::shared_ptr<QueueExecutor> global();
-
-        /**
          * Requests item execution on the operational queue. Item is put the the end of the queue.
          * @param invocable Function to be executed
-         * @param operation_type Specifies if executor allowed to disacard this request on cancelation and destruction.
+         * @param operation_type Specifies if executor allowed to disacard this request on cancellation and destruction.
          */
-        huesdk::Operation execute(std::function<void()> invocable, OperationType operation_type = OperationType::CANCELABLE);
+        support::Operation execute(std::function<void()> invocable, OperationType operation_type = OperationType::CANCELABLE) override;
 
         /**
          * Wait for all requests to be executed.
          * Blocks until there is no requests to process.
          * All incoming requests during wait_all() will be also processed.
          */
-        void wait_all();
+        void wait_all() override;
 
-/**
+        /**
          * Discards cancelable requests and waits other requests to be executed.
          * Blocks until there is no requests to process.
          * All incoming requests during cancel_all() will be also processed.
          */
-        void cancel_all();
+        void cancel_all() override;
 
         /**
          * Stops all incoming requests processing, discards cancelable requests and waits other requests to be executed.
          * Blocks until there is no requests to process.
          */
-        void shutdown();
+        void shutdown() override;
 
         /**
          * Gets operational queue used for requests execution.
          * @return working operational queue pointer
          */
-        std::shared_ptr<OperationalQueue> queue() const;
+        std::shared_ptr<OperationalQueue> get_operational_queue() const;
 
     private:
         void clear(OperationType policy);
@@ -83,6 +78,13 @@ namespace support {
         std::shared_ptr<Impl> _impl;
     };
 
-    std::shared_ptr<OperationalQueue> global_execution_queue();
+    using GlobalQueueExecutor = Provider<std::shared_ptr<QueueExecutor>>;
 }  // namespace support
 
+template<>
+struct default_object<std::shared_ptr<support::QueueExecutor>> {
+    static std::shared_ptr<support::QueueExecutor> get() {
+        return std::make_shared<support::QueueExecutor>(
+                std::make_shared<support::OperationalQueue>());
+    }
+};

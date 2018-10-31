@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
@@ -36,17 +37,10 @@ import java.util.List;
 @RunWith(JUnit4.class)
 public class AnimationTests extends BaseTest {
 
-    private static String RGB_BLACK = "#000000";
-    private static int LIGHTS_COUNT = 4;
-    private static long TIMEOUT_MS = 1000;
+    private static final String RGB_BLACK = "#000000";
+    private static final long TIMEOUT_MS = 1000;
 
     private IFeedbackMessageHandler _messageHandler = new FeedBackHandler();
-
-    private Light _frontLeftLight = null;
-    private Light _frontRightLight = null;
-    private Light _rearLeftLight = null;
-    private Light _rearRightLight = null;
-    private List<Light> _allLights = null;
 
     @Rule
     public ErrorCollector _errorCollector = new ErrorCollector();
@@ -77,49 +71,8 @@ public class AnimationTests extends BaseTest {
     @After
     public void tearDown() {
         threadWaitFor(1000);
-        _bridgeWrapperHelper.cleanUpUser();
+        cleanupUser();
         _hue_stream.ShutDown();
-    }
-
-    private void initializeBridgeResources() {
-        Integer entertainmentGroupId = _bridgeWrapperHelper.getEntertainmentGroupId();
-        List<IBridgeWrapper.ILightID> lights = _bridgeWrapperHelper.getLLCLightsIDs();
-
-        Assert.assertTrue(lights.size() >= LIGHTS_COUNT);
-        if (lights.size() > LIGHTS_COUNT) {
-            lights = lights.subList(0, LIGHTS_COUNT);
-        }
-
-        initializeLights(lights, entertainmentGroupId);
-        _bridge.SelectGroup(entertainmentGroupId.toString());
-    }
-
-    private void initializeLights(List<IBridgeWrapper.ILightID> lights, int entertainmentGroupId) {
-        Assert.assertEquals("Amount of lights is not equal to LIGHTS_COUNT", LIGHTS_COUNT, lights.size());
-
-        _frontLeftLight = new Light(Light.Position.FrontLeft, lights.get(0));
-        _frontRightLight = new Light(Light.Position.FrontRight, lights.get(1));
-        _rearLeftLight = new Light(Light.Position.RearLeft, lights.get(2));
-        _rearRightLight = new Light(Light.Position.RearRight, lights.get(3));
-
-        _allLights = new ArrayList<>();
-        _allLights.add(_frontRightLight);
-        _allLights.add(_frontLeftLight);
-        _allLights.add(_rearRightLight);
-        _allLights.add(_rearLeftLight);
-
-
-        _bridgeWrapperHelper.includeLightsIntoGroup(lights, entertainmentGroupId);
-        _bridgeWrapperHelper.setLightsCoordinates(entertainmentGroupId, lightsAsLightCoordinates());
-    }
-
-    private List<IBridgeWrapper.ILightCoordinate> lightsAsLightCoordinates() {
-        List<IBridgeWrapper.ILightCoordinate> result = new ArrayList<>();
-        for (Light ligth: _allLights) {
-            result.add(ligth.asLightCoordinate());
-        }
-
-        return result;
     }
 
     private void addEffectToEngine(Effect... effects) {
@@ -182,6 +135,7 @@ public class AnimationTests extends BaseTest {
     }
 
     @Test
+    @Ignore("HSDK-2347")
     public void simpleOverallAreaEffect() {
         final AreaEffect effect = new AreaEffect("simpleAreaEffect", 0);
         effect.AddArea(Area.getAll());
@@ -196,6 +150,7 @@ public class AnimationTests extends BaseTest {
     }
 
     @Test
+    @Ignore("HSDK-2347")
     public void twoAreaEffect() {
         final AreaEffect rearLeftPart = new AreaEffect("rearLeft", 1);
         rearLeftPart.AddArea(Area.getBackLeft());
@@ -218,6 +173,7 @@ public class AnimationTests extends BaseTest {
     }
 
     @Test
+    @Ignore("HSDK-2347")
     public void lightSourceEffect() {
         final LightSourceEffect effect = new LightSourceEffect();
         effect.SetColorAnimation(new ConstantAnimation(0.0)
@@ -235,6 +191,7 @@ public class AnimationTests extends BaseTest {
     }
 
     @Test
+    @Ignore("HSDK-2347")
     public void lightIteratorEffect() {
         int OFFSET_DIRATION = 1000;
 
@@ -270,6 +227,7 @@ public class AnimationTests extends BaseTest {
     }
 
     @Test
+    @Ignore("HSDK-2347")
     public void manualEffect() {
         final ManualEffect effect = new ManualEffect();
 

@@ -16,13 +16,13 @@ public:
 
 class MyHandler : public ITimelineStateChangedHandler {
  public:
-    TimelinePtr _timeline;
+    std::weak_ptr<ITimeline> _timeline;
     TimelineState _onTimelineStateChangedState;
     ITimeline* _onTimelineStateChangedTimeline;
     int _eventCount;
 
-    MyHandler(TimelinePtr timeline) {
-        _timeline = timeline;
+    MyHandler(std::weak_ptr<ITimeline> timeline) {
+        _timeline = std::move(timeline);
         _eventCount = 0;
         _onTimelineStateChangedTimeline = nullptr;
     }
@@ -33,7 +33,8 @@ class MyHandler : public ITimelineStateChangedHandler {
 
     void AssertTimelineStateChanged(TimelineState state) {
         ASSERT_EQ(1, _eventCount);
-        ASSERT_EQ(_onTimelineStateChangedTimeline, (ITimeline*)_timeline.get());
+        auto timeline_handle = _timeline.lock();
+        ASSERT_EQ(_onTimelineStateChangedTimeline, timeline_handle.get());
         ASSERT_EQ(_onTimelineStateChangedState, state);
         _eventCount = 0;
     }

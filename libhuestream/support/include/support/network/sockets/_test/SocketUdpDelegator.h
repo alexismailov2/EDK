@@ -25,6 +25,8 @@ namespace support {
          @return The socket delegate
          */
         virtual shared_ptr<SocketUdp> get_delegate(const SocketAddress& address_local) = 0;
+
+        virtual ~SocketUdpDelegatorProvider() = default;
     };
     
     // Default

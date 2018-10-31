@@ -25,7 +25,11 @@ namespace huesdk {
          @param ips a list of ipv4 addresses (e.g. ["192.168.1.1", "10.0.2.34"])
          @param callback each reachable ip will be notified through this callback
          */
-        virtual std::vector<std::string> filter_reachable_ips(std::vector<std::string> ips, const std::atomic<bool> &_stopped_by_user);
+        virtual std::vector<std::string> filter_reachable_ips(
+                std::vector<std::string> ips, const std::atomic<bool> &_stopped_by_user,
+                const std::function<void(const std::string&)>& reachable_ip_found);
+
+        virtual ~BridgeDiscoveryIpscanPreCheck() = default;
 
     private:
         static std::shared_ptr<BridgeDiscoveryIpscanPreCheck> _instance;

@@ -10,9 +10,9 @@
 namespace huestream {
 
 ConnectionFlowFactory::ConnectionFlowFactory(BridgeSettingsPtr bridgeSettings,
-                                                           HttpClientPtr http,
-                                                           MessageDispatcherPtr messageDispatcher,
-                                                           BridgeStorageAccessorPtr storageAccessor) :
+                                             BridgeHttpClientPtr http,
+                                             MessageDispatcherPtr messageDispatcher,
+                                             BridgeStorageAccessorPtr storageAccessor) :
     _bridgeSettings(bridgeSettings),
     _http(http),
     _messageDispatcher(messageDispatcher),

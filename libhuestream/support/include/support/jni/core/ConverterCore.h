@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace huesdk_jni_core {
 
     template<typename T>
@@ -13,6 +15,29 @@ namespace huesdk_jni_core {
 
     template<typename T>
     struct to {
+    };
+
+    template<typename T>
+    struct from_base {
+        using Target = jobject;
+
+        Target value() const { return _value; }
+        operator Target() const { return _value; }  // NOLINT
+
+        Target _value = nullptr;
+    };
+
+    template<typename T>
+    struct to_base {
+        using Target = T;
+
+        Target value() const & { return _value; }
+        operator Target() const & { return _value; }  // NOLINT
+
+        Target value() && { return std::move(_value); }
+        operator Target() && { return std::move(_value); }  // NOLINT
+
+        Target _value = {};
     };
 
     template <typename From, typename To>
@@ -33,11 +58,21 @@ namespace huesdk_jni_core {
 
     template<>
     struct from<void*> {
-        using Type = int64_t;                                              // NOLINT
+        using Target = int64_t;                                              // NOLINT
         template<typename T>
         from<void*>(T *ptr) : _value(reinterpret_cast<int64_t>(ptr)) {}     // NOLINT
-        Type value() const { return _value; }
-        Type _value;
+        Target value() const { return _value; }
+        Target _value;
+    };
+
+    template <>
+    struct to<std::string> : base_converter<jstring, std::string> {
+        explicit to(jobject instance) : base_converter(static_cast<jstring>(instance)) {}
+    };
+
+    template <>
+    struct from<std::string> : base_converter<std::string, jstring> {
+        using base_converter<std::string, jstring>::base_converter;
     };
 
 }  // namespace huesdk_jni_core

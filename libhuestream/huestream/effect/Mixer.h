@@ -8,6 +8,7 @@
 
 #include <huestream/common/data/Group.h>
 #include <huestream/effect/IMixer.h>
+#include <huestream/config/AppSettings.h>
 
 #include <memory>
 #include <mutex>
@@ -19,6 +20,7 @@ namespace huestream {
     protected:
         EffectListPtr _effects;
         GroupPtr _group;
+        bool _retain_color;
 
         void RenderEffects();
 
@@ -34,6 +36,8 @@ namespace huestream {
 
     public:
         Mixer();
+
+        Mixer(AppSettingsPtr appSettings);
 
         virtual ~Mixer();
 

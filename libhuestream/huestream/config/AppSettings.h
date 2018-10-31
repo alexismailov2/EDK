@@ -49,7 +49,7 @@ namespace huestream {
     /**
      set whether the library runs its own renderthread
      @note default true, should be false when the application wants to control the render loop manually
-    */
+     */
     PROP_DEFINE_BOOL(AppSettings, bool, useRenderThread, UseRenderThread);
 
     /**
@@ -93,6 +93,17 @@ namespace huestream {
      @note default 15000 (15 seconds)
      */
     PROP_DEFINE(AppSettings, int, monitorIntervalNotStreamingMs, MonitorIntervalNotStreamingMs);
+
+    /**
+     set the encryption key used to encrypt stored bridge information
+     */
+    PROP_DEFINE(AppSettings, std::string, storageEncryptionKey, StorageEncryptionKey);
+
+    /**
+     set whether the lights retain their last color when no more effects are applied to them
+     @note default false, which means the light turns off when all effects are finished
+     */
+    PROP_DEFINE_BOOL(AppSettings, bool, lightsRetainColor, LightsRetainColor);
     };
 
     /**

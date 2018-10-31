@@ -6,7 +6,7 @@
 
 #include <huestream/HueStream.h>
 #include <huestream/effect/lightscript/LightScript.h>
-#include <huestream/common/http/HttpClient.h>
+#include <huestream/common/http/BridgeHttpClient.h>
 #include <huestream/connect/BridgeFileStorageAccessor.h>
 #include <huestream/connect/BridgeStreamingChecker.h>
 #include <huestream/common/time/TimeManager.h>
@@ -35,14 +35,15 @@ HueStream::HueStream(ConfigPtr config, HttpClientPtr httpClient) :
     HueStream(config,
               httpClient,
               TimeManagerFactory::create(),
-              ConnectionMonitorFactory::create(httpClient, config->GetAppSettings()),
-              MixerFactory::create(),
+              ConnectionMonitorFactory::create(std::make_shared<BridgeHttpClient>(httpClient), config->GetAppSettings()),
+              MixerFactory::create(config->GetAppSettings()),
               BridgeStorageAccessorFactory::create(config->GetAppSettings()->GetBridgeFileName(),
+                                                   config->GetAppSettings(),
                                                    config->GetBridgeSettings()),
               MessageDispatcherFactory::create(),
               MessageTranslatorFactory::create(config->GetAppSettings()->GetLanguage()),
               ConnectorFactory::create(config),
-              GroupControllerFactory::create(httpClient)
+              GroupControllerFactory::create(std::make_shared<BridgeHttpClient>(httpClient))
     ) {}
 
 HueStream::HueStream(ConfigPtr config,
@@ -90,11 +91,11 @@ HueStream::HueStream(ConfigPtr config,
               connector,
               groupController,
               stream,
-              ConnectFactory::create(httpClient, dispatcher, config->GetBridgeSettings(), config->GetAppSettings(), stream, storageAccessor)) {
+              ConnectFactory::create(std::make_shared<BridgeHttpClient>(httpClient), dispatcher, config->GetBridgeSettings(), config->GetAppSettings(), stream, storageAccessor)) {
 }
 
 HueStream::HueStream(ConfigPtr config,
-                     HttpClientPtr httpClient,
+                     HttpClientPtr /* httpClient */,
                      TimeManagerPtr timeManager,
                      ConnectionMonitorPtr connectionMonitor,
                      MixerPtr mixer,
@@ -106,7 +107,6 @@ HueStream::HueStream(ConfigPtr config,
                      StreamPtr stream,
                      ConnectPtr connect):
     _config(std::move(config)),
-    _httpClient(std::move(httpClient)),
     _connectionMonitor(std::move(connectionMonitor)),
     _knownBridges(std::make_shared<BridgeList>()),
     _groupController(std::move(groupController)),
@@ -115,13 +115,14 @@ HueStream::HueStream(ConfigPtr config,
     _storageAccessor(std::move(storageAccessor)),
     _dispatcher(std::move(dispatcher)),
     _translator(std::move(translator)),
-    _timeManager(std::move(timeManager)),
+    _timeManager(timeManager),
     _connector(std::move(connector)),
     _stream(std::move(stream)),
     _connect(std::move(connect)),
-    _mixer(std::move(mixer)) {
+    _mixer(std::move(mixer)),
+    _timeProvider(std::move(timeManager)) {
     FeedbackMessage::SetTranslator(_translator);
-    TimeProviderProvider::set(_timeManager);
+
     Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(_config->GetBridgeSettings()));
 
     _connectionMonitor->SetFeedbackMessageCallback([this](const FeedbackMessage &message) {

@@ -8,6 +8,7 @@
 #include <huestream/effect/animation/animations/RandomAnimation.h>
 #include <huestream/effect/animation/animations/SequenceAnimation.h>
 #include <huestream/effect/animation/animations/TweenAnimation.h>
+#include <huestream/effect/animation/animations/FramesAnimation.h>
 #include <huestream/common/data/Scene.h>
 #include <huestream/common/data/Light.h>
 #include <huestream/common/data/Group.h>
@@ -37,6 +38,7 @@ std::shared_ptr<Serializable> ObjectBuilder::ConstructInstanceOf(std::string typ
     if (type == RandomAnimation::type) return std::make_shared<RandomAnimation>();
     if (type == SequenceAnimation::type) return std::make_shared<SequenceAnimation>();
     if (type == TweenAnimation::type) return std::make_shared<TweenAnimation>();
+    if (type == FramesAnimation::type) return std::make_shared<FramesAnimation>();
     if (type == Light::type) return std::make_shared<Light>();
     if (type == Color::type) return std::make_shared<Color>();
     if (type == Location::type) return std::make_shared<Location>();

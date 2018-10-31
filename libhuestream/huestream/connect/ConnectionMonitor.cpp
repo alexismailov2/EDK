@@ -19,6 +19,7 @@ ConnectionMonitor::ConnectionMonitor(BridgeStateCheckerPtr bridgeStateChecker) :
 void ConnectionMonitor::Start(BridgePtr bridge, int interval_msec) {
     Stop();
 
+    std::unique_lock<std::mutex> lk(_mutex);
     _running = true;
     _bridge = bridge;
     _interval_msec = interval_msec;
@@ -36,16 +37,21 @@ void ConnectionMonitor::MonitorThread() {
 }
 
 void ConnectionMonitor::Stop() {
-    if (!_running) {
-        return;
+    std::shared_ptr<std::thread> monitorThread;
+    {
+        std::unique_lock<std::mutex> lk(_mutex);
+        if (!_running) {
+            return;
+        }
+
+        _running = false;
+        _cv.notify_all();
+        monitorThread.swap(_monitorThread);
     }
 
-    _running = false;
-    _cv.notify_all();
-
-    if (_monitorThread != nullptr) {
-        _monitorThread->join();
-        _monitorThread = nullptr;
+    if (monitorThread != nullptr) {
+        monitorThread->join();
+        monitorThread = nullptr;
     }
 }
 void ConnectionMonitor::SetFeedbackMessageCallback(std::function<void(const huestream::FeedbackMessage &)> callback) {

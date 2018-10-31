@@ -226,28 +226,33 @@ class Bridge : public Serializable {
     std::shared_ptr<Bridge> Clone() const;
 
     /**
+     enable HTTPS on the bridge
+     */
+    void EnableSsl();
+
+    /**
      check if bridge version supports HTTPS
      */
     bool IsSupportingHttps() const;
 
-
 PROP_DEFINE(Bridge, BridgeSettingsPtr, bridgeSettings, BridgeSettings);
- PROP_DEFINE(Bridge, std::string, name, Name);
- PROP_DEFINE(Bridge, std::string, modelId, ModelId);
- PROP_DEFINE(Bridge, std::string, apiversion, Apiversion);
- PROP_DEFINE(Bridge, std::string, id, Id);
- PROP_DEFINE(Bridge, std::string, ipAddress, IpAddress);
- PROP_DEFINE(Bridge, std::string, tcpPort, TcpPort);
- PROP_DEFINE(Bridge, std::string, sslPort, SslPort);
- PROP_DEFINE_BOOL(Bridge, bool, isValidIp, IsValidIp);
- PROP_DEFINE_BOOL(Bridge, bool, isAuthorized, IsAuthorized);
- PROP_DEFINE_BOOL(Bridge, bool, isBusy, IsBusy);
- PROP_DEFINE(Bridge, std::string, clientKey, ClientKey);
- PROP_DEFINE(Bridge, std::string, user, User);
- PROP_DEFINE(Bridge, GroupListPtr, groups, Groups);
- PROP_DEFINE(Bridge, std::string, selectedGroup, SelectedGroup);
- PROP_DEFINE(Bridge, int, maxNoStreamingSessions, MaxNoStreamingSessions);
- PROP_DEFINE_GET(Bridge, bool, isUsingSsl, IsUsingSsl);
+PROP_DEFINE(Bridge, std::string, name, Name);
+PROP_DEFINE(Bridge, std::string, modelId, ModelId);
+PROP_DEFINE(Bridge, std::string, apiversion, Apiversion);
+PROP_DEFINE(Bridge, std::string, id, Id);
+PROP_DEFINE(Bridge, std::string, ipAddress, IpAddress);
+PROP_DEFINE(Bridge, std::string, tcpPort, TcpPort);
+PROP_DEFINE(Bridge, std::string, sslPort, SslPort);
+PROP_DEFINE_BOOL(Bridge, bool, isValidIp, IsValidIp);
+PROP_DEFINE_BOOL(Bridge, bool, isAuthorized, IsAuthorized);
+PROP_DEFINE_BOOL(Bridge, bool, isBusy, IsBusy);
+PROP_DEFINE(Bridge, std::string, clientKey, ClientKey);
+PROP_DEFINE(Bridge, std::string, user, User);
+PROP_DEFINE(Bridge, GroupListPtr, groups, Groups);
+PROP_DEFINE(Bridge, std::string, selectedGroup, SelectedGroup);
+PROP_DEFINE(Bridge, int, maxNoStreamingSessions, MaxNoStreamingSessions);
+PROP_DEFINE_GET(Bridge, bool, isUsingSsl, IsUsingSsl);
+PROP_DEFINE(Bridge, std::string, certificate, Certificate);
 
  protected:
     virtual void SerializeBase(JSONNode *node) const;

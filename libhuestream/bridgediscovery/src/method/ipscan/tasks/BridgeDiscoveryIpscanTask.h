@@ -5,15 +5,16 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
 #include <memory>
+#include <vector>
+
+#include "events/IBridgeDiscoveryEventNotifier.h"
+#include "events/BridgeDiscoveryTaskEventsData.h"
+#include "method/BridgeDiscoveryMethodUtil.h"
 
 #include "support/threading/Job.h"
 #include "support/threading/QueueExecutor.h"
-
-#include "tasks/BridgeDiscoveryCheckIpArrayTask.h"
-#include "method/BridgeDiscoveryMethodUtil.h"
+#include "support/util/Uuid.h"
 
 using Task = support::JobTask;
 
@@ -21,7 +22,9 @@ namespace huesdk {
 
     class BridgeDiscoveryIpscanTask : public Task {
     public:
-        BridgeDiscoveryIpscanTask();
+        BridgeDiscoveryIpscanTask(
+                const boost::uuids::uuid& request_id,
+                const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier);
 
         /**
          @see Job.h
@@ -43,6 +46,7 @@ namespace huesdk {
         std::vector<std::shared_ptr<BridgeDiscoveryResult>> _results;
         support::QueueExecutor _executor;
         std::atomic<bool> _stopped_by_user;
+        BridgeDiscoveryTaskEventsData _task_events_data;
     };
 
 }  // namespace huesdk

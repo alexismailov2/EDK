@@ -13,7 +13,7 @@
 
 namespace huestream {
 
-        BasicGroupLightController::BasicGroupLightController(HttpClientPtr http) : _http(http), _bridge(nullptr) {
+        BasicGroupLightController::BasicGroupLightController(BridgeHttpClientPtr http) : _http(http), _bridge(nullptr) {
         }
 
         std::map<BasicGroupLightController::LightPreset, std::tuple<double, double, double>> BasicGroupLightController::_presetSettingsMap = {
@@ -125,10 +125,8 @@ namespace huestream {
         }
 
         void BasicGroupLightController::httpPut(const std::string & url, const JSONNode & actionNode) {
-            _request = _http->CreateHttpRequest(url);
-            _request->set_verify_ssl(false);
             auto body = actionNode.write();
-            _request->do_put(body, [&](const support::HttpRequestError &error, const support::IHttpResponse &response) {});
+            _http->ExecuteHttpRequest(_bridge, HTTP_REQUEST_PUT, url, body, {});
         }
 
 }  // namespace huestream

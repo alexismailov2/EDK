@@ -33,8 +33,6 @@ namespace support {
         #ifdef ANDROID
         
         // time_t is signed on android
-        static const time_t time_max = ~(1L << (sizeof(time_t) * CHAR_BIT - 1));
-        static const time_t time_min =  (1L << (sizeof(time_t) * CHAR_BIT - 1));
        
         #if defined(__LP64__)
             #ifdef ARMEABI_V7A
@@ -44,12 +42,15 @@ namespace support {
             #endif
         #else
             time64_t result = timegm64(time_struct);
+
+            static const time_t time_max = ~(1L << (sizeof(time_t) * CHAR_BIT - 1));
+            static const time_t time_min =  (1L << (sizeof(time_t) * CHAR_BIT - 1));
+
+            if (result < time_min || result > time_max) {
+                // Invalid time struct
+                return -1;
+            }
         #endif
-       
-        if (result < time_min || result > time_max) {
-            // Invalid time struct
-            return -1;
-        }
         
         return result;
         

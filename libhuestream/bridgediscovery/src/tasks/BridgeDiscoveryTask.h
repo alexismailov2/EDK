@@ -50,12 +50,6 @@ namespace huesdk {
         void start_next_search_method();
 
         /**
-         Filters out already existing results from the input and runs BridgeDiscoveryCheckIpArrayTask with new results
-         @param discovery_results discovery method results to be checked
-         */
-        void perform_ip_check_and_continue(const std::vector<std::shared_ptr<BridgeDiscoveryResult>> &discovery_results);
-
-        /**
          Saves discovery results to result map. Pops current discovery result from the queue.
          @param discovery_results discovery method results to be processed
          */

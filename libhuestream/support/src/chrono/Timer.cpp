@@ -6,13 +6,15 @@
 #include <chrono>
 
 #include "support/chrono/Timer.h"
+#include "support/threading/Thread.h"
 
 using std::unique_lock;
 using std::chrono::milliseconds;
 
 namespace support {
             
-    Timer::Timer(unsigned int interval_ms, TimerEvent event) : _running(false),
+    Timer::Timer(unsigned int interval_ms, TimerEvent event) : _ticker_thread(new support::Thread),
+                                                               _running(false),
                                                                _interval_ms(interval_ms),
                                                                _recurring(false),
                                                                _fire_event_on_start(false),
@@ -20,6 +22,7 @@ namespace support {
                                                                _event(event) { }
     
     Timer::Timer(unsigned int interval_ms, TimerEvent event, bool recurring, bool fire_event_on_start) :
+                                                                               _ticker_thread(new support::Thread),
                                                                                _running(false),
                                                                                _interval_ms(interval_ms),
                                                                                _recurring(recurring),
@@ -44,7 +47,7 @@ namespace support {
         unique_lock<mutex> running_lock(_running_mutex);
     
         if (!_running) {
-            _ticker_thread = Thread([this] () {
+            _ticker_thread = std::make_unique<support::Thread>([this] () {
                 if (!_stop
                     && _fire_event_on_start) {
                     _event();
@@ -91,7 +94,7 @@ namespace support {
         }
 
         // Join the ticker thread until it's closed
-        _ticker_thread.join();
+        _ticker_thread->join();
     }
     
 }  // namespace support

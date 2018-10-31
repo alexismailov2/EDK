@@ -4,6 +4,7 @@
  ********************************************************************************/
 
 #include <mbedtls/x509_crt.h>
+#include <mbedtls/oid.h>
 
 #include <regex>
 
@@ -62,6 +63,22 @@ namespace support {
         mbedtls_x509_crt_free(&cert2);
 
         return equal;
+    }
+
+    bool X509Certificate::check_common_name(const mbedtls_x509_crt* cert, const std::string& common_name) {
+        const mbedtls_asn1_named_data* name = &cert->subject;
+
+        while (name != nullptr) {
+            if (MBEDTLS_OID_CMP(MBEDTLS_OID_AT_CN, &name->oid) == 0) {
+                if (name->val.len == common_name.size()) {
+                    if (memcmp(name->val.p, common_name.c_str(), common_name.size()) == 0) {
+                        return true;
+                    }
+                }
+            }
+            name = name->next;
+        }
+        return false;
     }
 
 }  // namespace support

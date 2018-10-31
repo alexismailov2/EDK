@@ -5,15 +5,18 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 #include <memory>
-#include <string>
 
 #include "support/threading/Job.h"
 #include "support/chrono/Timer.h"
+#include "support/util/Uuid.h"
 
 #include "BridgeDiscoveryUpnpListenTask.h"
 #include "BridgeDiscoveryUpnpSendTask.h"
+#include "events/BridgeDiscoveryEvents.h"
+#include "events/BridgeDiscoveryTaskEventsData.h"
 #include "method/BridgeDiscoveryMethodUtil.h"
 
 using Task = support::JobTask;
@@ -25,7 +28,9 @@ namespace huesdk {
 
     class BridgeDiscoveryUpnpTask : public Task {
     public:
-        BridgeDiscoveryUpnpTask();
+        BridgeDiscoveryUpnpTask(
+                const boost::uuids::uuid& request_id,
+                const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier);
 
         /**
          @see Job.h
@@ -50,13 +55,15 @@ namespace huesdk {
          */
         void start_listen_task();
 
-        std::string _listen_result;
+        std::string _unparsed_listen_result;
         // Timer has to be destroyed before socket to prevent data race between timer event lambda and socket destruction
         std::unique_ptr<SOCKET_UDP> _socket;
         std::unique_ptr<support::Timer> _timeout_timer;
         std::shared_ptr<support::Job<BridgeDiscoveryUpnpSendTask>> _send_job;
-        std::vector<std::shared_ptr<BridgeDiscoveryResult>> _results;
+        std::vector<std::shared_ptr<BridgeDiscoveryResult>> _unfiltered_results;
+        std::vector<std::shared_ptr<BridgeDiscoveryResult>> _filtered_results;
         CompletionHandler _done;
+        BridgeDiscoveryTaskEventsData _task_events_data;
     };
 
 }  // namespace huesdk

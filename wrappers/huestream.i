@@ -17,15 +17,27 @@
 %{
 #ifdef ANDROID
 #  include "support/jni/SDKSupportJNI.h"
+#  include "support/jni/core/JNIEnvFactory.h"
 #endif
 %}
 %{
 
 #ifdef ANDROID
+using huesdk_jni_core::JNIEnvFactory;
+
+JavaVM* JNIEnvFactory::JVM = nullptr;
+
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
   support::jni::init(vm);
-  return JNI_VERSION_1_6;
+  JNIEnvFactory::JVM = vm;
+  
+  JNIEnvFactory::Create();
+  return JNIEnvFactory::JNIVersion;
+}
+
+void JNI_OnUnload(JavaVM* vm, void* reserved) {
+  JNIEnvFactory::JVM = nullptr;
 }
 #endif
 %}
@@ -39,10 +51,10 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 #if defined(SWIGCSHARP)
   %include "csharp/std_shared_ptr_upcast.i" // Customized shared_ptr for upcasting support for Serializable classes
   //%include <std_shared_ptr.i> // Fallback standard shared_ptr if you have trouble with upcasting
-#endif
-
-#if defined(SWIGJAVA)
+#elif defined(SWIGJAVA)
   %include <java/std_shared_ptr_patched.i> // Customized shared_ptr for fixing shared_ptr derived delegators
+#else
+  %include <std_shared_ptr.i>
 #endif
 
 
@@ -112,6 +124,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 %shared_ptr(huestream::TriggerableAnimation)
 %shared_ptr(huestream::SequenceAnimation)
 %shared_ptr(huestream::TweenAnimation)
+%shared_ptr(huestream::FramesAnimation)
 %shared_ptr(huestream::Effect)
 %shared_ptr(huestream::AnimationEffect)
 %shared_ptr(std::vector<std::shared_ptr<huestream::AnimationEffect>>)
@@ -158,9 +171,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
   //%typemap(csdirectorin) std::shared_ptr<huestream::LightSourceEffect> "new LightSourceEffect($iminput, true)"
   //%typemap(csdirectorout) std::shared_ptr<huestream::AnimationList> "AnimationVector.getCPtr($cscall).Handle"
   //%feature("director") huestream::LightSourceEffect;
-#endif
-
-#if defined(SWIGJAVA)
+  
+#elif defined(SWIGJAVA)
   //IFeedbackMessageHandler supports Java inheritance
   %feature("director") huestream::IFeedbackMessageHandler;
   
@@ -183,6 +195,10 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 //    }
 //    $result = *tmp;
 //  %}
+
+#else
+    %feature("director") huestream::IFeedbackMessageHandler;
+
 #endif
 
 //----------------------------------------------------
@@ -208,8 +224,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 #include <huestream/common/data/BridgeSettings.h>
 #include <huestream/common/data/Bridge.h>
 #include <huestream/common/data/HueStreamData.h>
-#include <huestream/common/http/IHttpClient.h>
-#include <huestream/common/http/HttpClient.h>
+#include <huestream/common/http/IBridgeHttpClient.h>
+#include <huestream/common/http/BridgeHttpClient.h>
 #include <huestream/common/storage/FileStorageAccessor.h>
 #include <huestream/connect/FeedbackMessage.h>
 #include <huestream/connect/IBasicGroupLightController.h>
@@ -244,6 +260,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 #include <huestream/effect/animation/animations/RandomAnimation.h>
 #include <huestream/effect/animation/animations/SequenceAnimation.h>
 #include <huestream/effect/animation/animations/TweenAnimation.h>
+#include <huestream/effect/animation/animations/FramesAnimation.h>
 #include <huestream/effect/animation/data/Channel.h>
 #include <huestream/effect/effects/base/Effect.h>
 #include <huestream/effect/effects/base/AnimationEffect.h>
@@ -353,8 +370,8 @@ using namespace huestream;
 %include <huestream/common/data/HueStreamData.h>
 %attribute(huestream::HueStreamData, BridgeListPtr, Bridges, GetBridges, SetBridges);
 
-%include <huestream/common/http/IHttpClient.h>
-%include <huestream/common/http/HttpClient.h>
+%include <huestream/common/http/IBridgeHttpClient.h>
+%include <huestream/common/http/BridgeHttpClient.h>
 
 %include <huestream/common/storage/IStorageAccessor.h>
 %include <huestream/common/storage/FileStorageAccessor.h>
@@ -428,6 +445,8 @@ namespace huestream {
     %attribute(huestream::TweenAnimation, double, Time, GetTime, SetTime);
     %attribute(huestream::TweenAnimation, bool, IsBeginValuePresent, BeginValuePresent, SetBeginValuePresent);
     %attribute(huestream::TweenAnimation, TweenType, TweenType, GetTweenType, SetTweenType);
+
+%include <huestream/effect/animation/animations/FramesAnimation.h>
 
 %include <huestream/effect/animation/animations/base/TriggerableAnimation.h>
 %include <huestream/effect/animation/animations/SequenceAnimation.h>

@@ -30,6 +30,7 @@
 #include "huestream/effect/lightscript/LightScript.h"
 #include "huestream/HueStreamFactories.h"
 #include "support/util/Factory.h"
+#include "huestream/common/time/TimeProviderProvider.h"
 
 namespace huestream {
 
@@ -425,7 +426,6 @@ class HueStream : public IHueStream {
     ConfigPtr _config;
     FeedbackMessageHandlerPtr _handler;
     FeedbackMessageCallback _callback;
-    HttpClientPtr _httpClient;
     ConnectionMonitorPtr _connectionMonitor;
     BridgeListPtr _knownBridges;
     BasicGroupLightControllerPtr _groupController;
@@ -443,6 +443,7 @@ class HueStream : public IHueStream {
     StreamPtr _stream;
     ConnectPtr _connect;
     MixerPtr _mixer;
+    ScopedTimeProviderProvider _timeProvider;
 };
 
 }  // namespace huestream

@@ -13,55 +13,49 @@
 #endif
 #include "JObjectFactory.h"
 
+#include "ConverterCore.h"
+
 namespace huesdk_jni_core {
 
     template<typename T>
-    struct from<T*> {
-        using Type = jobject;
-        from<T*>(T *value, bool takeOwnership) {
-            _value = create_jobject(value, takeOwnership);
+    struct from<T*> : from_base<T*> {
+        from(T* value, bool takeOwnership) {
+            this->_value = create_jobject(value, takeOwnership);
         }
-        Type value() const { return _value; }
-        operator Type() const { return _value; }
-        Type _value;
     };
 
     template<typename T>
-    struct to<T*> {
-        using Type = T*;
-        to<T*>(jobject value) {
-            _value = get_reference<T>(value);
+    struct to<T*> : to_base<T*> {
+        explicit to(jobject value) {
+            this->_value = get_reference<T>(value);
         }
-        Type value() const { return _value; }
-        operator Type() const { return _value; }
-        Type _value;
     };
 
     template<typename T>
     struct from_base_object {
-        using Type = jobject;
+        using Target = jobject;
         from_base_object<T>(const T& value) {
             _value = create_jobject(std::make_shared<T>(value));
         }
-        Type value() const { return _value; }
-        operator Type() const { return _value; }
-        Type _value;
+        Target value() const { return _value; }
+        operator Target() const { return _value; }
+        Target _value;
     };
 
     template<typename T>
     struct to_base_object {
-        using Type = T;
+        using Target = T;
         to_base_object<T>(jobject value) {
             _value = get_reference<T>(value);
         }
-        const Type& value() const { return *_value; }
-        operator const Type&() const { return *_value; }
-        Type* _value = nullptr;
+        const Target& value() const { return *_value; }
+        operator const Target&() const { return *_value; }
+        Target* _value = nullptr;
     };
 
     template<typename T>
     struct to_base_enum {
-        using Type = T;
+        using Target = T;
         to_base_enum <T>(jobject value) {
             auto env = JNIEnvFactory::Create();
             const auto to_string = env->GetMethodID(EnumInfo<T>::Class, "toString", "()Ljava/lang/String;");
@@ -86,14 +80,14 @@ namespace huesdk_jni_core {
                 std::terminate();
             }
         }
-        const Type& value() const { return _value; }
-        operator const Type&() const { return _value; }
-        Type _value;
+        const Target& value() const { return _value; }
+        operator const Target&() const { return _value; }  // NOLINT
+        Target _value;
     };
 
     template<typename T>
     struct from_base_enum {
-        using Type = jobject;
+        using Target = jobject;
         from_base_enum<T>(const T& value) {
             const auto& item = EnumInfo<T>::Mapping[value];
             if (item.size()) {
@@ -108,9 +102,9 @@ namespace huesdk_jni_core {
                 std::terminate();
             }
         }
-        Type value() const { return _value; }
-        operator Type() const { return _value; }
-        Type _value = nullptr;
+        Target value() const { return _value; }
+        operator Target() const { return _value; }
+        Target _value = nullptr;
     };
 
 }  // namespace huesdk_jni_core

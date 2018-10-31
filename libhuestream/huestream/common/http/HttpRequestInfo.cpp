@@ -6,6 +6,7 @@
 #include <huestream/common/http/HttpRequestInfo.h>
 
 #include <string>
+#include <support/network/http/HttpRequestConst.h>
 
 namespace huestream {
 
@@ -21,8 +22,14 @@ HttpRequestInfo::HttpRequestInfo(std::string method, std::string url, std::strin
     _statusCode(0),
     _token(""),
     _roundTripTime(0),
-    _isFinished(false),
-    _enableSslVerification(true) {
+    _isReady(false),
+    _isRunning(false),
+    _enableSslVerification(true),
+    _connectTimeout(support::HTTP_CONNECT_TIMEOUT),
+    _receiveTimeout(support::HTTP_RECEIVE_TIMEOUT),
+    _requestTimeout(support::HTTP_REQUEST_TIMEOUT),
+    _enableLogging(true),
+    _securityLevel(support::HTTP_REQUEST_SECURITY_LEVEL_LOW) {
 }
 
 PROP_IMPL(HttpRequestInfo, std::string, url, Url);
@@ -33,35 +40,46 @@ PROP_IMPL(HttpRequestInfo, std::string, response, Response)
 PROP_IMPL(HttpRequestInfo, uint32_t, statusCode, StatusCode)
 PROP_IMPL(HttpRequestInfo, std::string, token, Token);
 PROP_IMPL(HttpRequestInfo, HttpRequestInfoCallback, callback, Callback);
-PROP_IMPL(HttpRequestInfo, uint32_t, roundTripTime, RoundTripTime)
-PROP_IMPL(HttpRequestInfo, bool, enableSslVerification, EnableSslVerification);
+PROP_IMPL(HttpRequestInfo, uint32_t, roundTripTime, RoundTripTime);
+PROP_IMPL(HttpRequestInfo, int, connectTimeout, ConnectTimeout);
+PROP_IMPL(HttpRequestInfo, int, receiveTimeout, ReceiveTimeout);
+PROP_IMPL(HttpRequestInfo, int, requestTimeout, RequestTimeout);
+PROP_IMPL_BOOL(HttpRequestInfo, bool, enableLogging, LoggingEnabled);
+PROP_IMPL(HttpRequestInfo, support::HttpRequestSecurityLevel, securityLevel, SecurityLevel);
+PROP_IMPL_BOOL(HttpRequestInfo, bool, enableSslVerification, SslVerificationEnabled);
+PROP_IMPL(HttpRequestInfo, std::string, expectedCommonName, ExpectedCommonName);
+PROP_IMPL(HttpRequestInfo, std::vector<std::string>, trustedCertificates, TrustedCertificates);
 
-    void HttpRequestInfo::WaitUntilReady() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        _condition.wait(lock, [this]() -> bool { return _isFinished; });
-        _isFinished = false;
-    }
+void HttpRequestInfo::WaitUntilReady() {
+    std::unique_lock<std::mutex> lock(_mutex);
+    _condition.wait(lock, [this]() -> bool { return _isReady; });
+}
 
-    bool HttpRequestInfo::IsReady() {
-        bool result = false;
-        std::unique_lock<std::mutex> lock(_mutex);
-        result = _isFinished;
-        return result;
-    }
+bool HttpRequestInfo::IsReady() {
+    std::unique_lock<std::mutex> lock(_mutex);
+    return _isReady;
+}
 
 void HttpRequestInfo::FinishRequest() {
     std::unique_lock<std::mutex> lock(_mutex);
-    _isFinished = true;
+    _isReady = true;
+    _isRunning = false;
     _condition.notify_all();
     lock.unlock();
     if (_callback != nullptr) {
         _callback();
     }
 }
-void HttpRequestInfo::StartRequest() {
+
+bool HttpRequestInfo::StartRequest() {
     std::unique_lock<std::mutex> lock(_mutex);
-    _isFinished = false;
-    lock.unlock();
+    if (_isRunning) {
+        return false;
+    } else {
+        _isRunning = true;
+        _isReady = false;
+        return true;
+    }
 }
 
 }  // namespace huestream

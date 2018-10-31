@@ -13,6 +13,8 @@
 
 using namespace huestream;
 
+constexpr static auto PERSISTENCE_ENCRYPTION_KEY = "encryption_key";
+
 struct CommandLineArguments {
     bool dontMeasure;
     string bridgeIpAddress;
@@ -25,7 +27,7 @@ struct CommandLineArguments {
 static shared_ptr<HueStream> _huestream;
 
 void InitializeHueStream(int framesPerSecond) {
-    auto config = std::make_shared<Config>("huestream_performance_test", "Windows");
+    auto config = std::make_shared<Config>("huestream_performance_test", "Windows", PersistenceEncryptionKey(PERSISTENCE_ENCRYPTION_KEY));
     config->GetStreamSettings()->SetUpdateFrequency(framesPerSecond);
     //Get HueStream instance to work with ...
     _huestream = std::make_shared<HueStream>(config);

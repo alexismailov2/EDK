@@ -12,6 +12,7 @@
 #include <huestream/connect/IConnectionFlowFactory.h>
 #include <huestream/connect/IConnectionFlow.h>
 #include <huestream/connect/IBridgeSearcher.h>
+#include <support/scheduler/Scheduler.h>
 
 #include <memory>
 #include <string>
@@ -58,6 +59,13 @@ class ConnectionFlow: public IConnectionFlow {
     ConnectionFlowState GetState() override;
 
  protected:
+    struct AuthenticationProcessInfo {
+        AuthenticationProcessInfo() : AuthenticationProcessInfo(-1) {}
+        explicit AuthenticationProcessInfo(int _bridgeNumber) : failedTries(0), bridgeNumber(_bridgeNumber) {}
+        int failedTries;
+        int bridgeNumber;
+    };
+
     void DoLoad();
 
     void DoConnectToBridge();
@@ -130,6 +138,8 @@ class ConnectionFlow: public IConnectionFlow {
 
     void Finish();
 
+    void SchedulerPushlinkTimedOut(BridgePtr bridge);
+
     ConnectionFlowFactoryPtr _factory;
     AppSettingsPtr _appSettings;
     BridgeSettingsPtr _bridgeSettings;
@@ -145,6 +155,8 @@ class ConnectionFlow: public IConnectionFlow {
     FeedbackMessageCallback _feedbackMessageCallback;
     HueStreamDataPtr _persistentData;
     BridgePtr _bridgeStartState;
+    std::map<BridgePtr, AuthenticationProcessInfo> _authenticationProcessesInfo;
+    std::unique_ptr<support::Scheduler> _scheduler;
 };
 }  // namespace huestream
 

@@ -2,6 +2,8 @@ package com.lighting.huestream.tests.integration;
 
 import com.lighting.huestream.FeedbackMessage;
 
+import org.junit.Assert;
+
 public class FeedbackMessageObserver extends FeedBackHandler {
     @Override
     public synchronized void NewFeedbackMessage(FeedbackMessage message) {
@@ -22,6 +24,15 @@ public class FeedbackMessageObserver extends FeedBackHandler {
 
     public boolean wasReceived() {
         return _wasReceived;
+    }
+
+    public synchronized void waitForMessage(int timeout) {
+        try {
+            super.wait(timeout);
+            Assert.assertTrue("Wait timeout for message " + _idToListen, this.wasReceived());
+        } catch (InterruptedException e) {
+            Assert.fail("Waiting was interrupted");
+        }
     }
 
     private boolean _isListening = false;

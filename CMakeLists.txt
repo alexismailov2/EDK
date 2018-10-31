@@ -171,6 +171,10 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 
+    # Parallel build
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+
     # RTTI support
     if (NOT BUILD_WITH_RTTI)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -GR-")

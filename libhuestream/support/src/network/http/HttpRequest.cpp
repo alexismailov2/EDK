@@ -26,15 +26,11 @@ namespace support {
     static std::shared_ptr<IHttpClient>                 _client_instance;
 
 
-    static std::shared_ptr<IHttpClient> get_default_http_client() {
+    std::shared_ptr<IHttpClient> HttpRequest::get_default_http_client() {
         std::lock_guard<std::mutex> lk(_instance_mutex);
 
         if (!_client_instance) {
-#ifdef OBJC_HTTP_CLIENT
-            _client_instance.reset(new ObjcHttpClient);
-#else
-            _client_instance.reset(new CurlHttpClient);
-#endif
+            reset_http_client_internal();
         }
 
         return _client_instance;
@@ -43,6 +39,19 @@ namespace support {
     void HttpRequest::set_http_client(const std::shared_ptr<IHttpClient>& client) {
         std::lock_guard<std::mutex> lk(_instance_mutex);
         _client_instance = client;
+    }
+
+    void HttpRequest::reset_http_client() {
+        std::lock_guard<std::mutex> lk(_instance_mutex);
+        reset_http_client_internal();
+    }
+
+    void HttpRequest::reset_http_client_internal() {
+#ifdef OBJC_HTTP_CLIENT
+        _client_instance.reset(new ObjcHttpClient);
+#else
+        _client_instance.reset(new CurlHttpClient);
+#endif
     }
 
     std::shared_ptr<IHttpClient> HttpRequest::get_http_client() {

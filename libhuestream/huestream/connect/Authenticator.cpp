@@ -16,7 +16,10 @@ namespace huestream {
 
 #define CLIP_ERROR_TYPE_PARAMETER_NOT_AVAILABLE 6
 
-        void Authenticator::Authenticate(BridgePtr bridge, AppSettingsPtr appSettings, AutenticateCallbackHandler cb) {
+        Authenticator::Authenticator(BridgeHttpClientPtr http) : _http(http) {
+        }
+
+        void Authenticator::Authenticate(BridgePtr bridge, AppSettingsPtr appSettings, AuthenticateCallbackHandler cb) {
             std::string url = bridge->GetApiRootUrl();
             std::string data;
 
@@ -30,14 +33,12 @@ namespace huestream {
                 data = "{\"devicetype\": \"" + deviceType + "\"}";
             }
 
-            auto req = std::make_shared<HttpRequestInfo>(HTTP_REQUEST_POST, url, data);
-            req->SetEnableSslVerification(false);
-            _http->Execute(req);
+            auto request = _http->ExecuteHttpRequest(bridge, HTTP_REQUEST_POST, url, data);
 
-            if (!req->GetSuccess()) {
+            if (!request->GetSuccess()) {
                 bridge->SetIsValidIp(false);
             } else {
-                auto response = req->GetResponse();
+                auto response = request->GetResponse();
                 if (!libjson::is_valid(response)) {
                     bridge->SetIsValidIp(false);
                 } else {
@@ -54,9 +55,6 @@ namespace huestream {
         }
 
         void Authenticator::Abort() {}
-
-        Authenticator::Authenticator(HttpClientPtr http) : _http(http) {
-        }
 
         std::string Authenticator::CreateDeviceType(AppSettingsPtr appSettings) {
             auto appName = appSettings->GetAppName();

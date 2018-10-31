@@ -10,8 +10,8 @@ All Rights Reserved.
 
 #include "support/network/http/IHttpResponse.h"
 #include "support/network/http/HttpRequestError.h"
-#include "support/std/types/File.h"
-#include "support/threading/ThreadPool.h"
+#include "support/util/File.h"
+#include "support/threading/ThreadPoolExecutor.h"
 
 namespace support {
     class HttpRequest;
@@ -20,7 +20,7 @@ namespace support {
     public:
         class IRequestInfo {
         public:
-            virtual ~IRequestInfo() {}
+            virtual ~IRequestInfo() = default;
             virtual HttpRequest* get_request() = 0;
             virtual int retry_countdown() = 0;
         };
@@ -36,6 +36,7 @@ namespace support {
         struct HttpErrorPostAction {
             HttpErrorPostActionType type;
             std::chrono::milliseconds delay = std::chrono::milliseconds{0};
+            unsigned int min_retries = 0;
         };
 
         enum class RequestType {
@@ -51,7 +52,7 @@ namespace support {
          @param response the http response from the server
          @param request_info can be used to execute the same request again, by calling add(request_info)
          */
-        using Callback = function<void(const support::HttpRequestError& error, const IHttpResponse& response, std::shared_ptr<support::HttpRequestExecutor::IRequestInfo> request_info)>;
+        using Callback = std::function<void(const support::HttpRequestError& error, const IHttpResponse& response, std::shared_ptr<support::HttpRequestExecutor::IRequestInfo> request_info)>;
 
         using HttpErrorDelegate = std::function<HttpErrorPostAction(support::HttpRequestError& error, const IHttpResponse& response, const std::shared_ptr<IRequestInfo>& request_info)>;
 
@@ -106,6 +107,23 @@ namespace support {
         void add(std::shared_ptr<IRequestInfo> request_info);
 
         /**
+         disable auto removal after dispatching completion event.
+         Disabling auto removal feature is useful when we want to extend lifespan of this object, as example to
+         postpone dispatching the results to the end user. By calling this api the caller gets the responsibility for
+         removing this object from executor.
+         Note: destructor waits all requests to be done before destroying the object. If user forgets to remove object manually
+               after calling this API then destructor will block forever.
+         * @param request_info request info object
+         */
+        void disable_auto_removal(std::shared_ptr<IRequestInfo> request_info);
+
+        /**
+         remove request info object.
+         * @param request_info request info object
+         */
+        void remove(std::shared_ptr<IRequestInfo> request_info);
+
+        /**
          notify that a request has been canceled (only to be called by HttpRequest)
          @param request the request that was canceled
          */
@@ -116,7 +134,7 @@ namespace support {
 
         static const char* REQUEST_METHOD[];
 
-        ThreadPool _request_pool;
+        ThreadPoolExecutor _thread_pool_executor;
         std::atomic<int>            _max_retries;
         std::atomic<bool>           _stopped;
         std::mutex                  _request_map_mutex;

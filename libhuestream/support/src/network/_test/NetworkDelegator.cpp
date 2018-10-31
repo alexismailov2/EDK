@@ -18,9 +18,10 @@ namespace support {
     static shared_ptr<NetworkDelegate> _delegate = shared_ptr<NetworkDelegate>(new NetworkDelegateImpl());
     static mutex _delegate_mutex;
 
-    void NetworkDelegator::set_delegate(shared_ptr<NetworkDelegate> delegate) {
+    shared_ptr<NetworkDelegate> NetworkDelegator::set_delegate(shared_ptr<NetworkDelegate> delegate) {
         unique_lock<mutex> delegate_lock(_delegate_mutex);
-        _delegate = delegate;
+        _delegate.swap(delegate);
+        return delegate;
     }
     
     
@@ -30,5 +31,10 @@ namespace support {
         unique_lock<mutex> delegate_lock(_delegate_mutex);
         return _delegate->get_network_interfaces();
     }
-    
+
+    bool NetworkDelegator::is_wifi_connected() {
+        unique_lock<mutex> delegate_lock(_delegate_mutex);
+        return _delegate->is_wifi_connected();
+    }
+
 }  // namespace support

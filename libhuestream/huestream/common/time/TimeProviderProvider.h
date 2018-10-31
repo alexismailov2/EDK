@@ -20,6 +20,7 @@ struct default_object<huestream::TimeProviderPtr>
 
 namespace huestream {
     using TimeProviderProvider = support::Provider<TimeProviderPtr>;
+    using ScopedTimeProviderProvider = support::ScopedProvider<TimeProviderPtr>;
 }
 
 #endif  // HUESTREAM_COMMON_TIME_TIMEPROVIDERPROVIDER_H_

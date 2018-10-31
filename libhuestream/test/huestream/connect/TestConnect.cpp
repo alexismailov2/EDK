@@ -8,17 +8,23 @@
 #include <memory>
 #include "huestream/connect/Connect.h"
 #include "test/huestream/_mock/MockFeedbackMessageHandler.h"
-#include "test/huestream/_mock/MockHttpClient.h"
+#include "test/huestream/_mock/MockBridgeHttpClient.h"
 #include "test/huestream/_mock/MockMessageDispatcher.h"
 #include "test/huestream/_mock/MockStream.h"
 #include "test/huestream/_mock/MockBridgeStorageAccessor.h"
 #include "test/huestream/_mock/MockBridge.h"
+#include "test/huestream/_mock/MockScheduler.h"
+#include "support/scheduler/SchedulerFactory.h"
 
 namespace huestream {
     class TestConnect : public ::testing::Test {
     public:
         void SetUp() override {
-            _httpClient = std::make_shared<MockHttpClient>();
+            _scheduler = std::make_shared<NiceMock<MockScheduler>>();
+            support::SchedulerFactory::set_factory_method([this](unsigned int interval) {
+                return std::unique_ptr<MockWrapperScheduler>(new MockWrapperScheduler(interval, _scheduler));
+            });
+            _httpClient = std::make_shared<MockBridgeHttpClient>();
             _messageDispatcher = std::make_shared<MockMessageDispatcher>();
             _stream = std::make_shared<MockStream>();
             _bridgeStorageAccessor = std::make_shared<MockBridgeStorageAccessor>();
@@ -34,12 +40,13 @@ namespace huestream {
 
     protected:
         std::shared_ptr<Connect> _connect;
-        std::shared_ptr<MockHttpClient> _httpClient;
+        std::shared_ptr<MockBridgeHttpClient> _httpClient;
         std::shared_ptr<MockMessageDispatcher> _messageDispatcher;
         std::shared_ptr<MockStream> _stream;
         std::shared_ptr<MockBridgeStorageAccessor> _bridgeStorageAccessor;
         std::shared_ptr<MockFeedbackMessageHandler> _feedbackMessageHandler;
         std::shared_ptr<MockBridge> _bridge;
+        std::shared_ptr<MockScheduler> _scheduler;
     };
 
     TEST_F(TestConnect, NewMessageFeedbackHandler) {

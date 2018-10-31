@@ -42,4 +42,5 @@
 
 // Java wrapper class names
 #define JNI_SDK_CLASS_NATIVE_TOOLS                        JNI_SDK_PACKAGE_NAME_UTILITIES "NativeTools"  // com/philips/lighting/hue/sdk/wrapper/utilities/NativeTools"
+#define JNI_SDK_CLASS_NET_UTIL                            JNI_SDK_PACKAGE_NAME_UTILITIES "NetUtil"      // com/philips/lighting/hue/sdk/wrapper/utilities/NetUtil"
 

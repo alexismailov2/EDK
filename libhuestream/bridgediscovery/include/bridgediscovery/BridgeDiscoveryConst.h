@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <regex>
 #include <string>
 
 #include "support/util/StringUtil.h"
@@ -28,14 +29,14 @@ namespace huesdk {
                                                      "Man:\"ssdp:discover\"\r\n"\
                                                      "MX:3\r\n\r\n";
         /** regex for parsing the found bridges from the received data */
-        const std::string UPNP_RESPONSE_REGEX = "LOCATION: http://(.+):.+\\r\\n"\
+        static const auto UPNP_RESPONSE_REGEX = std::regex("LOCATION: http://(.+):.+\\r\\n"\
                                                      "SERVER:.+IpBridge/(.+)\\r\\n"\
                                                      "ST:.+\\r\\n"\
-                                                     "USN: uuid:.+-([0-9a-zA-Z]{12})::upnp:rootdevice(\\r\\nhue-bridgeid:\\s*([0-9a-zA-Z]*))?";
+                                                     "USN: uuid:.+-([0-9a-zA-Z]{12})::upnp:rootdevice(\\r\\nhue-bridgeid:\\s*([0-9a-zA-Z]*))?");
         /** regex for parsing the found bridges for bridges with firmware >= 1.9 */
-        const std::string UPNP_RESPONSE_REGEX_19 = "LOCATION: http://(.+):.+\\r\\n"\
+        static const auto UPNP_RESPONSE_REGEX_19 = std::regex("LOCATION: http://(.+):.+\\r\\n"\
                                                      "SERVER:.+IpBridge/(.+)\\r\\n"\
-                                                     "hue-bridgeid:\\s*([0-9a-zA-Z].+)\\r\\n";
+                                                     "hue-bridgeid:\\s*([0-9a-zA-Z].+)\\r\\n");
 
         /* nupnp */
 

@@ -3,27 +3,34 @@
  All Rights Reserved.
  ********************************************************************************/
 
-#include "bridgediscovery/BridgeDiscovery.h"
+#include <memory>
 
+#include "bridgediscovery/BridgeDiscovery.h"
+#include "BridgeDiscoveryMethodFactory.h"
+#include "events/IBridgeDiscoveryEventNotifier.h"
 #include "method/IBridgeDiscoveryMethod.h"
 #include "method/ipscan/BridgeDiscoveryIpscan.h"
 #include "method/nupnp/BridgeDiscoveryNupnp.h"
 #include "method/upnp/BridgeDiscoveryUpnp.h"
-#include "BridgeDiscoveryMethodFactory.h"
+#include "support/util/MakeUnique.h"
+#include "support/util/Uuid.h"
 
 using std::unique_ptr;
 
 template<>
 std::unique_ptr<huesdk::IBridgeDiscoveryMethod>
-huesdk_lib_default_factory<huesdk::IBridgeDiscoveryMethod, huesdk::BridgeDiscovery::Option>(
-        huesdk::BridgeDiscovery::Option option) {
+huesdk_lib_default_factory<huesdk::IBridgeDiscoveryMethod, huesdk::BridgeDiscovery::Option,
+   boost::uuids::uuid, std::shared_ptr<huesdk::IBridgeDiscoveryEventNotifier>>(
+        huesdk::BridgeDiscovery::Option option,
+        boost::uuids::uuid request_id,
+        std::shared_ptr<huesdk::IBridgeDiscoveryEventNotifier> notifier) {
     switch (option) {
         case huesdk::BridgeDiscovery::Option::UPNP:
-            return std::unique_ptr<huesdk::BridgeDiscoveryUpnp>(new huesdk::BridgeDiscoveryUpnp());
+            return support::make_unique<huesdk::BridgeDiscoveryUpnp>(std::move(request_id), notifier);
         case huesdk::BridgeDiscovery::Option::NUPNP:
-            return std::unique_ptr<huesdk::BridgeDiscoveryNupnp>(new huesdk::BridgeDiscoveryNupnp());
+            return support::make_unique<huesdk::BridgeDiscoveryNupnp>(std::move(request_id), notifier);
         case huesdk::BridgeDiscovery::Option::IPSCAN:
-            return std::unique_ptr<huesdk::BridgeDiscoveryIpscan>(new huesdk::BridgeDiscoveryIpscan());
+            return support::make_unique<huesdk::BridgeDiscoveryIpscan>(std::move(request_id), notifier);
     }
     return nullptr;
 }

@@ -27,6 +27,8 @@ namespace support {
          @return The request delegate
          */
         virtual shared_ptr<HttpRequest> get_delegate(const string& url, int connect_timeout, int receive_timeout, int request_timeout, bool enable_logging = true, HttpRequestSecurityLevel security_level = HTTP_REQUEST_SECURITY_LEVEL_LOW) = 0;
+
+        virtual ~HttpRequestDelegateProvider() = default;
     };
     
     // Default
@@ -167,9 +169,11 @@ namespace support {
         /**
          Set the delegate
          @note   Initially HttpRequestDelegateProviderImpl is set as delegate
-         @return The delegate, nullptr if no delegate has been set
+         @return The previous delegate, nullptr if no delegate has been set
          */
-        static void set_delegate_provider(shared_ptr<HttpRequestDelegateProvider> delegate_provider);
+        static shared_ptr<HttpRequestDelegateProvider> set_delegate_provider(shared_ptr<HttpRequestDelegateProvider> delegate_provider);
+
+        static shared_ptr<HttpRequestDelegateProvider> get_delegate_provider();
         
     private:
         /** the request delegate */

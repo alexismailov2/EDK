@@ -10,15 +10,8 @@ namespace huestream_tests
     [TestFixture()]
     public class TestAnimations : TestBase
     {
-        private static String RGB_BLACK = "#000000";
-        private static int LIGHTS_COUNT = 4;
-        private static double TIMEOUT_MS = 1000;
-
-        protected Light _frontLeftLight = null;
-        protected Light _frontRightLight = null;
-        protected Light _rearLeftLight = null;
-        protected Light _rearRightLight = null;
-        protected List<Light> _allLights = null;
+        private const String RGB_BLACK = "#000000";
+        private const double TIMEOUT_MS = 1000;
 
         [SetUp]
         public void SetUp()
@@ -48,46 +41,6 @@ namespace huestream_tests
         private void ThreadWaitFor(int milliseconds)
         {
             Thread.Sleep(milliseconds);
-        }
-
-        private void InitializeBridgeResources()
-        {
-            int entertainmentGroupId = _bridgeWrapperHelper.GetEntertainmentGroupId();
-            List<ILightID> lights = _bridgeWrapperHelper.GetLLCLightsIDs();
-
-            Assert.IsTrue(lights.Count >= LIGHTS_COUNT);
-            if (lights.Count > LIGHTS_COUNT)
-            {
-                lights = lights.GetRange(0, LIGHTS_COUNT);
-            }
-
-            InitializeLights(lights, entertainmentGroupId);
-            _bridge.SelectGroup(entertainmentGroupId.ToString());
-        }
-
-        private void InitializeLights(List<ILightID> lights, int entertainmentGroupId)
-        {
-            Assert.AreEqual(LIGHTS_COUNT, lights.Count, "Amount of lights is not equal to LIGHTS_COUNT");
-
-            _frontLeftLight = new Light(Light.Position.FrontLeft, lights[0]);
-            _frontRightLight = new Light(Light.Position.FrontRight, lights[1]);
-            _rearLeftLight = new Light(Light.Position.RearLeft, lights[2]);
-            _rearRightLight = new Light(Light.Position.RearRight, lights[3]);
-
-            _allLights = new List<Light>
-            {
-                _frontRightLight,
-                _frontLeftLight,
-                _rearRightLight,
-                _rearLeftLight
-            };
-            _bridgeWrapperHelper.IncludeLightsIntoGroup(lights, entertainmentGroupId);
-            _bridgeWrapperHelper.SetLightsCoordinates(entertainmentGroupId, LightsAsLightCoordinates());
-        }
-
-        private List<ILightCoordinate> LightsAsLightCoordinates()
-        {
-            return _allLights.Select(x => x.AsLightCoordinate()).ToList();
         }
 
         private void AddEffectToEngine(params Effect[] effects)
@@ -147,6 +100,7 @@ namespace huestream_tests
         }
 
         [Test]
+        [Ignore("HSDK-2347")]
         public void SimpleOverallAreaEffect()
         {
             AreaEffect effect = new AreaEffect("simpleAreaEffect", 0);
@@ -163,6 +117,7 @@ namespace huestream_tests
         }
 
         [Test]
+        [Ignore("HSDK-2347")]
         public void TwoAreaEffect()
         {
             AreaEffect rearLeftPart = new AreaEffect("rearLeft", 1);
@@ -192,6 +147,7 @@ namespace huestream_tests
         }
 
         [Test]
+        [Ignore("HSDK-2347")]
         public void LightSourceEffect()
         {
             LightSourceEffect effect = new LightSourceEffect();
@@ -210,6 +166,7 @@ namespace huestream_tests
         }
 
         [Test]
+        [Ignore("HSDK-2347")]
         public void LightIteratorEffect()
         {
             int OFFSET_DIRATION = 1000;
@@ -245,6 +202,7 @@ namespace huestream_tests
         }
 
         [Test]
+        [Ignore("HSDK-2347")]
         public void ManualEffect()
         {
             ManualEffect effect = new ManualEffect();

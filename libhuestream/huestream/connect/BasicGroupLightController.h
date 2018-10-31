@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_CONNECT_BASICGROUPLIGHTCONTROLLER_H_
 #define HUESTREAM_CONNECT_BASICGROUPLIGHTCONTROLLER_H_
 
-#include <huestream/common/http/IHttpClient.h>
+#include <huestream/common/http/IBridgeHttpClient.h>
 #include <huestream/connect/IBasicGroupLightController.h>
 
 #include <memory>
@@ -18,7 +18,7 @@ namespace huestream {
 
         class BasicGroupLightController : public IBasicGroupLightController {
         public:
-            explicit BasicGroupLightController(HttpClientPtr http);
+            explicit BasicGroupLightController(BridgeHttpClientPtr http);
 
             void SetActiveBridge(BridgePtr bridge) override;
             
@@ -37,9 +37,8 @@ namespace huestream {
         protected:
             static std::map<LightPreset, std::tuple<double, double, double>> _presetSettingsMap;
 
-            HttpClientPtr _http;
+            BridgeHttpClientPtr _http;
             BridgePtr _bridge;
-            std::shared_ptr<support::HttpRequest> _request;
             std::mutex _mutex;
 
             std::string getBridgeUrl();

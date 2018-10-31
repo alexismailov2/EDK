@@ -16,7 +16,7 @@ namespace huestream {
         }
 
         virtual void TearDown() {
-            Serializable::SetObjectBuilder(nullptr);
+            Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
         }
 
         void assert_colors_equal(Color color1, Color color2) {

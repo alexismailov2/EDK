@@ -21,14 +21,9 @@ import java.util.function.Function;
 public class AnimationTests extends BaseTest {
 
     private static String RGB_BLACK = "#000000";
-    private static int LIGHTS_COUNT = 4;
     private static long TIMEOUT_MS = 1000;
 
-    private Light _frontLeftLight = null;
-    private Light _frontRightLight = null;
-    private Light _rearLeftLight = null;
-    private Light _rearRightLight = null;
-    private List<Light> _allLights = null;
+
 
     @Rule
     public ErrorCollector _errorCollector = new ErrorCollector();
@@ -55,7 +50,7 @@ public class AnimationTests extends BaseTest {
 
     @After
     public void tearDown() {
-        _bridgeWrapperHelper.cleanUpUser();
+        cleanupUser();
         _hue_stream.ShutDown();
     }
 
@@ -65,44 +60,6 @@ public class AnimationTests extends BaseTest {
         } catch (InterruptedException e) {
             Assert.fail("Thread was interrupted when sleeping");
         }
-    }
-
-    private void initializeBridgeResources() {
-        Integer entertainmentGroupId = _bridgeWrapperHelper.getEntertainmentGroupId();
-        List<IBridgeWrapper.ILightID> lights = _bridgeWrapperHelper.getLLCLightsIDs();
-
-        Assert.assertTrue(lights.size() >= LIGHTS_COUNT);
-        if (lights.size() > LIGHTS_COUNT) {
-            lights = lights.subList(0, LIGHTS_COUNT);
-        }
-
-        initializeLights(lights, entertainmentGroupId);
-        _bridge.SelectGroup(entertainmentGroupId.toString());
-    }
-
-    private void initializeLights(List<IBridgeWrapper.ILightID> lights, int entertainmentGroupId) {
-        Assert.assertEquals("Amount of lights is not equal to LIGHTS_COUNT", LIGHTS_COUNT, lights.size());
-
-        _frontLeftLight = new Light(Light.Position.FrontLeft, lights.get(0));
-        _frontRightLight = new Light(Light.Position.FrontRight, lights.get(1));
-        _rearLeftLight = new Light(Light.Position.RearLeft, lights.get(2));
-        _rearRightLight = new Light(Light.Position.RearRight, lights.get(3));
-
-        _allLights = new ArrayList<>();
-        _allLights.add(_frontRightLight);
-        _allLights.add(_frontLeftLight);
-        _allLights.add(_rearRightLight);
-        _allLights.add(_rearLeftLight);
-
-
-        _bridgeWrapperHelper.includeLightsIntoGroup(lights, entertainmentGroupId);
-        _bridgeWrapperHelper.setLightsCoordinates(entertainmentGroupId, lightsAsLightCoordinates());
-    }
-
-    private List<IBridgeWrapper.ILightCoordinate> lightsAsLightCoordinates() {
-        return _allLights.stream()
-                .map(it -> it.asLightCoordinate())
-                .collect(Collectors.toList());
     }
 
     private void addEffectToEngine(Effect... effects) {

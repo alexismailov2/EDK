@@ -17,6 +17,7 @@
 #include "huestream/connect/BridgeStreamingChecker.h"
 #include "huestream/common/language/DummyTranslator.h"
 #include "huestream/common/http/HttpClient.h"
+#include "huestream/common/http/BridgeHttpClient.h"
 #include "huestream/common/time/TimeManager.h"
 #include "huestream/effect/Mixer.h"
 #include "huestream/stream/DtlsEntropyProvider.h"
@@ -32,14 +33,16 @@ std::unique_ptr<EntropyProviderBase> huesdk_lib_default_factory<EntropyProviderB
 template<>
 std::unique_ptr<huestream::IBridgeStorageAccessor> huesdk_lib_default_factory<huestream::IBridgeStorageAccessor,
         const std::string &,
+        huestream::AppSettingsPtr,
         huestream::BridgeSettingsPtr>(const std::string &fileName,
+                                      huestream::AppSettingsPtr appSettings,
                                       huestream::BridgeSettingsPtr bridgeSettings) {
-    return support::make_unique<huestream::BridgeFileStorageAccessor>(fileName, bridgeSettings);
+    return support::make_unique<huestream::BridgeFileStorageAccessor>(fileName, appSettings, bridgeSettings);
 }
 
 template<>
-std::unique_ptr<huestream::IMixer> huesdk_lib_default_factory<huestream::IMixer>() {
-    return support::make_unique<huestream::Mixer>();
+std::unique_ptr<huestream::IMixer> huesdk_lib_default_factory<huestream::IMixer, huestream::AppSettingsPtr>(huestream::AppSettingsPtr appSettings) {
+    return support::make_unique<huestream::Mixer>(appSettings);
 }
 
 template<>
@@ -49,13 +52,13 @@ std::unique_ptr<huestream::IMessageTranslator> huesdk_lib_default_factory<huestr
 
 template<>
 std::unique_ptr<huestream::IConnect> huesdk_lib_default_factory<huestream::IConnect,
-                                                    huestream::HttpClientPtr,
+                                                    huestream::BridgeHttpClientPtr,
                                                     huestream::MessageDispatcherPtr,
                                                     huestream::BridgeSettingsPtr,
                                                     huestream::AppSettingsPtr,
                                                     huestream::StreamPtr,
                                                     huestream::BridgeStorageAccessorPtr>(
-    huestream::HttpClientPtr httpClient,
+    huestream::BridgeHttpClientPtr httpClient,
     huestream::MessageDispatcherPtr messageDispatcher,
     huestream::BridgeSettingsPtr bridgeSettings,
     huestream::AppSettingsPtr appSettings,
@@ -93,11 +96,10 @@ std::unique_ptr<huestream::IHttpClient> huesdk_lib_default_factory<huestream::IH
     return support::make_unique<huestream::HttpClient>();
 }
 
-
 template<>
 std::unique_ptr<huestream::IConnectionMonitor> huesdk_lib_default_factory<huestream::IConnectionMonitor,
-                                                           huestream::HttpClientPtr, huestream::AppSettingsPtr>(
-    huestream::HttpClientPtr httpClient, huestream::AppSettingsPtr appSettings) {
+                                                           huestream::BridgeHttpClientPtr, huestream::AppSettingsPtr>(
+    huestream::BridgeHttpClientPtr httpClient, huestream::AppSettingsPtr appSettings) {
     return support::make_unique<huestream::ConnectionMonitor>(
         support::make_unique<huestream::BridgeStreamingChecker>(
             support::make_unique<huestream::FullConfigRetriever>(httpClient, appSettings->UseForcedActivation())));
@@ -125,8 +127,8 @@ std::unique_ptr<huestream::IConnector> huesdk_lib_default_factory<huestream::ICo
 
 template<>
 std::unique_ptr<huestream::IBasicGroupLightController> huesdk_lib_default_factory<huestream::IBasicGroupLightController,
-    huestream::HttpClientPtr>(
-        huestream::HttpClientPtr httpClient) {
+    huestream::BridgeHttpClientPtr>(
+        huestream::BridgeHttpClientPtr httpClient) {
     return support::make_unique<huestream::BasicGroupLightController>(httpClient);
 }
 

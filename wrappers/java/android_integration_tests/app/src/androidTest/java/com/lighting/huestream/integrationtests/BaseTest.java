@@ -2,6 +2,7 @@ package com.lighting.huestream.integrationtests;
 
 
 import android.util.Log;
+import android.os.Environment;
 
 import com.lighting.huestream.Bridge;
 import com.lighting.huestream.BridgeSettings;
@@ -9,9 +10,13 @@ import com.lighting.huestream.Config;
 import com.lighting.huestream.HueStream;
 import com.lighting.huestream.StreamSettings;
 import com.lighting.huestream.StreamingMode;
+import com.lighting.huestream.PersistenceEncryptionKey;
+import com.lighting.huestream.FeedbackMessage;
+
 import com.lighting.huestream.integrationtests.helpers.BridgeWrapperBuilder;
 import com.lighting.huestream.integrationtests.helpers.IBridgeWrapper;
 import com.lighting.huestream.integrationtests.helpers.Network;
+import com.lighting.huestream.integrationtests.helpers.Light;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,16 +28,28 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Map;
+import java.io.File;
 
 public class BaseTest {
-    protected static int DEFAULT_TIMEOUT_MS = 3000;
+    private static final String TAG = BaseTest.class.getName();
+
+    protected static final int DEFAULT_TIMEOUT_MS = 3000;
+    protected static final int DISCOVERY_TIMEOUT_MS = 15000;
+    protected static final int LIGHTS_COUNT = 4;
 
     protected Bridge _bridge = null;
     protected HueStream _hue_stream = null;
     protected IBridgeWrapper _bridgeWrapperHelper = null;
+    protected Light _frontLeftLight = null;
+    protected Light _frontRightLight = null;
+    protected Light _rearLeftLight = null;
+    protected Light _rearRightLight = null;
+    protected List<Light> _allLights = null;
 
     protected Bridge initializeBridge() {
         readBridgePropertiesIfNeeded();
@@ -44,6 +61,7 @@ public class BaseTest {
         result.SetClientKey(_clientKey);
         result.SetTcpPort(_tcp_port);
         result.SetSslPort(_ssl_port);
+        result.EnableSsl();
 
         return result;
     }
@@ -57,10 +75,51 @@ public class BaseTest {
         builder.withUserName(_user)
                 .withClientKey(_clientKey)
                 .withIPv4Address(_ipv4_address)
-                .withTcpPort(Integer.parseInt(_tcp_port))
+                .withTcpPort(_tcp_port)
                 .withBridgeId(_bridge_id);
 
         return builder.build();
+    }
+
+    protected void initializeBridgeResources() {
+        Integer entertainmentGroupId = _bridgeWrapperHelper.getEntertainmentGroupId();
+        List<IBridgeWrapper.ILightID> lights = _bridgeWrapperHelper.getLLCLightsIDs();
+
+        Assert.assertTrue(lights.size() >= LIGHTS_COUNT);
+        if (lights.size() > LIGHTS_COUNT) {
+            lights = lights.subList(0, LIGHTS_COUNT);
+        }
+
+        initializeLights(lights, entertainmentGroupId);
+        _bridge.SelectGroup(entertainmentGroupId.toString());
+    }
+
+    private void initializeLights(List<IBridgeWrapper.ILightID> lights, int entertainmentGroupId) {
+        Assert.assertEquals("Amount of lights is not equal to LIGHTS_COUNT", LIGHTS_COUNT, lights.size());
+
+        _frontLeftLight = new Light(Light.Position.FrontLeft, lights.get(0));
+        _frontRightLight = new Light(Light.Position.FrontRight, lights.get(1));
+        _rearLeftLight = new Light(Light.Position.RearLeft, lights.get(2));
+        _rearRightLight = new Light(Light.Position.RearRight, lights.get(3));
+
+        _allLights = new ArrayList<>();
+        _allLights.add(_frontRightLight);
+        _allLights.add(_frontLeftLight);
+        _allLights.add(_rearRightLight);
+        _allLights.add(_rearLeftLight);
+
+
+        _bridgeWrapperHelper.includeLightsIntoGroup(lights, entertainmentGroupId);
+        _bridgeWrapperHelper.setLightsCoordinates(entertainmentGroupId, lightsAsLightCoordinates());
+    }
+
+    private List<IBridgeWrapper.ILightCoordinate> lightsAsLightCoordinates() {
+        List<IBridgeWrapper.ILightCoordinate> result = new ArrayList<>();
+        for (Light ligth: _allLights) {
+            result.add(ligth.asLightCoordinate());
+        }
+
+        return result;
     }
 
     protected HueStream createStream(StreamingMode streamingMode) {
@@ -69,7 +128,7 @@ public class BaseTest {
         StreamSettings streamSettings = new StreamSettings();
         streamSettings.SetStreamingPort(Integer.parseInt(_udp_port));
 
-        Config config = new Config("JavaIntegrationTests", "PC");
+        Config config = new Config("JavaIntegrationTests", "PC", new PersistenceEncryptionKey("encryption_key"));
         config.SetStreamSettings(streamSettings);
         config.SetStreamingMode(streamingMode);
         return new HueStream(config);
@@ -157,7 +216,7 @@ public class BaseTest {
 
     private void createUserIfNeeded() {
         if (_user.isEmpty() || _clientKey.isEmpty()) {
-            pushLink();
+            pushLink(true);
 
             final StringBuilder urlBuilder = new StringBuilder();
             urlBuilder.append("http://")
@@ -186,7 +245,17 @@ public class BaseTest {
         }
     }
 
-    private void pushLink() {
+    protected void cleanupUser() {
+        if (_user.isEmpty()) {
+            return;
+        }
+
+        _user = "";
+        _clientKey = "";
+        _bridgeWrapperHelper.cleanupUser();
+    }
+
+    protected void pushLink(Boolean enable) {
         final StringBuilder urlBuilder = new StringBuilder();
         urlBuilder.append("http://")
                 .append(_ipv4_address)
@@ -194,7 +263,7 @@ public class BaseTest {
                 .append(_tcp_port)
                 .append("/api/0/config");
 
-        final String REQUEST_BODY = "{\"linkbutton\":true}";
+        final String REQUEST_BODY = "{\"linkbutton\":" + (enable ? "true" : "false") + "}";
 
         JSONArray response = Network.performUpdateRequest(urlBuilder.toString(), REQUEST_BODY, Network.UPDATE_REQUEST.PUT);
         Assert.assertNotNull("Push link response is null", response);
@@ -207,6 +276,24 @@ public class BaseTest {
         }
     }
 
+    protected void clearPersistenceData() {
+        File peristenceFile = new File(PERSISTENCE_LOCATION);
+
+        if(peristenceFile.exists()) {
+            peristenceFile.delete();
+        }
+        
+    }
+
+    public FeedbackMessageObserver createObserverForMessage(FeedbackMessage.Id message) {
+        FeedbackMessageObserver messageObserver = new FeedbackMessageObserver();
+        _hue_stream.RegisterFeedbackHandler(messageObserver);
+
+        messageObserver.StartListening(message);
+        return messageObserver;
+    }
+
+
     private String _user = "";
     private String _clientKey = "";
     private static String _ipv4_address = "";
@@ -215,10 +302,10 @@ public class BaseTest {
     private static String _udp_port = "";
     private static String _ssl_port = "";
 
-    private static String DEFAULT_IP_ADDRESS = "192.168.1.51";
-    private static String DEFAULT_TCP_PORT = "60202";
-    private static String DEFAULT_UDP_PORT = "60202";
-    private static String DEFAULT_SSL_PORT = "61202";
-    private static String DEFAULT_BRIDGE_ID = "001788fffe1ffd08";
-
+    private static final String PERSISTENCE_LOCATION = "bridge.json";
+    private static final String DEFAULT_IP_ADDRESS = "192.168.1.51";
+    private static final String DEFAULT_TCP_PORT = "60202";
+    private static final String DEFAULT_UDP_PORT = "60202";
+    private static final String DEFAULT_SSL_PORT = "61202";
+    private static final String DEFAULT_BRIDGE_ID = "001788fffe1ffd08";
 }

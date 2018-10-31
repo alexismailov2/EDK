@@ -88,7 +88,14 @@ namespace support {
     }
     
     std::unique_ptr<IHttpResponse> HttpResponse::clone() const {
-        return std::unique_ptr<IHttpResponse>(new HttpResponse(_status_code, _body.c_str(), _body.length()));
+        auto response = std::unique_ptr<HttpResponse>(new HttpResponse(_status_code, _body.c_str(), _body.length()));
+
+        for (auto&& p : _header_fields) {
+            response->add_header_field(p.first.c_str(), p.second.c_str());
+        }
+
+        response->set_certificate_chain(_certificate_chain);
+        return std::unique_ptr<IHttpResponse>(response.release());
     }
     
     

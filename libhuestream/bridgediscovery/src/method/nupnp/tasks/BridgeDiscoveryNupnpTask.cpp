@@ -3,30 +3,34 @@
  All Rights Reserved.
  ********************************************************************************/
 
-#include <string>
-#include <vector>
 #include <memory>
-
-#include "support/network/http/HttpRequestTask.h"
-#include "support/logging/Log.h"
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "libjson/libjson.h"
 
 #include "bridgediscovery/BridgeDiscoveryConfiguration.h"
 #include "bridgediscovery/BridgeDiscoveryConst.h"
 
+#include "events/BridgeDiscoveryEvents.h"
 #include "method/nupnp/tasks/BridgeDiscoveryNupnpTask.h"
+#include "tasks/BridgeDiscoveryCheckIpArrayTask.h"
+
+#include "support/network/http/HttpRequestTask.h"
+#include "support/logging/Log.h"
 
 using Task = support::JobTask;
+using huesdk::bridge_discovery_events::BridgeDiscovered;
 using support::HttpRequestTask;
-using std::vector;
 
 namespace {
     using huesdk::BridgeDiscoveryResult;
     using huesdk::BridgeDiscoveryConfiguration;
 
-    vector<std::shared_ptr<BridgeDiscoveryResult>> parse_nupnp_response(HttpRequestError *error, IHttpResponse *response) {
-        vector<std::shared_ptr<BridgeDiscoveryResult>> return_value;
+    std::vector<std::shared_ptr<BridgeDiscoveryResult>> parse_nupnp_response(HttpRequestError *error, IHttpResponse *response) {
+        std::vector<std::shared_ptr<BridgeDiscoveryResult>> return_value;
 
         if (error != nullptr && response != nullptr &&
             error->get_code() == HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS) {
@@ -55,7 +59,7 @@ namespace {
         return return_value;
     }
 
-    const HttpRequestTask::Options *http_options_nupnp() {
+    const HttpRequestTask::Options* http_options_nupnp() {
         static HttpRequestTask::Options options;
 
         options.connect_timeout = huesdk::bridge_discovery_const::NUPNP_HTTP_CONNECT_TIMEOUT;
@@ -71,17 +75,60 @@ namespace {
 }  // namespace
 
 namespace huesdk {
-    BridgeDiscoveryNupnpTask::BridgeDiscoveryNupnpTask(const std::string &url) : _url{url} {}
+    BridgeDiscoveryNupnpTask::BridgeDiscoveryNupnpTask(
+            const std::string& url,
+            const boost::uuids::uuid& request_id,
+            const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier)
+       : _url{url} {
+        _task_events_data.request_id = request_id;
+        _task_events_data.notifier = notifier;
+    }
 
     void BridgeDiscoveryNupnpTask::execute(Task::CompletionHandler done) {
+        _task_events_data.start_of_task = {std::chrono::system_clock::now()};
         create_job<HttpRequestTask>(_url, http_options_nupnp())->run([this, done](HttpRequestTask *task) {
-            _results = parse_nupnp_response(task->get_error(), task->get_response());
-            done();
+            auto results = parse_nupnp_response(task->get_error(), task->get_response());
+
+            for (auto&& result : results) {
+                _task_events_data.ip_to_duration_map[result->get_ip()]
+                    = std::chrono::system_clock::now() - _task_events_data.start_of_task.value();
+            }
+
+            std::unordered_set<std::string> ips_to_check;
+            for (auto&& result_entry : results) {
+                HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscovery: submitting IP check for: "
+                        << std::string(result_entry->get_unique_id()) << ", ip: " << std::string(result_entry->get_ip())
+                        << HUE_ENDL;
+                ips_to_check.emplace(result_entry->get_ip());
+            }
+
+            auto check_ip_job = create_job<BridgeDiscoveryCheckIpArrayTask>(
+                    std::vector<std::string> {ips_to_check.begin(), ips_to_check.end()});
+            check_ip_job->run([this, done](BridgeDiscoveryCheckIpArrayTask* task) {
+                std::vector<std::shared_ptr<BridgeDiscoveryResult>> discovery_ipcheck_results;
+                for (const auto &result_entry : task->get_result()) {
+                    _results.emplace_back(
+                            std::make_shared<BridgeDiscoveryResult>(
+                                    result_entry.unique_id, result_entry.ip, result_entry.api_version, result_entry.model_id));
+                }
+
+                if (_task_events_data.notifier != nullptr) {
+                    for (auto&& result : _results) {
+                        BridgeDiscovered bridge_discovered_event {
+                            _task_events_data.request_id,
+                            BridgeDiscovery::Option::NUPNP,
+                            _task_events_data.ip_to_duration_map[result->get_ip()],
+                            result->get_ip()
+                        };
+                        _task_events_data.notifier->on_event(bridge_discovered_event);
+                    }
+                }
+                done();
+            });
         });
     }
 
-
-    const vector<std::shared_ptr<BridgeDiscoveryResult>> &BridgeDiscoveryNupnpTask::get_result() const {
+    const std::vector<std::shared_ptr<BridgeDiscoveryResult>>& BridgeDiscoveryNupnpTask::get_result() const {
         return _results;
     }
 }  // namespace huesdk

@@ -8,7 +8,6 @@
 
 #include <huestream/common/data/Bridge.h>
 #include <huestream/common/time/ITimeManager.h>
-#include <huestream/common/http/IHttpClient.h>
 #include <huestream/config/AppSettings.h>
 #include <huestream/stream/ProtocolSerializer.h>
 #include <huestream/stream/IStream.h>

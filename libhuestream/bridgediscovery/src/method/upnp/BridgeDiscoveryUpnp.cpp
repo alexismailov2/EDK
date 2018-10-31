@@ -16,8 +16,13 @@
 using support::JobState;
 
 namespace huesdk {
+    BridgeDiscoveryUpnp::BridgeDiscoveryUpnp(
+            const boost::uuids::uuid& request_id,
+            const std::shared_ptr<IBridgeDiscoveryEventNotifier>& notifier)
+            : BridgeDiscoveryMethodBase<BridgeDiscoveryUpnpTask>(request_id, notifier) {}
+
     bool BridgeDiscoveryUpnp::method_search(const BridgeDiscoveryMethodBase::MethodResultCallback &callback) {
-        _job = support::create_job<TaskType>();
+        _job = support::create_job<TaskType>(_request_id, _bridge_discovery_event_notifier);
 
         return _job->run([callback](TaskType *task) {
             callback(task->get_result());

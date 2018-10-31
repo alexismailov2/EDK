@@ -7,7 +7,6 @@
 #define HUESTREAM_STREAM_ISTREAM_H_
 
 #include <huestream/common/data/Bridge.h>
-#include <huestream/common/http/IHttpClient.h>
 #include <huestream/stream/IConnector.h>
 
 #include <functional>

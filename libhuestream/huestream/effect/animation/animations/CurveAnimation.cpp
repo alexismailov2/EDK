@@ -38,13 +38,12 @@ namespace huestream {
     }
 
     void CurveAnimation::UpdateValue(double *value, double positionMs) {
-        *value = _curveData.GetInterpolated(positionMs)->GetY();
+        *value = _curveData.GetInterpolatedValue(positionMs);
     }
 
     double CurveAnimation::GetLengthMs() const {
         return _curveData.GetLength();
     }
-
 
     CurveAnimation::CurveAnimation(PointListPtr points, Nullable<CurveOptions> options)
             : RepeatableAnimation(0), _curveData(points, options) {}
@@ -61,9 +60,16 @@ namespace huestream {
         _curveData.Append(other._curveData);
     }
 
-
     void CurveAnimation::Append(const CurveData &other) {
         _curveData.Append(other);
+    }
+
+    void CurveAnimation::AppendPoint(const PointPtr point) {
+        _curveData.AppendPoint(point);
+    }
+
+    void CurveAnimation::AppendPointLinearized(const PointPtr point, double delta) {
+        _curveData.AppendPointLinearized(point, delta);
     }
 
     const PointListPtr &CurveAnimation::GetPoints() const {

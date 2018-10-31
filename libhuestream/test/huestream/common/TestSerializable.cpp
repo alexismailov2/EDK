@@ -129,7 +129,7 @@ namespace huestream {
         }
 
         virtual void TearDown() {
-            Serializable::SetObjectBuilder(nullptr);
+            Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));
         }
     };
 

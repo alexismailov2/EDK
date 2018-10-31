@@ -9,11 +9,20 @@
 
 #include "support/details/SdkUtilsHelpers.h"
 
-namespace huesdk {
+namespace support {
 
+    template<typename To, typename From>
+    std::unique_ptr<To> unique_dynamic_cast(std::unique_ptr<From> from) {
+        if (dynamic_cast<To*>(from.get()) != nullptr) {
+            return std::unique_ptr<To>(dynamic_cast<To*>(from.release()));
+        } else {
+            return nullptr;
+        }
+    }
+    
     template<typename PointerType>
     void clean_up(PointerType& pointer) {
-        huesdk::delete_if_exlusively_owned(pointer);
+        delete pointer;
         pointer = nullptr;
     }
 
@@ -49,7 +58,7 @@ namespace huesdk {
             if (casted_clone != nullptr) {
                 return casted_clone;
             } else {
-                huesdk::clean_up(clone);
+                clean_up(clone);
                 return nullptr;
             }
         }
@@ -59,18 +68,18 @@ namespace huesdk {
     template<typename SourceType>
     std::remove_cv_t<std::remove_reference_t<SourceType>>* clone(const SourceType* const & p) {
         using TargetType = std::remove_cv_t<std::remove_reference_t<SourceType>>;
-        return huesdk::clone<TargetType, const SourceType*>(p);
+        return clone<TargetType, const SourceType*>(p);
     }
 
     template<typename SourceType>
     std::remove_cv_t<std::remove_reference_t<SourceType>>* clone(const std::unique_ptr<SourceType>& p) {
         using TargetType = std::remove_cv_t<std::remove_reference_t<SourceType>>;
-        return huesdk::clone<TargetType>(p.get());
+        return clone<TargetType>(p.get());
     }
 
     template<typename SourceType>
     std::remove_cv_t<std::remove_reference_t<SourceType>>* clone(const std::shared_ptr<SourceType>& p) {
         using TargetType = std::remove_cv_t<std::remove_reference_t<SourceType>>;
-        return huesdk::clone<TargetType>(p.get());
+        return clone<TargetType>(p.get());
     }
-}  // namespace huesdk
+}  // namespace support

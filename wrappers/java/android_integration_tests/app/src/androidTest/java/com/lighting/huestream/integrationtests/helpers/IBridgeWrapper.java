@@ -25,5 +25,5 @@ public interface IBridgeWrapper {
 
     void setLightsCoordinates(final Integer groupId, List<ILightCoordinate> lightCoordinates);
 
-    void cleanUpUser();
+    void cleanupUser();
 }

@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "support/network/NetworkInterface.h"
-#include "support/std/types/VectorOperations.h"
+#include "support/util/VectorOperations.h"
 
 namespace support {
 
@@ -30,7 +30,9 @@ namespace support {
 
         // returns a default list if the domain specified in the url is not "pinned"
         static std::vector<std::string> get_trusted_certificates(const std::string& url);
-        
+
+        static const std::vector<std::string>& get_root_certificates();
+
     private:
         static std::mutex _mutex;
         static bool _disable_ssl_check;

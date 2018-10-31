@@ -52,7 +52,7 @@ set(swig_module_dependencies huestream support bridge_discovery)
 # Do the swig action
 #------------------------------------------------------------------------------
 set_source_files_properties(${swig_interface_file} PROPERTIES CPLUSPLUS ON)
-set_source_files_properties(${swig_interface_file} PROPERTIES SWIG_FLAGS "-namespace;${swig_module_namespace}")
+set_source_files_properties(${swig_interface_file} PROPERTIES SWIG_FLAGS "-namespace;${swig_module_namespace};-v")
 
 # Should be swig_add_library, but cmake of jenkins/AS is too old.
 swig_add_module(${swig_target} csharp ${swig_interface_file})

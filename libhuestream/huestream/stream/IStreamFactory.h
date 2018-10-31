@@ -8,7 +8,6 @@
 
 #include <huestream/stream/IStreamStarter.h>
 #include <huestream/common/data/Bridge.h>
-#include <huestream/common/http/IHttpClient.h>
 
 #include <memory>
 

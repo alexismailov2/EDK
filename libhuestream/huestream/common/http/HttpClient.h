@@ -15,14 +15,23 @@ namespace huestream {
 
     class HttpClient : public IHttpClient {
     public:
+        ~HttpClient() override;
         void Execute(HttpRequestPtr request) override;
-        void ExecuteAsync(HttpRequestPtr request) override;
-        shared_ptr<support::HttpRequest> CreateHttpRequest(const std::string& url,
+        void ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback = {}) override;
+        shared_ptr<HttpRequest> CreateHttpRequest(const std::string& url,
             int connect_timeout = support::HTTP_CONNECT_TIMEOUT,
             int receive_timeout = support::HTTP_RECEIVE_TIMEOUT,
             int request_timeout = support::HTTP_REQUEST_TIMEOUT,
             bool enable_logging = true,
             support::HttpRequestSecurityLevel security_level = support::HTTP_REQUEST_SECURITY_LEVEL_LOW) override;
+
+    private:
+        struct Data {
+            std::mutex _active_requests_mutex;
+            bool _is_shutdown = false;
+            std::vector<HttpRequest*> _active_requests;
+        };
+        std::shared_ptr<Data> _data = std::make_shared<Data>();
     };
 
 }  // namespace huestream

@@ -23,6 +23,8 @@ namespace support {
              @return The request delegate
              */
             virtual shared_ptr<LoggerFile> get_delegate() = 0;
+
+            virtual ~LoggerFileDelegateProvider() = default;
         };
 
         // Default

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "support/util/StringUtil.h"
 
@@ -16,6 +17,13 @@ namespace support {
     enum NetworkInetType {
         INET_IPV4,
         INET_IPV6
+    };
+
+    enum NetworkAdapterType {
+        NETWORK_ADAPTER_TYPE_UNKNOWN,
+        NETWORK_ADAPTER_TYPE_WIRED,
+        NETWORK_ADAPTER_TYPE_WIRELESS,
+        NETWORK_ADAPTER_TYPE_CELLULAR
     };
 
     class NetworkInterface {
@@ -35,7 +43,9 @@ namespace support {
          @param up        Whether the network interface is enabled
          @param loopback  Whether the network interface is a loopback
          */
-        NetworkInterface(const string& ip, NetworkInetType inet_type, const string& name, bool up, bool loopback);
+        NetworkInterface(
+                const string& ip, NetworkInetType inet_type, const string& name, bool up, bool loopback,
+                NetworkAdapterType adapter_type = NetworkAdapterType::NETWORK_ADAPTER_TYPE_UNKNOWN, bool is_connected = false);
         
         /**
          Get name
@@ -96,7 +106,31 @@ namespace support {
          @param loopback Whether the network interface is a loopback
          */
         void set_loopback(bool loopback);
-        
+
+        /**
+         the type of the physical adapter
+         @return the type of the physical adapter
+         */
+        NetworkAdapterType get_adapter_type() const;
+
+        /**
+         Set the type of the physical adapter
+         @param adapter_type the type of the physical adapter
+         */
+        void set_adapter_type(NetworkAdapterType adapter_type);
+
+        /**
+         * Set whether the interface is connected
+         @param is_connected Whether the network interface is connected
+         */
+        void set_is_connected(bool is_connected);
+
+        /**
+         * Whether the network interface is connected
+         @return true if connected, false otherwise
+         */
+        bool get_is_connected() const;
+
         /**
          Whether this is a private ip according to the RFC1918, only for IPV4
          @return true when the ip is private, false otherwise
@@ -110,14 +144,26 @@ namespace support {
             format: 
             - IPV4: 192.168.1.1
             - IPV6: 2607:f0d0:1002:51::4 */
-        string          _ip;
-        /** the inet type: IPV4 or IPV6 */
+        string _ip;
         NetworkInetType _inet_type;
-        /** whether the network interface is enabled */
-        bool            _up;
-        /** whether the network interface is a loopback */
-        bool            _loopback;
+        bool _up;
+        bool _loopback;
+        NetworkAdapterType _adapter_type;
+        bool _is_connected;
     };
+
+    inline bool operator==(const NetworkInterface& lhs, const NetworkInterface& rhs) {
+        return (lhs.get_name() == rhs.get_name()) &&
+               (lhs.get_ip() == rhs.get_ip()) &&
+               (lhs.get_inet_type() == rhs.get_inet_type()) &&
+               (lhs.is_up() == rhs.is_up()) &&
+               (lhs.is_loopback() == rhs.is_loopback()) &&
+               (lhs.get_adapter_type() == rhs.get_adapter_type()) &&
+               (lhs.get_is_connected() == rhs.get_is_connected());
+    }
+
+    std::vector<NetworkInterface> prioritize(
+            std::vector<NetworkInterface> network_interfaces);
 
 }  // namespace support
 

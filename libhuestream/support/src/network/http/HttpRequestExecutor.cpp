@@ -9,6 +9,7 @@ All Rights Reserved.
 #include <map>
 #include <mutex>
 #include <algorithm>
+#include <unordered_map>
 
 #include "support/logging/Log.h"
 
@@ -19,6 +20,7 @@ All Rights Reserved.
 #define HUESDK_LIB_NETWORK_HTTP_RESPONSE_STATUS_CODE_OK (200)
 
 #include "support/network/http/_test/HttpRequestDelegator.h"
+#include "support/threading/ConditionVariable.h"
 #define HTTP_REQUEST support::HttpRequestDelegator
 
 using std::shared_ptr;
@@ -33,6 +35,8 @@ namespace support {
 
     class HttpRequestExecutor::RequestInfo : public HttpRequestExecutor::IRequestInfo {
     public:
+        using RetryErrorMap = std::unordered_map<unsigned int, unsigned int>;
+
         RequestInfo(HttpRequest* request,
                     RequestType request_type,
                     int retry_countdown,
@@ -62,8 +66,18 @@ namespace support {
         int retry_countdown() override {
             return _retry_countdown;
         }
-        
+
+        unsigned int retry_count_for_error(int error) {
+            return _retries_count[error];
+        }
+
+        void retry_performed_for_error(int error) {
+            ++_retries_count[error];
+            --_retry_countdown;
+        }
+
         HttpRequest* _request;
+        support::ConditionVariable<int> _idle_state_counter{0};
         RequestType _request_type;
         int _retry_countdown;
         int _server_reset_retry_countdown;
@@ -72,6 +86,9 @@ namespace support {
         string _body;
         File* _file;
         int _num_active_instances;
+        RetryErrorMap _retries_count;
+        bool _auto_remove = true;
+        HttpErrorPostActionType _post_action_type = HttpErrorPostActionType::NONE;
     };
 
     const char* HttpRequestExecutor::REQUEST_METHOD[] = {"GET", "PUT", "POST", "DELETE" };
@@ -80,7 +97,6 @@ namespace support {
     static const int SERVER_RESET_OCCURRENCE_MS = 900;
 
     HttpRequestExecutor::HttpRequestExecutor(int max_retries) :
-    _request_pool(1),
     _max_retries(max_retries),
     _stopped(false),
     _http_error_delegate(std::bind(&HttpRequestExecutor::handle_http_error, _1, _2, _3)) {
@@ -160,7 +176,9 @@ namespace support {
         add_request(request, request_info);
         
         request->set_executor(this);
-        _request_pool.add_task([this, request_info] () -> void { return execute(request_info); });
+        _thread_pool_executor.execute([this, request_info] () -> void {
+            execute(request_info);
+        });
     }
 
     void HttpRequestExecutor::add(shared_ptr<IRequestInfo> request_info) {
@@ -170,7 +188,7 @@ namespace support {
             request_info_cast->_retry_countdown = std::max(0, request_info_cast->_retry_countdown - 1);
         }
         add_request(request_info->get_request(), request_info);
-        _request_pool.add_task([this, request_info] () -> void { return execute(request_info); });
+        _thread_pool_executor.execute([this, request_info] () -> void { return execute(request_info); });
     }
 
     HttpRequest* HttpRequestExecutor::get_request(shared_ptr<IRequestInfo> request_info) {
@@ -191,13 +209,15 @@ namespace support {
     }
 
     void HttpRequestExecutor::execute(shared_ptr<IRequestInfo> request_info) {
-        const RequestInfo* request_info_cast = static_cast<const RequestInfo*>(request_info.get());
+        auto request_info_cast = static_cast<RequestInfo*>(request_info.get());
         HttpRequest* request = get_request(request_info);
 
         if (request) {
+            request_info_cast->_idle_state_counter.perform(support::operations::increment<int>);
             request->do_request(REQUEST_METHOD[static_cast<std::uint8_t>(request_info_cast->_request_type)], request_info_cast->_body, request_info_cast->_file, [this, request_info] (const HttpRequestError& error, const IHttpResponse& response) {
                 handle_response(error, response, request_info);
             });
+            request_info_cast->_idle_state_counter.perform(support::operations::decrement<int>);
         }
     }
 
@@ -214,7 +234,6 @@ namespace support {
 
         HttpRequestError mutable_error(error);
 
-
         // Discard request when request executor is stopped
         HttpErrorPostAction action;
         action.type = HttpErrorPostActionType::DISCARD;
@@ -223,10 +242,18 @@ namespace support {
             action = _http_error_delegate(mutable_error, response, request_info);
         }
 
-        if (action.type == HttpErrorPostActionType::RETRY && request_info_cast->_retry_countdown > 0) {
-            request_info_cast->_retry_countdown--;
+        if (request_info_cast->retry_count_for_error(response.get_status_code()) == 0) {
+            // This is the first time error occurred, override number of retries
+            auto min_retries = static_cast<int>(action.min_retries);
+            if (request_info_cast->_retry_countdown < min_retries) {
+                request_info_cast->_retry_countdown = min_retries;
+            }
+        }
 
-            _request_pool.add_task([this, action, request_info] () -> void {
+        if (action.type == HttpErrorPostActionType::RETRY && request_info_cast->_retry_countdown > 0) {
+            request_info_cast->retry_performed_for_error(response.get_status_code());
+
+            _thread_pool_executor.execute([this, action, request_info]() -> void {
                 if (action.delay.count() > 0) {
                     std::this_thread::sleep_for(action.delay);
                 }
@@ -235,19 +262,20 @@ namespace support {
             });
         } else {
             if (request_info_cast->_callback != nullptr) {
+                request_info_cast->_idle_state_counter.wait(0);
                 request_info_cast->_callback(mutable_error, response, request_info);
             } else {
                 HUE_LOG << HUE_NETWORK << HUE_WARN << "HttpRequestExecutor: no callback defined " << HUE_ENDL;
             }
 
-            do {
-                remove_request(request_info_cast->_request);
-            } while (action.type == HttpErrorPostActionType::DISCARD &&
-                     _request_map.find(request_info_cast->_request) != _request_map.end());
+            request_info_cast->_post_action_type = action.type;
+            if (request_info_cast->_auto_remove) {
+                remove(request_info);
+            }
         }
     }
 
-    HttpRequestExecutor::HttpErrorPostAction HttpRequestExecutor::handle_http_error(support::HttpRequestError& error, const support::IHttpResponse& /*response*/, const std::shared_ptr<support::HttpRequestExecutor::IRequestInfo>& /*request_info*/) {
+    HttpRequestExecutor::HttpErrorPostAction HttpRequestExecutor::handle_http_error(support::HttpRequestError& error, const support::IHttpResponse& /*response*/, const std::shared_ptr<support::HttpRequestExecutor::IRequestInfo>& /* request_info */) {
         HttpRequestExecutor::HttpErrorPostAction action;
         action.type = HttpErrorPostActionType::NONE;
 
@@ -259,6 +287,20 @@ namespace support {
         }
 
         return action;
+    }
+
+    void HttpRequestExecutor::disable_auto_removal(std::shared_ptr<IRequestInfo> request_info) {
+        std::lock_guard<mutex> lock(_request_map_mutex);
+        RequestInfo* request_info_cast = static_cast<RequestInfo*>(request_info.get());
+        request_info_cast->_auto_remove = false;
+    }
+
+    void HttpRequestExecutor::remove(std::shared_ptr<IRequestInfo> request_info) {
+        RequestInfo* request_info_cast = static_cast<RequestInfo*>(request_info.get());
+        do {
+            remove_request(request_info_cast->_request);
+        } while (request_info_cast->_post_action_type == HttpErrorPostActionType::DISCARD &&
+                 _request_map.find(request_info_cast->_request) != _request_map.end());
     }
 
 }  // namespace support
