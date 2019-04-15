@@ -1,16 +1,18 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
 #include <curl/curl.h>
 
+#include <string>
 #include <mutex>
 #include <thread>
 
 #include "support/network/http/curl/CurlHttpClient.h"
 #include "support/network/http/curl/CurlRequest.h"
 #include "support/network/http/HttpRequestParams.h"
+#include "support/network/Network.h"
 
 #define SHORT_WAIT_TIMEOUT_MS 100
 #define LONG_WAIT_TIMEOUT_MS 10000
@@ -81,9 +83,52 @@ namespace support {
         }
     }
 
+#ifdef ANDROID
+    static curl_socket_t open_curl_socket(void *custom_data, curlsocktype purpose, struct curl_sockaddr *address) {
+        (void) purpose;
+        (void) address;
+        auto curl_request = static_cast<CurlRequest *>(custom_data);
+        auto socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+        Network::set_interface_for_socket(static_cast<int>(socket_fd), curl_request->get_interface_name());
+
+        return socket_fd;
+    }
+
+    static int close_curl_socket(void *custom_data, curl_socket_t item) {
+        (void)custom_data;
+        int result = 0;
+        if (item != CURL_SOCKET_BAD) {
+            if (close(item) != 0) {
+                HUE_LOG << HUE_NETWORK << HUE_ERROR << "CurlRequest: Closing socket " << item << " failed with error " << errno
+                        << HUE_ENDL;
+                result = 1;
+            }
+        }
+        return result;
+    }
+
     IHttpClient::Handle CurlHttpClient::start_request(const HttpRequestParams &data, HttpRequestCallback callback) {
         CurlRequest *request = new CurlRequest(data, callback);
 
+        // run on specified interface
+        if (!data.interface_name.empty()) {
+            curl_easy_setopt(request->get_handle(), CURLOPT_OPENSOCKETFUNCTION, open_curl_socket);
+            curl_easy_setopt(request->get_handle(), CURLOPT_OPENSOCKETDATA, request);
+            curl_easy_setopt(request->get_handle(), CURLOPT_CLOSESOCKETFUNCTION, close_curl_socket);
+        }
+
+        return start_request(request);
+    }
+#else
+    IHttpClient::Handle CurlHttpClient::start_request(const HttpRequestParams &data, HttpRequestCallback callback) {
+        if (!data.interface_name.empty()) {
+            assert("Specifying interface name is not supported on this platform");
+        }
+        return start_request(new CurlRequest(data, callback));
+    }
+#endif
+
+    IHttpClient::Handle CurlHttpClient::start_request(CurlRequest *request) {
         // make this request use the shared tls data
         curl_easy_setopt(request->get_handle(), CURLOPT_SHARE, _curlsh.get());
 
@@ -179,5 +224,4 @@ namespace support {
             } while (msgs_in_queue > 0);
         }
     }
-
 }  // namespace support

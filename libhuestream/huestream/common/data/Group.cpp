@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -39,12 +39,17 @@ namespace huestream {
     }
 
     void Group::AddLight(std::string id, double x, double y, std::string name, std::string model, bool reachable) {
+        AddLight(id, x, y, 0.0, name, model, reachable);
+    }
+
+    void Group::AddLight(std::string id, double x, double y, double z, std::string name, std::string model, bool reachable) {
         if (_lights == nullptr) {
             _lights = std::make_shared<LightList>();
         }
 
         auto location = Location(Clip(x, -1, 1),
-                                 Clip(y, -1, 1));
+                                 Clip(y, -1, 1),
+                                 Clip(z, -1, 1));
 
         for (auto &light : *_lights) {
             if (light->GetId() == id) {

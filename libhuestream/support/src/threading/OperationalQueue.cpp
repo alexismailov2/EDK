@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 
@@ -203,6 +203,7 @@ namespace support {
             }
 
             call_and_ignore_exception(current_ticket->invocable);
+            state->thread_pool->process_tick();
 
             {
                 std::lock_guard<std::mutex> lock(state->sync_mutex);
@@ -246,6 +247,10 @@ namespace support {
     size_t OperationalQueue::ticket_count() {
         std::lock_guard<std::mutex> lock(_state->sync_mutex);
         return _state->registry.size();
+    }
+
+    std::shared_ptr<ThreadPool> OperationalQueue::get_thread_pool() const {
+        return _state->thread_pool;
     }
 
 }  // namespace support

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -36,7 +36,7 @@ namespace support_unittests {
 
     class MockHttpRequest : public HttpRequest {
     public:
-        explicit MockHttpRequest(const string& url, int connect_timeout, int receive_timeout = 8, int request_timeout = 8) :
+        explicit MockHttpRequest(const string& url, int connect_timeout = 8, int receive_timeout = 8, int request_timeout = 8) :
         HttpRequest(url, connect_timeout, receive_timeout, request_timeout),
         _url(url),
         _executing(false),
@@ -93,6 +93,8 @@ namespace support_unittests {
 
         MOCK_METHOD1(set_verify_ssl, void(bool));
 
+        MOCK_METHOD1(get_private_network_interface_name_for_url, string(std::string url));
+
         /* internals */
 
         MOCK_METHOD0(fake_delay, unsigned int());
@@ -139,6 +141,8 @@ namespace support_unittests {
 
         ~MockHttpRequest();
 
+        HttpRequestParams get_request_data() const;
+
     protected:
         /** */
         std::string             _url;
@@ -155,6 +159,8 @@ namespace support_unittests {
         HttpRequestExecutor*    _executor;
 
         std::unique_ptr<support::QueueDispatcher> _dispatcher;
+
+        HttpRequestParams       _request_data;
 
         /**
         

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -7,6 +7,7 @@
 #include <huestream/HueStream.h>
 #include <huestream/common/util/Rand.h>
 #include <huestream/effect/effects/ExplosionEffect.h>
+#include <huestream/common/data/Area.h>
 #include <huestream_example_console/Terminal.h>
 #include <huestream_example_console/ExplosionMenu.h>
 #include <huestream_example_console/App.h>

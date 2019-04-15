@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -34,6 +34,8 @@ namespace support {
         std::string              common_name;
         std::vector<std::string> trusted_certs;
         bool                     verify_ssl;
+        std::string              interface_name;
+        HttpRequestProgressCallback progress_callback;
     };
 
 }  // namespace support

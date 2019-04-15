@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 /** @file */
@@ -22,6 +22,7 @@ namespace huestream {
     enum IterationOrder {
         IterationOrderLeftRight,    ///< from left to right
         IterationOrderFrontBack,    ///< from front to back
+        IterationOrderTopBottom,    ///< from top to bottom
         IterationOrderClockwise,    ///< clockwise
         IterationOrderInOut,        ///< from close to center to further away from center
         IterationOrderRandom,       ///< random order

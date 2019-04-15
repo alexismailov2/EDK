@@ -12,12 +12,24 @@ import java.net.URL;
 import java.util.logging.Logger;
 
 public class Network {
+    static private JSONParser parser = new JSONParser();
+
     public enum UPDATE_REQUEST {
         POST,
         PUT
     }
 
-    public static JSONArray performUpdateRequest(final String fullUrl, final String serializedRequest, final UPDATE_REQUEST type) {
+    public static class Response {
+        public Response(Object body, int code) {
+            this.body = body;
+            this.code = code;
+        }
+
+        public final Object body;
+        public final int code;
+    }
+
+    public static Response performUpdateRequest(final String fullUrl, final String serializedRequest, final UPDATE_REQUEST type) {
         try {
             URL url = new URL(fullUrl);
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
@@ -30,66 +42,77 @@ public class Network {
             writer.write(serializedRequest);
             writer.flush();
             writer.close();
+        
+            Object responseBody = null;
+            try {
+                responseBody = parser.parse(extractFromStream(httpConnection.getInputStream()));
+            } catch (ParseException ignored) {}
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            JSONParser parser = new JSONParser();
-            return (JSONArray) parser.parse(reader);
+            return new Response(responseBody, httpConnection.getResponseCode());
         } catch (MalformedURLException e) {
             Logger.getGlobal().warning("Malformed url, when doing the request: " + e);
         } catch (IOException e) {
             Logger.getGlobal().warning("IOException when opening url connection: " + e);
-        } catch (ParseException e) {
-            Logger.getGlobal().warning("Can not parse incoming JSON: " + e);
         }
 
         return null;
     }
 
-    public static JSONArray performUpdateRequest(final String fullUrl, final JSONObject request, final UPDATE_REQUEST type) {
+    public static Response performUpdateRequest(final String fullUrl, final JSONObject request, final UPDATE_REQUEST type) {
         return performUpdateRequest(fullUrl, request.toString(), type);
     }
 
-    public static JSONArray performDeleteRequest(final String fullUrl) {
+    public static Response performDeleteRequest(final String fullUrl) {
         try {
             URL url = new URL(fullUrl);
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setRequestMethod("DELETE");
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            JSONParser parser = new JSONParser();
-            JSONArray result = (JSONArray) parser.parse(reader);
+            Object responseBody = null;
+            try {
+                responseBody = parser.parse(extractFromStream(httpConnection.getInputStream()));
+            } catch (ParseException ignored) {}
 
-            return result;
+            return new Response(responseBody, httpConnection.getResponseCode());
         } catch (MalformedURLException e) {
             Logger.getGlobal().warning("Malformed url, when doing the request: " + e);
         } catch (IOException e) {
             Logger.getGlobal().warning("IOException when opening url connection: " + e);
-        } catch (ParseException e) {
-            Logger.getGlobal().warning("Can not parse incoming JSON: " + e);
         }
 
         return null;
     }
 
-    public static JSONObject performGetRequest(final String fullUrl) {
+    public static Response performGetRequest(final String fullUrl) {
         try {
             URL url = new URL(fullUrl);
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setRequestMethod("GET");
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            JSONParser parser = new JSONParser();
-            JSONObject result = (JSONObject) parser.parse(reader);
+            Object responseBody = null;
+            try {
+                responseBody = parser.parse(extractFromStream(httpConnection.getInputStream()));
+            } catch (ParseException ignored) {}
 
-            return result;
+            return new Response(responseBody, httpConnection.getResponseCode());
         } catch (MalformedURLException e) {
             Logger.getGlobal().warning("Malformed url, when doing the request: " + e);
         } catch (IOException e) {
             Logger.getGlobal().warning("IOException when opening url connection: " + e);
-        } catch (ParseException e) {
-            Logger.getGlobal().warning("Can not parse incoming JSON: " + e);
         }
 
         return null;
+    }
+
+    private static String extractFromStream(final InputStream stream) throws IOException {
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        final StringBuilder builder = new StringBuilder();
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            builder.append(line);
+        }
+
+        return builder.toString();
     }
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -19,7 +19,7 @@ using std::string;
 
 namespace huesdk {
 
-    string BridgeDiscoveryConfiguration::_bridge_discovery_url = "https://www.meethue.com";
+    string BridgeDiscoveryConfiguration::_bridge_discovery_url = "https://discovery.meethue.com";
 
     std::mutex   BridgeDiscoveryConfiguration::_proxy_mutex;
     bool BridgeDiscoveryConfiguration::_has_proxy_settings = false;

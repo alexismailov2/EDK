@@ -8,6 +8,7 @@ list(APPEND source_files
     huestream/common/data/TestArea.cpp
     huestream/common/data/TestBridge.cpp
     huestream/common/data/TestColor.cpp
+    huestream/common/data/TestCuboidArea.cpp
     huestream/common/data/TestGroup.cpp
     huestream/common/http/TestBridgeHttpClient.cpp
     huestream/common/language/TestDummyTranslator.cpp
@@ -44,6 +45,7 @@ list(APPEND source_files
     huestream/effect/effects/TestExplosionEffect.cpp
     huestream/effect/effects/TestLightIteratorEffect.cpp
     huestream/effect/effects/TestLightSourceEffect.cpp
+    huestream/effect/effects/TestSphereLightSourceEffect.cpp
     huestream/effect/effects/TestManualEffect.cpp
     huestream/effect/effects/TestMultiChannelEffect.cpp
     huestream/stream/TestDefaultTimerProvider.cpp

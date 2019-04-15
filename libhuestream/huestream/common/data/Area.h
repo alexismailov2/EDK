@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 /** @file */
@@ -7,9 +7,9 @@
 #ifndef HUESTREAM_COMMON_DATA_AREA_H_
 #define HUESTREAM_COMMON_DATA_AREA_H_
 
+#include <huestream/common/data/IArea.h>
 #include <huestream/common/data/Location.h>
 #include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/common/serialize/Serializable.h>
 
 #include <vector>
 #include <string>
@@ -19,7 +19,7 @@ namespace huestream {
     /**
      defintion of an area within (or outside when inverted) the rectangle spanned by a top left and bottom right location
      */
-    class Area : public Serializable {
+    class Area : public IArea {
     public:
         static constexpr const char* type = "huestream.Area";
 
@@ -73,7 +73,9 @@ namespace huestream {
 
         Area(const Location &topLeft, const Location &bottomRight, const std::string name, bool inverted = false);
 
-        bool isInArea(const Location &location) const;
+        AreaPtr Clone() const override;
+
+        bool isInArea(const Location &location) const override;
 
     PROP_DEFINE(Area, Location, topLeft, TopLeft);
     PROP_DEFINE(Area, Location, bottomRight, BottomRight);
@@ -88,10 +90,7 @@ namespace huestream {
         std::string GetTypeName() const override;
     };
 
-    /**
-     shared pointer to an huestream::Area object
-     */
-    SMART_POINTER_TYPES_FOR(Area)
+    typedef Area RectangleArea;
 
 }  // namespace huestream
 

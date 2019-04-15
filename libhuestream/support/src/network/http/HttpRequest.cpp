@@ -1,17 +1,21 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
+
+#include <regex>
 #include <string>
 #include <cassert>
 
+#include "support/network/Network.h"
 #include "support/network/NetworkConfiguration.h"
 #include "support/network/http/HttpRequest.h"
 #include "support/network/http/HttpRequestBase.h"
 #include "support/network/http/HttpRequestParams.h"
 #include "support/network/http/IHttpClient.h"
 #include "support/network/http/IHttpResponse.h"
+#include "support/util/UrlUtil.h"
 
 #ifdef OBJC_HTTP_CLIENT
 #   include "support/network/http/objc/ObjcHttpClient.h"
@@ -19,6 +23,10 @@
 #   include "support/network/http/curl/CurlHttpClient.h"
 #endif
 
+using std::regex;
+using std::regex_search;
+using std::smatch;
+using std::string;
 
 namespace support {
 
@@ -36,7 +44,7 @@ namespace support {
         return _client_instance;
     }
 
-    void HttpRequest::set_http_client(const std::shared_ptr<IHttpClient>& client) {
+    void HttpRequest::set_default_http_client(const std::shared_ptr<IHttpClient>& client) {
         std::lock_guard<std::mutex> lk(_instance_mutex);
         _client_instance = client;
     }
@@ -88,6 +96,7 @@ namespace support {
         data.common_name = _common_name;
         data.trusted_certs = _trusted_certs;
         data.verify_ssl = _verify_ssl;
+        data.progress_callback = _progress_callback;
 
         if (data.trusted_certs.empty()) {
             data.trusted_certs = NetworkConfiguration::get_trusted_certificates(data.url);
@@ -123,10 +132,24 @@ namespace support {
                 get_http_client()->stop_request(_handle);
             }
 
-            _handle = get_http_client()->start_request(data, callback);
+            data.interface_name = get_private_network_interface_name_for_url(_url);
+            _handle = get_http_client()->start_request(std::move(data), callback);
         }
 
         return HTTP_REQUEST_STATUS_OK;
+    }
+
+    string HttpRequest::get_private_network_interface_name_for_url(string url) {
+        string name;
+#       ifdef  ANDROID
+        const NetworkInterface network_interface(support::UrlUtil::get_host(url), NetworkInetType::INET_IPV4);
+        if (network_interface.is_private()) {
+            name = Network::get_local_interface_name(NetworkInterface::ip_to_uint(network_interface.get_ip()));
+        }
+#       else
+        (void)url;
+#       endif  // ANDROID
+        return name;
     }
 
     void HttpRequest::cancel() {

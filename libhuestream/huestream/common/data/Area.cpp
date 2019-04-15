@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -170,6 +170,10 @@ namespace huestream {
         _inverted = inverted;
     }
 
+    AreaPtr Area::Clone() const {
+        return std::make_shared<Area>(*this);
+    }
+
     bool Area::isInArea(const Location &location) const {
         bool inArea = false;
 
@@ -197,8 +201,7 @@ namespace huestream {
     void Area::Deserialize(JSONNode *node) {
         Serializable::Deserialize(node);
         DeserializeValue(node, AttributeName, &_name, "");
-        auto x = DeserializeAttribute<Location>(node, AttributeTopLeft, std::make_shared<Location>(_topLeft));
-        _topLeft = *x;
+        _topLeft = *DeserializeAttribute<Location>(node, AttributeTopLeft, std::make_shared<Location>(_topLeft));
         _bottomRight = *DeserializeAttribute<Location>(node, AttributeBottomRight, std::make_shared<Location>(_bottomRight));
         DeserializeValue(node, AttributeInverted, &_inverted, false);
     }

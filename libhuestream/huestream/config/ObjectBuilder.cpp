@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -13,8 +13,11 @@
 #include <huestream/common/data/Light.h>
 #include <huestream/common/data/Group.h>
 #include <huestream/common/data/Bridge.h>
+#include <huestream/common/data/Area.h>
+#include <huestream/common/data/CuboidArea.h>
 #include <huestream/effect/effects/AreaEffect.h>
 #include <huestream/effect/effects/LightSourceEffect.h>
+#include <huestream/effect/effects/SphereLightSourceEffect.h>
 #include <huestream/effect/lightscript/Action.h>
 #include <huestream/effect/effects/MultiChannelEffect.h>
 #include <huestream/config/ObjectBuilder.h>
@@ -45,9 +48,11 @@ std::shared_ptr<Serializable> ObjectBuilder::ConstructInstanceOf(std::string typ
     if (type == Bridge::type) return std::make_shared<Bridge>(_bridgeSettings);
     if (type == Group::type) return std::make_shared<Group>();
     if (type == Area::type) return std::make_shared<Area>();
+    if (type == CuboidArea::type) return std::make_shared<CuboidArea>();
     if (type == Channel::type) return std::make_shared<Channel>();
     if (type == AreaEffect::type) return std::make_shared<AreaEffect>();
     if (type == LightSourceEffect::type) return std::make_shared<LightSourceEffect>();
+    if (type == SphereLightSourceEffect::type) return std::make_shared<SphereLightSourceEffect>();
     if (type == LightIteratorEffect::type) return std::make_shared<LightIteratorEffect>();
     if (type == MultiChannelEffect::type) return std::make_shared<MultiChannelEffect>();
     if (type == Action::type) return std::make_shared<Action>();

@@ -23,8 +23,6 @@ public class ConnectivityTests extends BaseTest {
 
     @After
     public void tearDown() {
-        cleanupUser();
-        pushLink(false);
         _hue_stream.ShutDown();
         clearPersistenceData();
     }
@@ -245,24 +243,6 @@ public class ConnectivityTests extends BaseTest {
         _hue_stream.ConnectBridgeAsync();
         
         messageObserver.waitForMessage(DEFAULT_TIMEOUT_MS);
-    }
-    
-    @Test
-    public void connectManual_Success_ResetStreamAndDisablePushlink_ConnectFromPersistence_AuthenticationStarted_AbortConnection_StreamStopped()
-    {
-        _hue_stream.ConnectManualBridgeInfo(_bridge);
-        checkStreamConnectionValid();
-        
-        resetStream();
-        cleanupUser();
-        pushLink(false);
-        
-        FeedbackMessageObserver messageObserver = createObserverForMessage(FeedbackMessage.Id.ID_START_AUTHORIZING);
-        _hue_stream.ConnectBridgeAsync();
-        messageObserver.waitForMessage(DEFAULT_TIMEOUT_MS);
-        
-        _hue_stream.AbortConnecting();
-        checkStreamNotConnected();
     }
     
     @Test

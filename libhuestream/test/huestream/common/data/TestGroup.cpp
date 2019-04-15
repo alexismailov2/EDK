@@ -34,8 +34,8 @@ TEST_F(TestGroup, Serialize) {
     pGroup->AddLight("4", 0.2, -0.3);
     pGroup->AddLight("5", 0.1, -0.2);
     pGroup->AddLight("6", 0.0, -0.1);
-    pGroup->AddLight("7", -0.1, 0.0);
-    pGroup->AddLight("8", -0.2, 0.1, lightName, lightModel);
+    pGroup->AddLight("7", -0.1, 0.0, 0.5);
+    pGroup->AddLight("8", -0.2, 0.1, -0.2, lightName, lightModel);
 
     auto sceneTag = "jfdks";
     auto sceneName = "Savanna Sunset";
@@ -76,6 +76,8 @@ TEST_F(TestGroup, Serialize) {
     ASSERT_EQ(-0.1, g->GetLights()->at(5)->GetPosition().GetY());
     ASSERT_EQ(0.0, g->GetLights()->at(6)->GetPosition().GetY());
     ASSERT_EQ(0.1, g->GetLights()->at(7)->GetPosition().GetY());
+    ASSERT_EQ(0.5, g->GetLights()->at(6)->GetPosition().GetZ());
+    ASSERT_EQ(-0.2, g->GetLights()->at(7)->GetPosition().GetZ());
     ASSERT_EQ(lightName, g->GetLights()->at(7)->GetName());
     ASSERT_EQ(lightModel, g->GetLights()->at(7)->GetModel());
 
@@ -90,11 +92,12 @@ TEST_F(TestGroup, AddLight) {
     auto name = "bedroom lamp";
     auto model = "LLC002";
     ASSERT_EQ(0, pGroup->GetLights()->size());
-    pGroup->AddLight("1", 0.5, 0.6, name, model);
+    pGroup->AddLight("1", 0.5, 0.6, 0.7, name, model);
     ASSERT_EQ(1, pGroup->GetLights()->size());
     ASSERT_EQ("1", pGroup->GetLights()->at(0)->GetId());
     ASSERT_EQ(0.5, pGroup->GetLights()->at(0)->GetPosition().GetX());
     ASSERT_EQ(0.6, pGroup->GetLights()->at(0)->GetPosition().GetY());
+    ASSERT_EQ(0.7, pGroup->GetLights()->at(0)->GetPosition().GetZ());
     ASSERT_EQ(name, pGroup->GetLights()->at(0)->GetName());
     ASSERT_EQ(model, pGroup->GetLights()->at(0)->GetModel());
 }
@@ -103,17 +106,18 @@ TEST_F(TestGroup, WhenLightExistsLightIsUpdated) {
     auto name = "nicelight";
     auto model = "LST001";
 
-    pGroup->AddLight("1", 0.1, 0.2);
+    pGroup->AddLight("1", 0.1, 0.2, 0.3);
     ASSERT_EQ("1", pGroup->GetLights()->at(0)->GetId());
     ASSERT_EQ(0.1, pGroup->GetLights()->at(0)->GetPosition().GetX());
     ASSERT_EQ(0.2, pGroup->GetLights()->at(0)->GetPosition().GetY());
     ASSERT_EQ("", pGroup->GetLights()->at(0)->GetName());
     ASSERT_EQ("", pGroup->GetLights()->at(0)->GetModel());
 
-    pGroup->AddLight("1", 0.5, 0.6, name, model);
+    pGroup->AddLight("1", 0.5, 0.6, 0.7, name, model);
     ASSERT_EQ("1", pGroup->GetLights()->at(0)->GetId());
     ASSERT_EQ(0.5, pGroup->GetLights()->at(0)->GetPosition().GetX());
     ASSERT_EQ(0.6, pGroup->GetLights()->at(0)->GetPosition().GetY());
+    ASSERT_EQ(0.7, pGroup->GetLights()->at(0)->GetPosition().GetZ());
     ASSERT_EQ(name, pGroup->GetLights()->at(0)->GetName());
     ASSERT_EQ(model, pGroup->GetLights()->at(0)->GetModel());
 }
@@ -144,10 +148,10 @@ TEST_F(TestGroup, Clone) {
     pGroup->AddLight("2", 0.4, -0.5);
     pGroup->AddLight("3", 0.3, -0.4);
     pGroup->AddLight("4", 0.2, -0.3);
-    pGroup->AddLight("5", 0.1, -0.2);
-    pGroup->AddLight("6", 0.0, -0.1);
-    pGroup->AddLight("7", -0.1, 0.0, lightName7, lightModel7, true);
-    pGroup->AddLight("8", -0.2, 0.1, lightName8, lightModel8, false);
+    pGroup->AddLight("5", 0.1, -0.2, 1.0);
+    pGroup->AddLight("6", 0.0, -0.1, 0.1);
+    pGroup->AddLight("7", -0.1, 0.0, -1.0, lightName7, lightModel7, true);
+    pGroup->AddLight("8", -0.2, 0.1, -0.1, lightName8, lightModel8, false);
 
     auto g = std::shared_ptr<Group>(pGroup->Clone());
     pGroup->SetId("13");
@@ -184,6 +188,10 @@ TEST_F(TestGroup, Clone) {
     ASSERT_EQ(-0.1, g->GetLights()->at(5)->GetPosition().GetY());
     ASSERT_EQ(0.0, g->GetLights()->at(6)->GetPosition().GetY());
     ASSERT_EQ(0.1, g->GetLights()->at(7)->GetPosition().GetY());
+    ASSERT_EQ(1.0, g->GetLights()->at(4)->GetPosition().GetZ());
+    ASSERT_EQ(0.1, g->GetLights()->at(5)->GetPosition().GetZ());
+    ASSERT_EQ(-1.0, g->GetLights()->at(6)->GetPosition().GetZ());
+    ASSERT_EQ(-0.1, g->GetLights()->at(7)->GetPosition().GetZ());
     ASSERT_EQ(lightName7, g->GetLights()->at(6)->GetName());
     ASSERT_EQ(lightModel7, g->GetLights()->at(6)->GetModel());
     ASSERT_EQ(lightName8, g->GetLights()->at(7)->GetName());

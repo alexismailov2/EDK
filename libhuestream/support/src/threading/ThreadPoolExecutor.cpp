@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -150,10 +150,13 @@ void ThreadPoolExecutor::shutdown() {
 }
 
 void ThreadPoolExecutor::shutdown(ShutdownPolicy shutdown_policy) {
+    support::Subscription task_executed_subscription;
     {
         std::lock_guard<std::mutex> lock{*_shared_data->_mutex};
+        task_executed_subscription = std::move(_task_executed_subscription);
         _is_shutdown = true;
     }
+    task_executed_subscription = {};
 
     switch (shutdown_policy) {
         case ShutdownPolicy::CANCEL_ALL:
@@ -170,4 +173,24 @@ void ThreadPoolExecutor::shutdown(ShutdownPolicy shutdown_policy) {
 
 std::shared_ptr<support::ThreadPool> ThreadPoolExecutor::get_thread_pool() const {
     return _thread_pool;
+}
+
+void ThreadPoolExecutor::schedule(std::chrono::steady_clock::time_point time_point, std::function<void()> invocable, OperationType operation_type /* = OperationType::CANCELABLE */) {
+    std::lock_guard<std::mutex> lock{*_shared_data->_mutex};
+    _shared_data->_task_schedule.add_task(std::move(time_point), std::move(invocable), operation_type == OperationType::CANCELABLE);
+
+    if (_task_executed_subscription || _is_shutdown) return;
+
+    _task_executed_subscription = _thread_pool->subscribe_for_tick_events([this] {
+        {
+            support::detail::TaskSchedule::TaskContainer tasks;
+            {
+                std::lock_guard<std::mutex> lock(*_shared_data->_mutex);
+                tasks = _shared_data->_task_schedule.filter_and_erase_tasks(std::chrono::steady_clock::now());
+            }
+            for (auto&& task : tasks) {
+                this->execute(task.first, task.second ? OperationType::CANCELABLE : OperationType::NON_CANCELABLE);
+            }
+        }
+    });
 }

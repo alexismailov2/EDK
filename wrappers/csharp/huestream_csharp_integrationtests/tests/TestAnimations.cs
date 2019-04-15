@@ -34,7 +34,6 @@ namespace huestream_tests
         [TearDown]
         public void TearDown()
         {
-            CleanupUser();
             _hue_stream.ShutDown();
         }
 

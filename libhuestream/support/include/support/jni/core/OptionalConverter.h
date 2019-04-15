@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -81,6 +81,7 @@ namespace huesdk_jni_core {
                 this->_value = to<std::string>(value).value();
             }
         }
+        explicit to(jobject value) : to(static_cast<jstring>(value)) {}
     };
 
     /*

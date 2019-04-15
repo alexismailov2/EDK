@@ -1,14 +1,16 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
 #include "support/jni/core/ClassInfo.h"
 #include "support/jni/core/ArrayList.h"
 #include "support/jni/core/HashMap.h"
+#include "support/jni/core/TreeSet.h"
 
 REGISTER_CLASS(huesdk_jni_core::ArrayList, "java/util/ArrayList");
 REGISTER_CLASS(huesdk_jni_core::HashMap, "java/util/HashMap");
+REGISTER_CLASS(huesdk_jni_core::TreeSet, "java/util/TreeSet");
 
 #include "support/jni/core/Converter.h"
 #include "support/jni/core/ContainerConverters.h"

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -9,6 +9,7 @@
 
 #include <thread>
 #include <memory>
+#include <string>
 
 #include "support/network/http/curl/CurlRequest.h"
 #include "support/network/http/HttpRequestParams.h"
@@ -28,6 +29,9 @@ namespace support {
         Handle start_request(const HttpRequestParams &data, HttpRequestCallback callback) override;
 
         void stop_request(Handle handle) override;
+
+    protected:
+        IHttpClient::Handle start_request(CurlRequest *request);
 
     private:
         /* multi handle that shares the connection pool for all http requests */

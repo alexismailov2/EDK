@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -11,6 +11,7 @@
 
 #include "support/threading/Job.h"
 
+#include "bridgediscovery/BridgeDiscoveryResult.h"
 #include "bridgediscovery/BridgeDiscoveryIpCheckResult.h"
 
 namespace support {
@@ -24,9 +25,9 @@ namespace huesdk {
     public:
         /**
          Constructor
-         * @param _ip ip to check
+         * @param input result to check
          */
-        explicit BridgeDiscoveryCheckIpTask(const std::string &_ip);
+        explicit BridgeDiscoveryCheckIpTask(const std::shared_ptr<BridgeDiscoveryResult> &input);
 
         /**
          @see Job.h
@@ -42,7 +43,7 @@ namespace huesdk {
     private:
         void parse_config_response(support::HttpRequestError* error, support::IHttpResponse* response);
 
-        std::string _ip;
+        std::shared_ptr<BridgeDiscoveryResult> _input;
         BridgeDiscoveryIpCheckResult _result;
     };
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -13,7 +13,9 @@ namespace support {
 
     ThreadPool::ThreadPool(size_t workers, bool finish_tasks_on_close, std::string name)
             : _close(false)
-            , _should_finish_tasks_on_close(finish_tasks_on_close) {
+            , _should_finish_tasks_on_close(finish_tasks_on_close)
+            , _last_tick_time_point{std::chrono::steady_clock::now()}
+            , _tick_interval{std::chrono::seconds(1)} {
         for (size_t i = 0; i < workers; i++) {
             const auto thread_name = name.empty() ? name : name + "-" + std::to_string(i + 1);
             _threads.emplace_back(std::make_unique<support::Thread>(thread_name, std::bind(&ThreadPool::event_loop, this)));
@@ -22,26 +24,26 @@ namespace support {
 
     void ThreadPool::event_loop() {
         std::unique_lock<std::mutex> tasks_lock(_tasks_mutex);
-        while (should_execute_tasks()) {
-            _tasks_condition.wait(tasks_lock, [&] () -> bool {
-                // Wait until there is a new task or the thread pool closed
+        while (!_close || (!_tasks.empty() && _should_finish_tasks_on_close)) {
+            _tasks_condition.wait_for(tasks_lock, _tick_interval.load(), [&] () -> bool {
                 return (!_tasks.empty() || _close);
             });
 
-            if (should_execute_tasks()) {
-                // Get task from the queue
-                ThreadPoolTask task = _tasks.front();
-                // Remove task from the queue
+            ThreadPoolTask task;
+            if (!_tasks.empty()) {
+                task = _tasks.front();
                 _tasks.pop();
-                tasks_lock.unlock();
-
-                // Execute the task
-                call_and_ignore_exception(task);
-                // Destroy the task out of critical section otherwise we can run to deadlock.
-                task = nullptr;
-
-                tasks_lock.lock();
             }
+
+            tasks_lock.unlock();
+
+            if (task) {
+                call_and_ignore_exception(task);
+                task = {};
+            }
+
+            process_tick();
+            tasks_lock.lock();
         }
     }
     
@@ -61,8 +63,29 @@ namespace support {
         }
         _threads.clear();
     }
-    
-    bool ThreadPool::should_execute_tasks() const {
-        return !_close || (!_tasks.empty() && _should_finish_tasks_on_close);
+
+    void ThreadPool::set_tick_interval(std::chrono::milliseconds period) {
+        _tick_interval = period;
+    }
+
+    Subscription ThreadPool::subscribe_for_tick_events(std::function<void()> handler) {
+        return _tick_signal.connect(handler);
+    }
+
+    void ThreadPool::process_tick() {
+        bool tick_once = false;
+        {
+            std::lock_guard<std::mutex> lock_guard{_last_tick_time_point_mutex};
+
+            const auto current_time_point = std::chrono::steady_clock::now();
+            if (_last_tick_time_point + _tick_interval.load() < current_time_point) {
+                _last_tick_time_point = current_time_point;
+                tick_once = true;
+            }
+        }
+
+        if (tick_once) {
+            _tick_signal();
+        }
     }
 }  // namespace support

@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 #pragma once
@@ -85,9 +85,9 @@ namespace support {
         void stop();
 
         /**
-         * start the executor (Note: by default executor is already in "started" state)
+         * cancel requests
          */
-        void start();
+        void wait_for_pending_requests();
 
         /**
          add a request to be executed
@@ -97,14 +97,16 @@ namespace support {
          @param resource_path the URL of the request
          @param body the HTTP body to send with the request (optional)
          @param file the file to send with the request (optional)
+         @return whether the operation succeded (for ex. if the executor is not started)
          */
-        void add(HttpRequest* request, RequestType request_type, Callback callback, const char* resource_path, const char* body = nullptr, File* file = nullptr);
+        bool add(HttpRequest* request, RequestType request_type, Callback callback, const char* resource_path, const char* body = nullptr, File* file = nullptr);
 
         /**
          add a request to be executed by giving the request_info object that was recieved on callback of a previous execution of the request
          @param request_info request info object
+         @return whether the operation succeded (for ex. if the executor is not started)
          */
-        void add(std::shared_ptr<IRequestInfo> request_info);
+        bool add(std::shared_ptr<IRequestInfo> request_info);
 
         /**
          disable auto removal after dispatching completion event.

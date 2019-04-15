@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -25,6 +25,7 @@
 #define JNI_JAVA_PRIMITIVE_ARRAY                          "["
 
 // JAVA Classes
+#define JNI_JAVA_CLASS_COLLECTION                         "java/util/Collection"
 #define JNI_JAVA_CLASS_LIST                               "java/util/List"
 #define JNI_JAVA_CLASS_STRING                             "java/lang/String"
 #define JNI_JAVA_CLASS_INTEGER                            "java/lang/Integer"

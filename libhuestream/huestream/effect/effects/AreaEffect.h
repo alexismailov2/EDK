@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -7,6 +7,7 @@
 #define HUESTREAM_EFFECT_EFFECTS_AREAEFFECT_H_
 
 #include <huestream/config/Config.h>
+#include <huestream/common/data/IArea.h>
 #include <huestream/common/data/Area.h>
 #include <huestream/effect/effects/base/ColorAnimationEffect.h>
 
@@ -52,13 +53,13 @@ namespace huestream {
          add area to list of areas in which this effect will be rendered
          @param area Additional area
          */
-        virtual void AddArea(const Area &area);
+        virtual void AddArea(const IArea &area);
 
         /**
          set a single area in which this effect will be rendered
          @param area New area
          */
-        virtual void SetArea(const Area &area);
+        virtual void SetArea(const IArea &area);
     };
 }  // namespace huestream
 

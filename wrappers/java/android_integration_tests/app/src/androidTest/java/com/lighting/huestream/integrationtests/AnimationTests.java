@@ -71,7 +71,6 @@ public class AnimationTests extends BaseTest {
     @After
     public void tearDown() {
         threadWaitFor(1000);
-        cleanupUser();
         _hue_stream.ShutDown();
     }
 

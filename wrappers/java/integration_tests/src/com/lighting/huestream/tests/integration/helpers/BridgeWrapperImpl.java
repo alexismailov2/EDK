@@ -25,7 +25,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
             for(Integer groupId : groups) {
                 String url = buildApiUrl("groups/" + groupId.toString());
 
-                JSONArray response = Network.performDeleteRequest(url);
+                JSONArray response = (JSONArray) Network.performDeleteRequest(url).body;
                 getSuccessNode(response);
             }
         }
@@ -34,7 +34,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
     @Override
     public String getLightRBGColor(ILightID lightId) {
         final String stipUrl = "http://" + _ip4Address + ":" + _tcpPort + "/stip/devices/" + lightId.getMac();
-        final JSONObject response = Network.performGetRequest(stipUrl);
+        final JSONObject response = (JSONObject) Network.performGetRequest(stipUrl).body;
         Assert.assertNotNull("Stip Light status response is null", response);
 
         final JSONObject stateNode = (JSONObject) response.get("state");
@@ -79,7 +79,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
 
     @Override
     public List<ILightID> getLLCLightsIDs() {
-        JSONObject lightsResponse = Network.performGetRequest(buildApiUrl("lights"));
+        JSONObject lightsResponse = (JSONObject) Network.performGetRequest(buildApiUrl("lights")).body;
         List<ILightID> result = new ArrayList<>();
 
         for (Object key: lightsResponse.keySet()) {
@@ -108,7 +108,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
         JSONObject request = new JSONObject();
         request.put("lights", lightsArray);
 
-        JSONArray response = Network.performUpdateRequest(buildApiUrl("groups/" + targetGroupId), request, Network.UPDATE_REQUEST.PUT);
+        JSONArray response = (JSONArray)Network.performUpdateRequest(buildApiUrl("groups/" + targetGroupId), request, Network.UPDATE_REQUEST.PUT).body;
         getSuccessNode(response);
     }
 
@@ -127,7 +127,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
         JSONObject request = new JSONObject();
         request.put("locations", locationsNode);
 
-        JSONArray response = Network.performUpdateRequest(buildApiUrl("groups/" + groupId), request, Network.UPDATE_REQUEST.PUT);
+        JSONArray response = (JSONArray) Network.performUpdateRequest(buildApiUrl("groups/" + groupId), request, Network.UPDATE_REQUEST.PUT).body;
         Assert.assertNotNull("Update locations response is null", response);
 
         for (Object node : response) {
@@ -145,7 +145,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
             return;
         }
 
-        JSONArray response = Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName));
+        JSONArray response = (JSONArray)Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName)).body;
         getSuccessNode(response);
     }
 
@@ -156,7 +156,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
         request.put("lights", lightsArray);
         request.put("class", "TV");
 
-        JSONArray response = Network.performUpdateRequest(buildApiUrl("groups"), request, Network.UPDATE_REQUEST.POST);
+        JSONArray response = (JSONArray)Network.performUpdateRequest(buildApiUrl("groups"), request, Network.UPDATE_REQUEST.POST).body;
         JSONObject successNode = (JSONObject) getSuccessNode(response);
 
         String groupIDValue = (String)successNode.get("id");
@@ -166,7 +166,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
     }
 
     List<Integer> getAllEntertainmentGroups() {
-        JSONObject groupsResponse = Network.performGetRequest(buildApiUrl("groups"));
+        JSONObject groupsResponse = (JSONObject) Network.performGetRequest(buildApiUrl("groups")).body;
         Assert.assertNotNull("Groups JSON object is NULL", groupsResponse);
         List<Integer> result = new ArrayList<>();
 

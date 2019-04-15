@@ -39,7 +39,7 @@ public class BaseTest {
     private static final String TAG = BaseTest.class.getName();
 
     protected static final int DEFAULT_TIMEOUT_MS = 3000;
-    protected static final int DISCOVERY_TIMEOUT_MS = 15000;
+    protected static final int DISCOVERY_TIMEOUT_MS = 120000;
     protected static final int LIGHTS_COUNT = 4;
 
     protected Bridge _bridge = null;
@@ -53,7 +53,6 @@ public class BaseTest {
 
     protected Bridge initializeBridge() {
         readBridgePropertiesIfNeeded();
-        createUserIfNeeded();
 
         Bridge result = new Bridge(_bridge_id, _ipv4_address, true, new BridgeSettings());
 
@@ -69,7 +68,6 @@ public class BaseTest {
     protected IBridgeWrapper initializeBridgeWrapper()
     {
         readBridgePropertiesIfNeeded();
-        createUserIfNeeded();
 
         BridgeWrapperBuilder builder = new BridgeWrapperBuilder();
         builder.withUserName(_user)
@@ -181,9 +179,19 @@ public class BaseTest {
                     _bridge_id = DEFAULT_BRIDGE_ID;
                 }
 
-                String bridge_ip = params.get("-Dhue_ip");
-                if (bridge_ip == null) {
-                    bridge_ip = DEFAULT_IP_ADDRESS;
+                _ipv4_address = params.get("-Dhue_ip");
+                if (_ipv4_address == null) {
+                    _ipv4_address = DEFAULT_IP_ADDRESS;
+                }
+
+                _user = params.get("-Dhue_username");
+                if (_user == null) {
+                    _user = DEFAULT_USERNAME;
+                }
+
+                _clientKey = params.get("-Dhue_clientkey");
+                if (_clientKey == null) {
+                    _clientKey = DEFAULT_CLIENT_KEY;
                 }
             } catch (Exception e) {
                 System.out.println("Exception, setting default params " + e);
@@ -214,37 +222,6 @@ public class BaseTest {
         return fileContents.toString();
     }
 
-    private void createUserIfNeeded() {
-        if (_user.isEmpty() || _clientKey.isEmpty()) {
-            pushLink(true);
-
-            final StringBuilder urlBuilder = new StringBuilder();
-            urlBuilder.append("http://")
-                    .append(_ipv4_address)
-                    .append(":")
-                    .append(_tcp_port)
-                    .append("/api");
-
-            final String REQUEST_BODY = "{\"devicetype\": \"JavaIntegrationTests#PC\", \"generateclientkey\":true}";
-
-            JSONArray response = Network.performUpdateRequest(urlBuilder.toString(), REQUEST_BODY, Network.UPDATE_REQUEST.POST);
-            Assert.assertNotNull("Push link response is null", response);
-
-            try {
-                JSONObject responseRoot = response.getJSONObject(0);
-                JSONObject successNode = responseRoot.getJSONObject("success");
-
-                _user = successNode.getString("username");
-                _clientKey = successNode.getString("clientkey");
-
-                Assert.assertFalse("User name is empty", _user.isEmpty());
-                Assert.assertFalse("Client key is empty", _clientKey.isEmpty());
-            } catch (JSONException e) {
-                Assert.fail("JSONException caught");
-            }
-        }
-    }
-
     protected void cleanupUser() {
         if (_user.isEmpty()) {
             return;
@@ -252,28 +229,18 @@ public class BaseTest {
 
         _user = "";
         _clientKey = "";
-        _bridgeWrapperHelper.cleanupUser();
     }
 
-    protected void pushLink(Boolean enable) {
+    protected void pushLink() {
         final StringBuilder urlBuilder = new StringBuilder();
         urlBuilder.append("http://")
                 .append(_ipv4_address)
                 .append(":")
                 .append(_tcp_port)
-                .append("/api/0/config");
+                .append("/stip/linkbutton");
 
-        final String REQUEST_BODY = "{\"linkbutton\":" + (enable ? "true" : "false") + "}";
-
-        JSONArray response = Network.performUpdateRequest(urlBuilder.toString(), REQUEST_BODY, Network.UPDATE_REQUEST.PUT);
-        Assert.assertNotNull("Push link response is null", response);
-
-        try {
-            JSONObject responseRoot = response.getJSONObject(0);
-            responseRoot.get("success");
-        } catch (JSONException e) {
-            Assert.fail("JSONException caught");
-        }
+        Network.Response response = Network.performUpdateRequest(urlBuilder.toString(), "", Network.UPDATE_REQUEST.POST);
+        Assert.assertEquals(204, response.code);
     }
 
     protected void clearPersistenceData() {
@@ -308,4 +275,6 @@ public class BaseTest {
     private static final String DEFAULT_UDP_PORT = "60202";
     private static final String DEFAULT_SSL_PORT = "61202";
     private static final String DEFAULT_BRIDGE_ID = "001788fffe1ffd08";
+    private static final String DEFAULT_USERNAME = "integrationTest";
+    private static final String DEFAULT_CLIENT_KEY = "integrationTest";
 }

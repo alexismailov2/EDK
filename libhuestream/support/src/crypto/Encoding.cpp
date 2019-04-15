@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -28,6 +28,30 @@ namespace support {
         std::string encoded = std::string(reinterpret_cast<const char*>(dst), dlen) + "\n";
         delete [] dst;
         return encoded;
+    }
+
+    std::string Encoding::base64_decode(const std::string& data) {
+        size_t dlen;
+        size_t slen = data.size();
+
+        auto src = reinterpret_cast<const unsigned char*>(data.c_str());
+
+        // get the size of the decoded string
+        auto ret = mbedtls_base64_decode(nullptr, 0, &dlen, src, slen);
+        if (ret == MBEDTLS_ERR_BASE64_INVALID_CHARACTER) {
+            return "";
+        }
+
+        std::string decoded;
+        auto dst = new unsigned char[dlen];
+
+        ret = mbedtls_base64_decode(dst, dlen, &dlen, src, slen);
+        if (ret == 0) {
+            decoded = std::string(reinterpret_cast<const char*>(dst), dlen);
+        }
+
+        delete [] dst;
+        return decoded;
     }
 
     std::string Encoding::hex_encode(const std::string& data) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 #pragma once
@@ -13,6 +13,7 @@ All Rights Reserved.
 #include "support/threading/Executor.h"
 #include "support/threading/ThreadPool.h"
 #include "support/threading/ConditionVariable.h"
+#include "support/threading/detail/TaskSchedule.h"
 
 namespace support {
 
@@ -55,6 +56,14 @@ namespace support {
         support::Operation execute(std::function<void()> invocable, OperationType operation_type = OperationType::CANCELABLE) override;
 
         /**
+         * Schedule a task after certain point of time. After each task execution, executor filters all the tasks that need
+         * to be executed after that point of time and executes them using Executor::schedule method.
+         * @param time_point time point after which the task could be executed
+         * @param invocable Function to be executed.
+         */
+        void schedule(std::chrono::steady_clock::time_point time_point, std::function<void()> invocable, OperationType operation_type = OperationType::CANCELABLE) override;
+
+        /**
          * Wait for all requests to be executed.
          * Blocks until there is no requests to process.
          * All incoming requests during wait_all() will be also processed.
@@ -89,11 +98,13 @@ namespace support {
         struct SharedData {
             std::shared_ptr<std::mutex> _mutex = std::make_shared<std::mutex>();
             std::vector<std::shared_ptr<Operation>> _operations;
+            detail::TaskSchedule _task_schedule;
         };
         std::shared_ptr<SharedData> _shared_data;
         std::shared_ptr<ThreadPool> _thread_pool;
         support::ConditionVariable<int> _waiting_condition{0};
         bool _is_shutdown = false;
+        support::Subscription _task_executed_subscription;
         ThreadPoolExecutor::ShutdownPolicy _shutdown_policy = ThreadPoolExecutor::ShutdownPolicy::CANCEL_ALL;
     };
 }  // namespace support

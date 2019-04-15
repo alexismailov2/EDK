@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -37,6 +37,9 @@ namespace support {
     };
     
     typedef std::function<void (const support::HttpRequestError& error, const IHttpResponse& response)> HttpRequestCallback;
+
+    typedef std::function<void (int64_t download_total, int64_t downloaded_upto_now,
+                                int64_t uplodad_total, int64_t uploaded_upto_now)> HttpRequestProgressCallback;
 
     class HttpRequestBase : public IHttpRequest {
     public:
@@ -225,6 +228,22 @@ namespace support {
          */
         virtual void set_verify_ssl(bool);
 
+        /**
+         set true if you want to treat this request as external and to not influence bridge connection state
+         */
+        void set_external(bool is_external) override;
+
+        /**
+         returns true if request is for external use (doesnt influence bridge connection state)
+         */
+        bool is_external() const override;
+
+
+        /*
+         sets a callback for the download / upload bytewise progress
+         */
+        virtual void set_progress_callback(HttpRequestProgressCallback progress_callback);
+
     protected:
         /**
          Constructor
@@ -278,6 +297,8 @@ namespace support {
         std::string              _common_name;
         std::vector<std::string> _trusted_certs;
         bool                     _verify_ssl;
+        bool                     _is_external;
+        HttpRequestProgressCallback _progress_callback;
     };
 }  // namespace support
 

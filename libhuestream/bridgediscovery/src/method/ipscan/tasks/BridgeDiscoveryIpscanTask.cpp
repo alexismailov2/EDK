@@ -1,8 +1,9 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
+#include <algorithm>
 #include <string>
 #include <memory>
 #include <vector>

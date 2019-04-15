@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -32,6 +32,8 @@ namespace huesdk {
                 return BridgeDiscovery::Option::IPSCAN;
             case BRIDGE_DISCOVERY_CLASS_TYPE_NUPNP :
                 return BridgeDiscovery::Option::NUPNP;
+            case BRIDGE_DISCOVERY_CLASS_TYPE_MDNS:
+                return BridgeDiscovery::Option::MDNS;
             default :
                 HUE_LOG << HUE_ERROR
                         << "BridgeDiscoveryClassType can't be converted to BridgeDiscovery::Option" << HUE_ENDL;

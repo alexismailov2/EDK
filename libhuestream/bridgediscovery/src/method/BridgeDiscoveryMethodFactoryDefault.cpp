@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -10,6 +10,7 @@
 #include "events/IBridgeDiscoveryEventNotifier.h"
 #include "method/IBridgeDiscoveryMethod.h"
 #include "method/ipscan/BridgeDiscoveryIpscan.h"
+#include "method/mdns/BridgeDiscoveryMDNS.h"
 #include "method/nupnp/BridgeDiscoveryNupnp.h"
 #include "method/upnp/BridgeDiscoveryUpnp.h"
 #include "support/util/MakeUnique.h"
@@ -31,6 +32,8 @@ huesdk_lib_default_factory<huesdk::IBridgeDiscoveryMethod, huesdk::BridgeDiscove
             return support::make_unique<huesdk::BridgeDiscoveryNupnp>(std::move(request_id), notifier);
         case huesdk::BridgeDiscovery::Option::IPSCAN:
             return support::make_unique<huesdk::BridgeDiscoveryIpscan>(std::move(request_id), notifier);
+        case huesdk::BridgeDiscovery::Option::MDNS:
+            return support::make_unique<huesdk::BridgeDiscoveryMDNS>(std::move(request_id), notifier);
     }
     return nullptr;
 }

@@ -50,7 +50,6 @@ public class AnimationTests extends BaseTest {
 
     @After
     public void tearDown() {
-        cleanupUser();
         _hue_stream.ShutDown();
     }
 

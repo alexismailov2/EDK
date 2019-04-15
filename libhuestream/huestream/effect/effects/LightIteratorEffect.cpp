@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -25,6 +25,7 @@ namespace huestream {
 const std::map<IterationOrder, std::string> LightIteratorEffect::_orderSerializeMap = {
     {IterationOrderLeftRight, "leftright"},
     {IterationOrderFrontBack, "frontback"},
+    {IterationOrderTopBottom, "topbottom"},
     {IterationOrderClockwise, "clockwise"},
     {IterationOrderInOut,     "inout"},
     {IterationOrderRandom,    "random"},
@@ -252,13 +253,14 @@ bool LightIteratorEffect::CompareLights(LightPtr i, LightPtr j) const {
             result = j->GetPosition().GetY() < i->GetPosition().GetY();
             break;
 
+        case IterationOrderTopBottom:
+            result = j->GetPosition().GetZ() < i->GetPosition().GetZ();
+            break;
+
         case IterationOrderClockwise : {
-            auto middle = Point(0, 0);
-            auto lightPointI = Point(i->GetPosition().GetX(), i->GetPosition().GetY());
-            auto vectorI = Vector(middle, lightPointI);
+            auto vectorI = Vector(i->GetPosition().GetX(), i->GetPosition().GetY());
             auto angleLightPointI = vectorI.GetAngle();
-            auto lightPointJ = Point(j->GetPosition().GetX(), j->GetPosition().GetY());
-            auto vectorJ = Vector(middle, lightPointJ);
+            auto vectorJ = Vector(j->GetPosition().GetX(), j->GetPosition().GetY());
             auto angleLightPointJ = vectorJ.GetAngle();
             result = angleLightPointJ < angleLightPointI;
             break;

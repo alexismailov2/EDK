@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -27,7 +27,8 @@ namespace support {
         _executor(nullptr),
         _log_component(HUE_NETWORK),
         _security_level(security_level),
-        _verify_ssl(true) {
+        _verify_ssl(true),
+        _is_external(false) {
         if (!enable_logging) {
             _log_component = HUE_IGNORE;
         }
@@ -204,5 +205,17 @@ namespace support {
 
     void HttpRequestBase::set_verify_ssl(bool value) {
         _verify_ssl = value;
+    }
+
+    void HttpRequestBase::set_external(bool is_external) {
+        _is_external = is_external;
+    }
+
+    bool HttpRequestBase::is_external() const {
+        return _is_external;
+    }
+
+    void HttpRequestBase::set_progress_callback(HttpRequestProgressCallback progress_callback) {
+        _progress_callback = std::move(progress_callback);
     }
 }  // namespace support

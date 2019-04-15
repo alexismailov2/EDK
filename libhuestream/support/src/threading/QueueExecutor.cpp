@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 
@@ -11,6 +11,8 @@ All Rights Reserved.
 #include "support/threading/QueueExecutor.h"
 
 #include "support/threading/OperationalQueue.h"
+#include "support/threading/detail/TaskSchedule.h"
+#include "support/threading/ThreadPool.h"
 
 using support::Operation;
 
@@ -25,7 +27,9 @@ namespace support {
         std::list<TicketInfo> tickets;
         std::shared_ptr<OperationalQueue> queue;
         std::mutex sync;
+        support::detail::TaskSchedule task_schedule;
         bool closing;
+        support::Subscription task_execute_subscription;
 
         explicit Impl(std::shared_ptr<OperationalQueue> i_queue)
                 : queue(i_queue)
@@ -73,18 +77,20 @@ namespace support {
             : QueueExecutor{GlobalQueueExecutor::get()->get_operational_queue()} {}
 
     QueueExecutor::QueueExecutor(std::shared_ptr<OperationalQueue> queue)
-            : _impl(std::make_shared<Impl>(queue)) {
-    }
+            : _impl(std::make_shared<Impl>(queue)) {}
 
     QueueExecutor::~QueueExecutor() {
         shutdown();
     }
 
     void QueueExecutor::shutdown() {
+        support::Subscription task_execute_subscription;
         {
             std::lock_guard<decltype(_impl->sync)> lock(_impl->sync);
+            task_execute_subscription = std::move(_impl->task_execute_subscription);
             _impl->closing = true;
         }
+        task_execute_subscription = {};
 
         clear(OperationType::CANCELABLE);
     }
@@ -186,5 +192,23 @@ namespace support {
 
     std::shared_ptr<OperationalQueue> QueueExecutor::get_operational_queue() const {
         return _impl->queue;
+    }
+
+    void QueueExecutor::schedule(std::chrono::steady_clock::time_point time_point, std::function<void()> invocable, OperationType operation_type /* = OperationType::CANCELABLE */) {
+        std::lock_guard<std::mutex> lock(_impl->sync);
+        _impl->task_schedule.add_task(std::move(time_point), std::move(invocable), operation_type == OperationType::CANCELABLE);
+
+        if (_impl->task_execute_subscription || _impl->closing) return;
+
+        _impl->task_execute_subscription = support::Subscription{_impl->queue->get_thread_pool()->subscribe_for_tick_events([this]() {
+            support::detail::TaskSchedule::TaskContainer tasks;
+            {
+                std::lock_guard<std::mutex> lock(_impl->sync);
+                tasks = _impl->task_schedule.filter_and_erase_tasks(std::chrono::steady_clock::now());
+            }
+            for (auto&& task : tasks) {
+                this->execute(task.first, task.second ? OperationType::CANCELABLE : OperationType::NON_CANCELABLE);
+            }
+        })};
     }
 }  // namespace support

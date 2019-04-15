@@ -67,14 +67,17 @@ endif()
 list(APPEND SUPPORT_DEFINITIONS_PRIVATE "CERTIFICATE_MAP_FILE=${CERTIFICATE_MAP_FILE}")
 
 # enable JNI if that was explicitly required from outside
-if(NOT ANDROID)
-    find_package(JNI REQUIRED)
-    list(APPEND SUPPORT_PRIVATE_INCLUDES ${JNI_INCLUDE_DIRS})
-endif(NOT ANDROID)
+if(${ENABLE_JNI})
+    list(APPEND SUPPORT_DEFINITIONS_PRIVATE "ENABLE_JNI")
+    if (NOT ANDROID)
+        find_package(JNI REQUIRED)
+        list(APPEND SUPPORT_PRIVATE_INCLUDES ${JNI_INCLUDE_DIRS})
+    endif()
 
-# add jni sources
-file(GLOB_RECURSE SUPPORT_SOURCES_JNI "src/jni/*.cpp" "include/support/jni/*.h")
-list(APPEND SUPPORT_SOURCES ${SUPPORT_SOURCES_JNI})
+    # add jni sources
+    file(GLOB_RECURSE SUPPORT_SOURCES_JNI "src/jni/*.cpp" "include/support/jni/*.h")
+    list(APPEND SUPPORT_SOURCES ${SUPPORT_SOURCES_JNI})
+endif()
 
 #
 # set additional libraries

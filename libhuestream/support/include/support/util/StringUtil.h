@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include <functional>
+
+#include "support/util/Uuid.h"
 
 namespace support {
 
@@ -24,6 +26,9 @@ namespace support {
         
         return string_stream.str();
     }
+
+    template<>
+    std::string to_string<const boost::uuids::uuid>(const boost::uuids::uuid& id);
     
     /**
      Make string upper case (only characters a-z are supported)

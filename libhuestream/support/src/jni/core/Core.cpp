@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -10,6 +10,7 @@
 #include "support/jni/core/Core.h"
 #include "support/jni/core/JNIEnvFactory.h"
 #include "support/jni/core/ClassInfo.h"
+#include "support/jni/core/JNILocalRef.h"
 
 using huesdk_jni_core::JNIEnvFactory;
 using huesdk_jni_core::ClassInfoRegister;
@@ -29,7 +30,7 @@ jint Init(JavaVM* vm, void* /*pvt*/) {
 
     auto env = JNIEnvFactory::Create();
     ClassInfoRegister::InitClasses(env.get());
-    const auto ScopeEnumClass = env->FindClass("com/philips/lighting/hue/sdk/wrapper/WrapperObject$Scope");
+    JNILocalRef<jclass> ScopeEnumClass{env->FindClass("com/philips/lighting/hue/sdk/wrapper/WrapperObject$Scope")};
     const auto field = env->GetStaticFieldID(ScopeEnumClass, "Internal", "Lcom/philips/lighting/hue/sdk/wrapper/WrapperObject$Scope;");
     InternalScope = env->NewGlobalRef(env->GetStaticObjectField(ScopeEnumClass, field));
     return JNIEnvFactory::JNIVersion;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -261,7 +261,7 @@ TEST_F(TestStream, UpdateBridge) {
     _stream->RenderSingleFrame();
     EXPECT_CALL(*_mockConnector, Send(_, 25)).Times(1);
     auto bridgeCpy = CreateBridge();
-    bridgeCpy->GetGroup()->AddLight("1", 0.1, 0.1, "1", "LTC001");
+    bridgeCpy->GetGroup()->AddLight("1", 0.1, 0.1, 0.1, "1", "LTC001");
     _stream->UpdateBridgeGroup(bridgeCpy);
 
     _stream->RenderSingleFrame();

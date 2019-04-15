@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -24,6 +24,8 @@ namespace huesdk {
          @param model_id The model ID of the bridge (BSB001 or BSB002)
          */
         BridgeDiscoveryResult(const std::string &unique_id, const std::string &ip, const std::string &api_version, const std::string &model_id);
+
+        explicit BridgeDiscoveryResult(const std::string &ip);
 
         /**
          Get the unique id of the bridge

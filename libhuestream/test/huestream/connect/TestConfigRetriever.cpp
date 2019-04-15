@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -87,18 +87,21 @@ namespace huestream {
             EXPECT_THAT(group->GetLights()->at(0)->GetId(), Eq("1"));
             EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetX(), DoubleEq(-1));
             EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetY(), DoubleEq(1));
+            EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetZ(), DoubleEq(0));
             EXPECT_THAT(group->GetLights()->at(0)->GetName(), Eq("Hue goooo"));
             EXPECT_THAT(group->GetLights()->at(0)->GetModel(), Eq("LLC020"));
             EXPECT_THAT(group->GetLights()->at(0)->Reachable(), Eq(true));
             EXPECT_THAT(group->GetLights()->at(1)->GetId(), Eq("2"));
             EXPECT_THAT(group->GetLights()->at(1)->GetPosition().GetX(), DoubleEq(0.5));
             EXPECT_THAT(group->GetLights()->at(1)->GetPosition().GetY(), DoubleEq(-0.99));
+            EXPECT_THAT(group->GetLights()->at(1)->GetPosition().GetZ(), DoubleEq(0));
             EXPECT_THAT(group->GetLights()->at(1)->GetName(), Eq("Strip"));
             EXPECT_THAT(group->GetLights()->at(1)->GetModel(), Eq("LST002"));
             EXPECT_THAT(group->GetLights()->at(1)->Reachable(), Eq(true));
             EXPECT_THAT(group->GetLights()->at(2)->GetId(), Eq("3"));
             EXPECT_THAT(group->GetLights()->at(2)->GetPosition().GetX(), DoubleEq(0.1));
             EXPECT_THAT(group->GetLights()->at(2)->GetPosition().GetY(), DoubleEq(-0.1));
+            EXPECT_THAT(group->GetLights()->at(2)->GetPosition().GetZ(), DoubleEq(0.2));
             EXPECT_THAT(group->GetLights()->at(2)->GetName(), Eq("Hue go 3"));
             EXPECT_THAT(group->GetLights()->at(2)->GetModel(), Eq("LLC020"));
             EXPECT_THAT(group->GetLights()->at(2)->Reachable(), Eq(false));
@@ -121,6 +124,7 @@ namespace huestream {
             ASSERT_THAT(group->GetLights()->at(0)->GetId(), Eq("4"));
             EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetX(), DoubleEq(0.1));
             EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetY(), DoubleEq(0.2));
+            EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetZ(), DoubleEq(0.3));
             EXPECT_THAT(group->GetLights()->at(0)->GetName(), Eq("Hue go 4"));
             EXPECT_THAT(group->GetLights()->at(0)->GetModel(), Eq("LLC020"));
             EXPECT_THAT(group->GetLights()->at(0)->Reachable(), Eq(true));
@@ -151,6 +155,7 @@ namespace huestream {
             ASSERT_THAT(group->GetLights()->at(0)->GetId(), Eq("4"));
             EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetX(), DoubleEq(-0.1));
             EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetY(), DoubleEq(-0.2));
+            EXPECT_THAT(group->GetLights()->at(0)->GetPosition().GetZ(), DoubleEq(-0.3));
             EXPECT_THAT(group->GetLights()->at(0)->GetName(), Eq("Hue go 4"));
             EXPECT_THAT(group->GetLights()->at(0)->GetModel(), Eq("LLC020"));
             EXPECT_THAT(group->GetLights()->at(0)->Reachable(), Eq(true));
@@ -181,7 +186,7 @@ namespace huestream {
                 "\"stream\":{\"proxymode\":\"auto\",\"proxynode\":\"/lights/3\",\"active\":false,\"owner\":null},"
                 "\"action\":{\"on\":true},\"state\":{\"all_on\":true,\"any_on\":true}}";
         const std::string eGroupFree = "\"3\":{\"name\":\"Mancave\",\"type\":\"Entertainment\",\"class\":\"Free\","
-                "\"lights\":[4],\"locations\":{\"4\":[0.1,0.2,0.3]},"
+                "\"lights\":[\"4\"],\"locations\":{\"4\":[0.1,0.2,0.3]},"
                 "\"stream\":{\"proxymode\":\"auto\",\"proxynode\":\"/lights/4\",\"active\":true,\"owner\":\"4LQDOrk3pBfgnjw8PXvwyLVRbYcJ8DQDGQMbg0EA\"},"
                 "\"action\":{\"on\":false},\"state\":{\"all_on\":false,\"any_on\":false}}";
         const std::string eGroupOther = "\"4\":{\"name\":\"Mancave\",\"type\":\"Entertainment\",\"class\":\"Other\","

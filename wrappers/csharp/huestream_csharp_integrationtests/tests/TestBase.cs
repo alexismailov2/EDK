@@ -4,6 +4,7 @@ using huestream;
 using System.Linq;
 using System;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
@@ -15,14 +16,16 @@ namespace huestream_tests
         protected const String APPLICATION_NAME = "CSharpIntegrationTests";
         protected const String PERSISTENCE_LOCATION = "bridge.json";
 
-        private String IPv4_ADDRESS = "192.168.1.51";
-        private String BRIDGE_ID = "001788fffe1ffd08";
-        private String TCP_PORT = "60202";
-        private String UDP_PORT = "60202";
-        private String SSL_PORT = "61202";
+        private String _ipv4_address = "192.168.1.51";
+        private String _bridge_id = "001788fffe1ffd08";
+        private String _tcp_port = "60202";
+        private String _udp_port = "60202";
+        private String _ssl_port = "61202";
+        private String _username = "integrationTest";
+        private String _client_key = "integrationTest";
         
         protected const int CONNECTION_TIMEOUT_MS = 3000;
-        protected const int DISCOVERY_TIMEOUT_MS = 15000;
+        protected const int DISCOVERY_TIMEOUT_MS = 120000;
         protected const int LIGHTS_COUNT = 4;
 
         protected FeedbackMessageHandler _message_handler;
@@ -40,27 +43,24 @@ namespace huestream_tests
         {
             if (TestContext.Parameters.Count > 0)
             {
-                IPv4_ADDRESS = TestContext.Parameters["hue_ip"];
-                BRIDGE_ID = TestContext.Parameters["hue_bridge_id"];
-                UDP_PORT = TestContext.Parameters["hue_streaming_port"];
-                SSL_PORT = TestContext.Parameters["hue_https_port"];
-                TCP_PORT = TestContext.Parameters["hue_http_port"];
+                _ipv4_address = TestContext.Parameters["hue_ip"];
+                _bridge_id = TestContext.Parameters["hue_bridge_id"];
+                _udp_port = TestContext.Parameters["hue_streaming_port"];
+                _ssl_port = TestContext.Parameters["hue_https_port"];
+                _tcp_port = TestContext.Parameters["hue_http_port"];
+                _username = TestContext.Parameters["hue_username"];
+                _client_key = TestContext.Parameters["hue_clientkey"];
             }
         }
 
         public Bridge InitializeBridge()
         {
-            if (GetUser().Length == 0 || GetClientKey().Length == 0)
-            {
-                CreateUser();
-            }
+            Bridge result = new Bridge(_bridge_id, _ipv4_address, true, new BridgeSettings());
 
-            Bridge result = new Bridge(BRIDGE_ID, IPv4_ADDRESS, true, new BridgeSettings());
-
-            result.SetUser(GetUser());
-            result.SetClientKey(GetClientKey());
-            result.SetTcpPort(TCP_PORT);
-            result.SetSslPort(SSL_PORT);
+            result.SetUser(_username);
+            result.SetClientKey(_client_key);
+            result.SetTcpPort(_tcp_port);
+            result.SetSslPort(_ssl_port);
             result.EnableSsl();
             
             return result;
@@ -68,17 +68,12 @@ namespace huestream_tests
 
         public IBridgeWrapper InitializeBridgeWrapper()
         {
-            if (GetUser().Length == 0 || GetClientKey().Length == 0)
-            {
-                CreateUser();
-            }
-
             BridgeWrapperBuilder builder = new BridgeWrapperBuilder();
-            builder.WithUserName(GetUser())
-                   .WithClientKey(GetClientKey())
-                   .WithIPv4Address(IPv4_ADDRESS)
-                   .WithTcpPort(TCP_PORT)
-                   .WithBridgeId(BRIDGE_ID);
+            builder.WithUserName(_username)
+                   .WithClientKey(_client_key)
+                   .WithIPv4Address(_ipv4_address)
+                   .WithTcpPort(_tcp_port)
+                   .WithBridgeId(_bridge_id);
 
             return builder.Build();
         }
@@ -126,7 +121,7 @@ namespace huestream_tests
         protected HueStream CreateStream(StreamingMode streamingMode)
         {
             StreamSettings streamSettings = new StreamSettings();
-            streamSettings.SetStreamingPort(int.Parse(UDP_PORT));
+            streamSettings.SetStreamingPort(int.Parse(_udp_port));
 
             Config config = new Config(APPLICATION_NAME, Environment.OSVersion.Platform.ToString(), new PersistenceEncryptionKey("encryption_key"));
             config.SetStreamSettings(streamSettings);
@@ -136,76 +131,26 @@ namespace huestream_tests
 
         protected void CleanupUser()
         {
-            if (_user == "")
+            if (_username == "")
             {
                 return;
             }
             
-            _user = "";
-            _clientKey = "";
-            _bridgeWrapperHelper.CleanUpUser();
+            _username = "";
+            _client_key = "";
         }
 
-        private String GetUser()
-        {
-            return _user;
-        }
-
-        private String GetClientKey()
-        {
-            return _clientKey;
-        }
-        
-        protected void CreateUser()
-        {
-            PushLink();
-
-            StringBuilder urlBuilder = new StringBuilder();
-            urlBuilder.Append("http://")
-                    .Append(IPv4_ADDRESS)
-                    .Append(":")
-                    .Append(TCP_PORT)
-                    .Append("/api");
-
-            String REQUEST_BODY = "{\"devicetype\": \"" + APPLICATION_NAME + "\", \"generateclientkey\":true}";
-
-            JArray response = Network.PerformUpdateRequest(urlBuilder.ToString(), REQUEST_BODY, Network.UPDATE_REQUEST.POST);
-            Assert.NotNull(response, "Push link response is null");
-
-            JToken responseRoot = response[0];
-            Assert.NotNull(responseRoot, "Wrong structure of incoming response");
-
-            var successNode = responseRoot["success"];
-            Assert.NotNull(successNode, "Creating group was not successful");
-
-            _user = (string)successNode["username"];
-            Assert.NotNull(_user, "User name is null");
-            Assert.False(_user.Length == 0, "User name is empty");
-
-            _clientKey = (string)successNode["clientkey"];
-            Assert.NotNull(_clientKey, "Client key is null");
-            Assert.False(_clientKey.Length == 0, "Client key is empty");
-        }
-
-        protected void PushLink(bool enable = true)
+        protected void PushLink()
         {
             StringBuilder urlBuilder = new StringBuilder();
             urlBuilder.Append("http://")
-                    .Append(IPv4_ADDRESS)
+                    .Append(_ipv4_address)
                     .Append(":")
-                    .Append(TCP_PORT)
-                    .Append("/api/0/config");
+                    .Append(_tcp_port)
+                    .Append("/stip/linkbutton");
 
-            String REQUEST_BODY = "{\"linkbutton\":" + (enable ? "true" : "false") + "}";
-
-            JArray response = Network.PerformUpdateRequest(urlBuilder.ToString(), REQUEST_BODY, Network.UPDATE_REQUEST.PUT);
-            Assert.NotNull(response, "Push link response is null");
-
-            JToken responseRoot = response[0];
-            Assert.NotNull(responseRoot, "Wrong structure of incoming response");
-
-            var successNode = responseRoot["success"];
-            Assert.NotNull(successNode, "Push link was not successful");
+            var response = Network.PerformUpdateRequest(urlBuilder.ToString(), "", Network.UPDATE_REQUEST.POST);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.code, "Push link response is null");
         }
 
         protected void ClearPersistenceData()
@@ -228,9 +173,5 @@ namespace huestream_tests
 
             return waitHandle;
         }
-
-
-        private String _user = "";
-        private String _clientKey = "";
     }
 }

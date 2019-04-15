@@ -69,10 +69,11 @@ TEST_F(TestFrames, Empty) {
     EXPECT_NEAR(AddMillisecondsAndReturnValue(&f, 100), 0, precision);
 }
 
-TEST_F(TestFrames, Serialize) {
+TEST_F(TestFrames, SerializeUncompressed) {
     auto f = FramesAnimation(10);
     f.Append(0.5);
     f.Append(0.7);
+    f.SetCompressionEnabled(false);
     
     JSONNode node;
     f.Serialize(&node);
@@ -82,9 +83,28 @@ TEST_F(TestFrames, Serialize) {
     ASSERT_TRUE(SerializerHelper::IsAttributeSet(&node, FramesAnimation::AttributeFrames));
     ASSERT_EQ(node[FramesAnimation::AttributeFrames].type(), JSON_ARRAY);
     ASSERT_EQ(node[FramesAnimation::AttributeFrames].as_array().size(), 2);
+    ASSERT_EQ(node[FramesAnimation::AttributeFrames].as_array().at(0).type(), JSON_NUMBER);
+    EXPECT_NEAR(node[FramesAnimation::AttributeFrames].as_array().at(0).as_float(), 0.5, 0.0001);
+    EXPECT_NEAR(node[FramesAnimation::AttributeFrames].as_array().at(1).as_float(), 0.7, 0.0001);
 }
 
-TEST_F(TestFrames, Deserialize) {
+TEST_F(TestFrames, SerializeCompressed) {
+    auto f = FramesAnimation(10);
+    f.Append(0.0);
+    f.Append(1.0);
+    f.SetCompressionEnabled(true);
+
+    JSONNode node;
+    f.Serialize(&node);
+
+    ASSERT_AttributeIsSetAndStringValue(node, Serializable::AttributeType, FramesAnimation::type);
+    ASSERT_AttributeIsSetAndDoubleValue(node, FramesAnimation::AttributeFps, 10);
+    ASSERT_TRUE(SerializerHelper::IsAttributeSet(&node, FramesAnimation::AttributeFrames));
+    ASSERT_EQ(node[FramesAnimation::AttributeFrames].type(), JSON_STRING);
+    ASSERT_EQ(node[FramesAnimation::AttributeFrames].as_string(), "AA//");
+}
+
+TEST_F(TestFrames, DeserializeUncompressed) {
     JSONNode node;
     AddStringAttribute(&node, Serializable::AttributeType, FramesAnimation::type);
     AddDoubleAttribute(&node, FramesAnimation::AttributeFps, 33.33);
@@ -104,15 +124,70 @@ TEST_F(TestFrames, Deserialize) {
     ASSERT_EQ(3, frames->size());
 }
 
+TEST_F(TestFrames, DeserializeCompressed) {
+    JSONNode node;
+    AddStringAttribute(&node, Serializable::AttributeType, FramesAnimation::type);
+    AddDoubleAttribute(&node, FramesAnimation::AttributeFps, 33.33);
+
+    JSONNode framesNode(FramesAnimation::AttributeFrames, "ABCDEF");
+    node.push_back(framesNode);
+
+    auto f = FramesAnimation();
+    f.Deserialize(&node);
+
+    ASSERT_DOUBLE_EQ(f.GetFps(), 33.33);
+    auto frames = f.GetFrames();
+    ASSERT_EQ(3, frames->size());
+}
+
+TEST_F(TestFrames, SerDesCompressed) {
+    auto fs = FramesAnimation(10);
+    fs.Append(0.5);
+    fs.Append(0.7);
+    fs.SetCompressionEnabled(true);
+
+    JSONNode node;
+    fs.Serialize(&node);
+
+    std::cout << node.write_formatted() << std::endl;
+
+    auto fd = FramesAnimation();
+    fd.Deserialize(&node);
+
+    ASSERT_DOUBLE_EQ(fs.GetFps(), fd.GetFps());
+    EXPECT_NEAR(fs.GetFrames()->at(0), fd.GetFrames()->at(0), 16);
+    EXPECT_NEAR(fs.GetFrames()->at(1), fd.GetFrames()->at(1), 16);
+}
+
+TEST_F(TestFrames, SerDesUncompressed) {
+    auto fs = FramesAnimation(10);
+    fs.Append(0.5);
+    fs.Append(0.7);
+    fs.SetCompressionEnabled(false);
+
+    JSONNode node;
+    fs.Serialize(&node);
+
+    auto fd = FramesAnimation();
+    fd.Deserialize(&node);
+
+    ASSERT_DOUBLE_EQ(fs.GetFps(), fd.GetFps());
+    EXPECT_EQ(fs.GetFrames()->at(0), fd.GetFrames()->at(0));
+    EXPECT_EQ(fs.GetFrames()->at(1), fd.GetFrames()->at(1));
+}
+
 TEST_F(TestFrames, Clone) {
     auto f = FramesAnimation(10);
     f.Append(0.5);
-    auto f_clone = f.Clone();
-    ASSERT_NE(nullptr,            f_clone);
-    EXPECT_EQ(f.GetValue(),       f_clone->GetValue());
-    EXPECT_EQ(f.GetMarker(),      f_clone->GetMarker());
-    EXPECT_EQ(f.GetTypeName(),    f_clone->GetTypeName());
-    EXPECT_EQ(f.GetTotalLength(), f_clone->GetTotalLength());
+    f.Append(0.7);
+    auto f_clone = std::static_pointer_cast<FramesAnimation>(f.Clone());
+    ASSERT_NE(nullptr,              f_clone);
+    EXPECT_EQ(f.GetValue(),         f_clone->GetValue());
+    EXPECT_EQ(f.GetMarker(),        f_clone->GetMarker());
+    EXPECT_EQ(f.GetTypeName(),      f_clone->GetTypeName());
+    ASSERT_DOUBLE_EQ(f.GetFps(),    f_clone->GetFps());
+    EXPECT_EQ(f.GetFrames()->at(0), f_clone->GetFrames()->at(0));
+    EXPECT_EQ(f.GetFrames()->at(1), f_clone->GetFrames()->at(1));
 }
 
 }  // namespace huestream

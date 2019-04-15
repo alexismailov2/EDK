@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -9,8 +9,6 @@
 #include <vector>
 
 #include "support/util/StringUtil.h"
-
-using std::string;
 
 namespace support {
 
@@ -39,38 +37,53 @@ namespace support {
                           e.g. 192.168.1.1 (IPV4),
                                2607:f0d0:1002:51::4 (IPV6)
          @param inet_type The type of the network interface: IPV4 or IPV6
+         */
+        NetworkInterface(std::string ip, NetworkInetType inet_type);
+
+        /**
+         Construct with data
+         @param ip        The ip address
+                          e.g. 192.168.1.1 (IPV4),
+                               2607:f0d0:1002:51::4 (IPV6)
+         @param inet_type The type of the network interface: IPV4 or IPV6
          @param name      The name of the network interface, e.g. "eth0"
          @param up        Whether the network interface is enabled
          @param loopback  Whether the network interface is a loopback
          */
         NetworkInterface(
-                const string& ip, NetworkInetType inet_type, const string& name, bool up, bool loopback,
+                std::string ip, NetworkInetType inet_type, std::string name, bool up, bool loopback,
                 NetworkAdapterType adapter_type = NetworkAdapterType::NETWORK_ADAPTER_TYPE_UNKNOWN, bool is_connected = false);
-        
+
         /**
          Get name
          @return The name of the network interface
          */
-        const string& get_name() const;
+        const std::string& get_name() const;
         
         /**
          Set name
          @param name The name of the network interface
          */
-        void set_name(const string& name);
+        void set_name(const std::string& name);
 
         /**
          Get ip address
          @return The ip address of the network interface
          */
-        const string& get_ip() const;
-        
+        const std::string& get_ip() const;
+
         /**
          Set ip
          @param ip Set the ip address of the network interface
          */
-        void set_ip(const string& ip);
-        
+        void set_ip(const std::string& ip);
+
+        /**
+         Set netmask
+         @param ip Set the netmask of the network interface
+         */
+        void set_netmask(const std::string& netmask);
+
         /**
          Get inet type
          @return The inet type of the network interface: IPV4 or IPV6
@@ -136,15 +149,31 @@ namespace support {
          @return true when the ip is private, false otherwise
          */
         bool is_private() const;
-        
+
+        /**
+          Check wether the given IP address is in the subnet range of the network
+          NB only IPv4 is currently supported
+          @param ip the IP address to check
+         */
+        bool is_in_subnet(uint32_t ip);
+
+        /**
+          Converts ip string to ip integer representation
+          NB only IPv4 is currently supported
+          @param ip the IP address
+         */
+        static uint32_t ip_to_uint(const std::string& ip);
+
     private:
         /** the name, e.g. "eth0" */
-        string          _name;
+        std::string          _name;
         /** the ip address
             format: 
             - IPV4: 192.168.1.1
             - IPV6: 2607:f0d0:1002:51::4 */
-        string _ip;
+        std::string _ip;
+        uint32_t _ipv4_num;
+        uint32_t _netmask_num;
         NetworkInetType _inet_type;
         bool _up;
         bool _loopback;
@@ -164,6 +193,5 @@ namespace support {
 
     std::vector<NetworkInterface> prioritize(
             std::vector<NetworkInterface> network_interfaces);
-
 }  // namespace support
 

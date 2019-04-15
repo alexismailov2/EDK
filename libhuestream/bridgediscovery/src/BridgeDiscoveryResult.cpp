@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -16,6 +16,10 @@ namespace huesdk {
               _ip(ip),
               _api_version(api_version),
               _model_id(model_id) {
+    }
+
+    BridgeDiscoveryResult::BridgeDiscoveryResult(const string &ip)
+            : _ip(ip) {
     }
 
     const char *BridgeDiscoveryResult::get_unique_id() const {

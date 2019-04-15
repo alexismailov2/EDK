@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 #include <math.h>
@@ -16,8 +16,6 @@ All Rights Reserved.
 #include "support/network/http/HttpRequestExecutor.h"
 #include "support/network/http/IHttpRequest.h"
 #include "support/network/http/HttpRequestError.h"
-
-#define HUESDK_LIB_NETWORK_HTTP_RESPONSE_STATUS_CODE_OK (200)
 
 #include "support/network/http/_test/HttpRequestDelegator.h"
 #include "support/threading/ConditionVariable.h"
@@ -103,6 +101,7 @@ namespace support {
     }
  
     HttpRequestExecutor::~HttpRequestExecutor() {
+        stop();
     }
 
     void HttpRequestExecutor::set_max_retries(int max_retries) {
@@ -119,8 +118,9 @@ namespace support {
         _request_map_cond.wait(lock, [this] { return _request_map.empty(); } );
     }
 
-    void HttpRequestExecutor::start() {
-        _stopped = false;
+    void HttpRequestExecutor::wait_for_pending_requests() {
+        unique_lock<mutex> lock(_request_map_mutex);
+        _request_map_cond.wait(lock, [this] { return _request_map.empty(); } );
     }
 
     void HttpRequestExecutor::add_request(HttpRequest* request, shared_ptr<IRequestInfo> request_info) {
@@ -156,8 +156,12 @@ namespace support {
         }
     }
    
-    void HttpRequestExecutor::add(HttpRequest* request, RequestType request_type, Callback callback, const char* resource_path, const char* body, File* file) {
+    bool HttpRequestExecutor::add(HttpRequest* request, RequestType request_type, Callback callback, const char* resource_path, const char* body, File* file) {
         unique_lock<mutex> lock(_request_map_mutex);
+        if (_stopped) {
+            return false;
+        }
+
         string body_string;
         if (body != nullptr) {
             body_string = body;
@@ -179,16 +183,24 @@ namespace support {
         _thread_pool_executor.execute([this, request_info] () -> void {
             execute(request_info);
         });
+
+        return true;
     }
 
-    void HttpRequestExecutor::add(shared_ptr<IRequestInfo> request_info) {
+    bool HttpRequestExecutor::add(shared_ptr<IRequestInfo> request_info) {
         unique_lock<mutex> lock(_request_map_mutex);
+        if (_stopped) {
+            return false;
+        }
+
         RequestInfo* request_info_cast = static_cast<RequestInfo*>(request_info.get());
         if (request_info_cast) {
             request_info_cast->_retry_countdown = std::max(0, request_info_cast->_retry_countdown - 1);
         }
         add_request(request_info->get_request(), request_info);
         _thread_pool_executor.execute([this, request_info] () -> void { return execute(request_info); });
+
+        return true;
     }
 
     HttpRequest* HttpRequestExecutor::get_request(shared_ptr<IRequestInfo> request_info) {

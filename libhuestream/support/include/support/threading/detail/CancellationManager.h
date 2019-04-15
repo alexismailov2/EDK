@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 
@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <functional>
 #include <utility>
 
-#include "support/signals/Signals.h"
+#include "support/signals/SynchronousSignal.h"
 #include "support/util/Subscription.h"
 #include "support/util/ExceptionUtil.h"
 

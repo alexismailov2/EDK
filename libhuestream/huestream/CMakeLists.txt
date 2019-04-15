@@ -11,6 +11,7 @@ list(APPEND huestream_files
     common/data/Bridge.cpp
     common/data/BridgeSettings.cpp
     common/data/Color.cpp
+    common/data/CuboidArea.cpp
     common/data/Group.cpp
     common/data/HueStreamData.cpp
     common/data/Light.cpp
@@ -67,6 +68,7 @@ list(APPEND huestream_files
     effect/effects/HitEffect.cpp
     effect/effects/LightIteratorEffect.cpp
     effect/effects/LightSourceEffect.cpp
+    effect/effects/SphereLightSourceEffect.cpp
     effect/effects/ManualEffect.cpp
     effect/effects/MultiChannelEffect.cpp
     effect/effects/SequenceEffect.cpp
@@ -96,8 +98,10 @@ list(APPEND huestream_files
     common/data/Bridge.h
     common/data/BridgeSettings.h
     common/data/Color.h
+    common/data/CuboidArea.h
     common/data/Group.h
     common/data/HueStreamData.h
+    common/data/IArea.h
     common/data/Light.h
     common/data/Location.h
     common/data/Scene.h
@@ -174,6 +178,7 @@ list(APPEND huestream_files
     effect/effects/HitEffect.h
     effect/effects/LightIteratorEffect.h
     effect/effects/LightSourceEffect.h
+    effect/effects/SphereLightSourceEffect.h
     effect/effects/ManualEffect.h
     effect/effects/MultiChannelEffect.h
     effect/effects/SequenceEffect.h

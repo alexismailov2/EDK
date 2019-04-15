@@ -35,7 +35,7 @@ namespace huestream {
             ASSERT_DOUBLE_EQ(inRadiusColor.GetR(), 0.1);
             ASSERT_DOUBLE_EQ(inRadiusColor.GetG(), 0.2);
             ASSERT_DOUBLE_EQ(inRadiusColor.GetB(), 0.3);
-            ASSERT_NEAR(inRadiusColor.GetAlpha(), 0.9, 0.05);
+            ASSERT_NEAR(inRadiusColor.GetAlpha(), 0.92, 0.01);
             ASSERT_DOUBLE_EQ(outRadiusColor.GetAlpha(), 0);
         }
     };

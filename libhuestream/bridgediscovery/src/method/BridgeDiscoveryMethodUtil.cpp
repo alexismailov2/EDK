@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -127,47 +127,43 @@ using IpCheckFutureVector = std::vector<std::future<BridgeDiscoveryIpCheckResult
         return unique_bridge_id;
     }
 
-    BridgeDiscoveryIpCheckResult BridgeDiscoveryMethodUtil::parse_bridge_config_result(const string& ip, const string& result) {
+    BridgeDiscoveryIpCheckResult BridgeDiscoveryMethodUtil::parse_bridge_config_result(const std::shared_ptr<BridgeDiscoveryResult>& input, const string& result) {
         BridgeDiscoveryIpCheckResult ip_check_result;
-        ip_check_result.ip        = ip;
-        ip_check_result.reachable = true;
+        ip_check_result.ip          = input->get_ip();
+        ip_check_result.unique_id   = input->get_unique_id();
+        ip_check_result.api_version = input->get_api_version();
+        ip_check_result.model_id    = input->get_model_id();
+        ip_check_result.reachable   = true;
         
-        HUE_LOG << HUE_NETWORK << HUE_DEBUG << "BridgeDiscoveryMethodUtil: parse_bridge_config_result: parsing response -> ip: " << ip << ", body: " << result << HUE_ENDL;
-        
-        JSONNode nodes;
+        HUE_LOG << HUE_NETWORK << HUE_DEBUG << "BridgeDiscoveryMethodUtil: parse_bridge_config_result: parsing response -> ip: " << input->get_ip() << ", body: " << result << HUE_ENDL;
         
         if (!result.empty()) {
             if (libjson::is_valid(result)) {
-                nodes = libjson::parse(result);
-                // Get unique id
-                string unique_id;
-                
-                JSONNode::const_iterator bridge_id_node_it = nodes.find("bridgeid");
-                // Check if bridge id is part of the result
-                if (bridge_id_node_it == nodes.end()) {
-                    JSONNode::const_iterator mac_node_it = nodes.find("mac");
-                    
-                    // Convert it to unique id
-                    unique_id = mac_node_it != nodes.end() ? BridgeDiscoveryMethodUtil::get_unique_bridge_id_from_mac(mac_node_it->as_string()) : "";
-                } else {
-                    // Use bridgeid as unique id
-                    unique_id = support::to_upper_case(bridge_id_node_it->as_string());
+                auto nodes = libjson::parse(result);
+
+                auto bridge_id_node_it = nodes.find("bridgeid");
+                auto mac_node_it = nodes.find("mac");
+                auto api_version_node_it = nodes.find("apiversion");
+                auto model_id_node_it = nodes.find("modelid");
+
+                if (bridge_id_node_it != nodes.end()) {
+                    ip_check_result.unique_id = support::to_upper_case(bridge_id_node_it->as_string());
+                } else if (mac_node_it != nodes.end()) {
+                    ip_check_result.unique_id = BridgeDiscoveryMethodUtil::get_unique_bridge_id_from_mac(mac_node_it->as_string());
                 }
-                
-                if (unique_id.length() > 0) {
-                    // Set the unique id and mark the ip as a bridge
-                    ip_check_result.unique_id = unique_id;
+
+                if (!ip_check_result.unique_id.empty()) {
                     ip_check_result.is_bridge = true;
                     
-                    HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscoveryMethodUtil: parse_bridge_config_result: parsed result -> unique id: " << unique_id << ", ip: " << ip << HUE_ENDL;
+                    HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscoveryMethodUtil: parse_bridge_config_result: parsed result -> unique id: " << ip_check_result.unique_id << ", ip: " << ip_check_result.ip << HUE_ENDL;
 
-                    // Get api version
-                    JSONNode::const_iterator api_version_node_it = nodes.find("apiversion");
-                    ip_check_result.api_version = api_version_node_it != nodes.end() ? api_version_node_it->as_string() : "";
+                    if (api_version_node_it != nodes.end()) {
+                        ip_check_result.api_version = api_version_node_it->as_string();
+                    }
 
-                    // Get model_id
-                    JSONNode::const_iterator model_id_node_it = nodes.find("modelid");
-                    ip_check_result.model_id = model_id_node_it != nodes.end() ? model_id_node_it->as_string() : "";
+                    if (model_id_node_it != nodes.end()) {
+                        ip_check_result.model_id = model_id_node_it->as_string();
+                    }
                 }
             } else {
                 HUE_LOG << HUE_CORE << HUE_ERROR << "BridgeDiscoveryMethodUtil: parse_bridge_config_result: invalid json" << HUE_ENDL;

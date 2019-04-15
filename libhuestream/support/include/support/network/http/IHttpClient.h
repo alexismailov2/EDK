@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -32,9 +32,9 @@ namespace support {
 
     class IHttpClient {
     public:
-        typedef void* Handle;
+        using Handle = void*;
 
-        virtual ~IHttpClient() {}
+        virtual ~IHttpClient() = default;
 
         virtual Handle start_request(const HttpRequestParams& data, HttpRequestCallback callback) = 0;
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 
@@ -9,6 +9,10 @@ All Rights Reserved.
 #include <memory>
 #include <utility>
 #include <vector>
+
+#include <boost/fusion/adapted/struct.hpp>
+#include <boost/fusion/include/algorithm.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
 
 #include "support/threading/ThreadPoolExecutor.h"
 #include "support/threading/FutureExceptions.h"

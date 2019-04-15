@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -58,7 +58,7 @@ namespace huesdk {
          @param  result The http response body
          @return struct with the information
          */
-        static BridgeDiscoveryIpCheckResult parse_bridge_config_result(const std::string& ip, const std::string& result);
+        static BridgeDiscoveryIpCheckResult parse_bridge_config_result(const std::shared_ptr<BridgeDiscoveryResult>& input, const std::string& result);
     };
 
 }  // namespace huesdk

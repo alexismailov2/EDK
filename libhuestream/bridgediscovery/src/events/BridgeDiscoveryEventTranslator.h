@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -85,6 +85,8 @@ namespace huesdk {
                         return bridge_discovery_events::IPSCAN_METHOD;
                     case BridgeDiscovery::Option::NUPNP:
                         return bridge_discovery_events::NUPNP_METHOD;
+                    case BridgeDiscovery::Option::MDNS:
+                        return bridge_discovery_events::MDNS_METHOD;
                     default:
                         HUE_LOG << HUE_CORE << HUE_ERROR
                             << "Can't convert bridge discovery option to string" << HUE_ENDL;

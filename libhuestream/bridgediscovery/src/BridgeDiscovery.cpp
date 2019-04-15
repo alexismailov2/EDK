@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -53,11 +53,11 @@ namespace huesdk {
     }
 
     void BridgeDiscovery::search(IBridgeDiscoveryCallback *callback) {
-        search(BridgeDiscovery::Option::UPNP | BridgeDiscovery::Option::NUPNP, callback);
+        search(BridgeDiscovery::Option::MDNS | BridgeDiscovery::Option::NUPNP, callback);
     }
 
     void BridgeDiscovery::search(Callback callback) {
-        search(BridgeDiscovery::Option::UPNP | BridgeDiscovery::Option::NUPNP, callback);
+        search(BridgeDiscovery::Option::MDNS | BridgeDiscovery::Option::NUPNP, callback);
     }
 
     void BridgeDiscovery::search(support::EnumSet<Option> options, IBridgeDiscoveryCallback *callback) {
@@ -167,6 +167,7 @@ namespace huesdk {
 
         // NOTE: IPSCAN must go first, because its search will contain all needed bridge info. Possible following (N)UPNP search results of the same bridge will be discarded.
         auto discovery_options = {
+                BridgeDiscovery::Option::MDNS,
                 BridgeDiscovery::Option::IPSCAN,
                 BridgeDiscovery::Option::UPNP,
                 BridgeDiscovery::Option::NUPNP

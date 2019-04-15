@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -21,7 +21,7 @@ namespace huesdk {
 
     bool BridgeDiscoveryNupnp::method_search(const MethodResultCallback &callback) {
         _job = support::create_job<TaskType>(
-                BridgeDiscoveryConfiguration::get_bridge_discovery_url() + bridge_discovery_const::NUPNP_HTTP_URL_PATH,
+                get_bridge_discovery_nupnp_url(),
                 _request_id,
                 _bridge_discovery_event_notifier);
 
@@ -32,5 +32,21 @@ namespace huesdk {
 
     BridgeDiscoveryClassType BridgeDiscoveryNupnp::get_type() const {
         return BridgeDiscoveryClassType::BRIDGE_DISCOVERY_CLASS_TYPE_NUPNP;
+    }
+
+    std::string BridgeDiscoveryNupnp::get_bridge_discovery_nupnp_url() {
+        string url = BridgeDiscoveryConfiguration::get_bridge_discovery_url();
+
+        // add the /api/nupnp suffix to the legacy urls for backward compatibility
+
+        if (url == "https://www.meethue.com" ||
+            url == "https://www-system.meethue.com" ||
+            url == "https://www-portal.meethue.com") {
+            return url + bridge_discovery_const::NUPNP_HTTP_URL_PATH;
+        }
+
+        // any other url is used as is
+
+        return url;
     }
 }  // namespace huesdk

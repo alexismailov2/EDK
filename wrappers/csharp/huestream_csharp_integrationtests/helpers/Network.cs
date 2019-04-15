@@ -13,7 +13,19 @@ public static class Network
         PUT
     }
 
-    public static JArray PerformUpdateRequest(String fullUrl, String serializedRequest, UPDATE_REQUEST type)
+    public struct Response
+    {
+        public Response(HttpStatusCode code, JContainer body)
+        {
+            this.code = code;
+            this.body = body;
+        }
+
+        public readonly HttpStatusCode code;
+        public readonly JContainer body;
+    }
+
+    public static Response PerformUpdateRequest(String fullUrl, String serializedRequest, UPDATE_REQUEST type)
     {
         var url = new Uri(fullUrl);
         byte[] requestByteArray = Encoding.UTF8.GetBytes(serializedRequest);
@@ -31,25 +43,22 @@ public static class Network
             stream.Close();
         }
 
-        String jsonResponse = string.Empty;
-
         // Get response
         using (var response = (HttpWebResponse)httpRequest.GetResponse())
         using (var stream = response.GetResponseStream())
         using (var reader = new StreamReader(stream))
         {
-            jsonResponse = reader.ReadToEnd();
+            var jsonResponse = reader.ReadToEnd();
+            return new Response(response.StatusCode, JArray.Parse(jsonResponse));
         }
-
-        return JArray.Parse(jsonResponse);
     }
 
-    public static JArray PerformUpdateRequest(String fullUrl, JObject request, UPDATE_REQUEST type)
+    public static Response PerformUpdateRequest(String fullUrl, JObject request, UPDATE_REQUEST type)
     {
         return PerformUpdateRequest(fullUrl, request.ToString(Formatting.None), type);
     }
 
-    public static JArray PerformDeleteRequest(String fullUrl)
+    public static Response PerformDeleteRequest(String fullUrl)
     {
         var url = new Uri(fullUrl);
 
@@ -57,19 +66,17 @@ public static class Network
         httpRequest.Method = "DELETE";
         httpRequest.Accept = "application/json";
 
-        String jsonResponse = string.Empty;
 
         using (var response = (HttpWebResponse)httpRequest.GetResponse())
         using (var stream = response.GetResponseStream())
         using (var reader = new StreamReader(stream))
         {
-            jsonResponse = reader.ReadToEnd();
+            var jsonResponse = reader.ReadToEnd();
+            return new Response(response.StatusCode, JArray.Parse(jsonResponse));
         }
-
-        return JArray.Parse(jsonResponse);
     }
 
-    public static JObject PerformGetRequest(String fullUrl)
+    public static Response PerformGetRequest(String fullUrl)
     {
         var url = new Uri(fullUrl);
 
@@ -77,15 +84,12 @@ public static class Network
         httpRequest.Method = WebRequestMethods.Http.Get;
         httpRequest.Accept = "application/json";
 
-        String jsonResponse = string.Empty;
-
         using (var response = (HttpWebResponse)httpRequest.GetResponse())
         using (var stream = response.GetResponseStream())
         using (var reader = new StreamReader(stream))
         {
-            jsonResponse = reader.ReadToEnd();
+            var jsonResponse = reader.ReadToEnd();
+            return new Response(response.StatusCode, JObject.Parse(jsonResponse));
         }
-
-        return JObject.Parse(jsonResponse);
     }
 }

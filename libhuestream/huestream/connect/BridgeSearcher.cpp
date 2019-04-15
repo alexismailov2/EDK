@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -44,7 +44,7 @@ namespace huestream {
             _cb = cb;
             _searcher = std::make_shared<BridgeDiscovery>();
             if (bruteForce) {
-                _searcher->search(BridgeDiscovery::Option::UPNP |
+                _searcher->search(BridgeDiscovery::Option::MDNS |
                                   BridgeDiscovery::Option::NUPNP |
                                   BridgeDiscovery::Option::IPSCAN, this);
             } else {

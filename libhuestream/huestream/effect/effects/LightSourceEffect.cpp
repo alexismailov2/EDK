@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -53,9 +53,11 @@ namespace huestream {
     }
 
     AnimationListPtr LightSourceEffect::GetAnimations() {
-        if (_i == nullptr)
-            return AnimationHelper::CreatePtr(_x, _y, _radius, _r, _g, _b, _a);
-        return AnimationHelper::CreatePtr(_x, _y, _radius, _r, _g, _b, _a, _i);
+        auto list = ColorAnimationEffect::GetAnimations();
+        list->push_back(_x);
+        list->push_back(_y);
+        list->push_back(_radius);
+        return list;
     }
 
     std::string LightSourceEffect::GetTypeName() const {
@@ -77,4 +79,7 @@ namespace huestream {
         _y = DeserializeAttribute<Animation>(node, AttributeY, _y);
         _radius = DeserializeAttribute<Animation>(node, AttributeRadius, _radius);
     }
+
+    typedef LightSourceEffect CircleLightSourceEffect;
+
 }  // namespace huestream

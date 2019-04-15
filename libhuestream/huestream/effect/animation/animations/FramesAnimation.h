@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -25,6 +25,7 @@ namespace huestream {
         void SetFps(const double &fps);
 
         PROP_DEFINE(FramesAnimation, std::shared_ptr<std::vector<uint16_t>>, frames, Frames);
+        PROP_DEFINE(FramesAnimation, bool, compressionEnabled, CompressionEnabled);
 
     public:
         FramesAnimation();
@@ -62,6 +63,11 @@ namespace huestream {
         std::string GetTypeName() const override;
 
     private:
+        void SerializeFramesCompressed(JSONNode *node) const;
+        void SerializeFramesRaw(JSONNode *node) const;
+        void AddFramesFrom12BitBase64String(const std::string& frameString);
+        const std::string Pack12bitBase64(double number) const;
+
         double _fpms;
         double _frameLength;
     };

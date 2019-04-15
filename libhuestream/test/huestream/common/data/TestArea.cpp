@@ -10,8 +10,8 @@ using namespace std;
 class TestArea : public testing::Test {
 protected:
 
-    AreaPtr _frontLeft;
-    AreaPtr _backHalf;
+    shared_ptr<Area> _frontLeft;
+    shared_ptr<Area> _backHalf;
 
     virtual void SetUp() {
         Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(nullptr));

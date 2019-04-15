@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -8,6 +8,8 @@
 #include <mutex>
 #include <functional>
 #include <condition_variable>
+#include <utility>
+#include <vector>
 
 namespace support {
 
@@ -22,9 +24,7 @@ namespace support {
         explicit ConditionVariable(const T& value) : _value(value) {}
 
         void set_value(const T& value, NotifyMode mode = NotifyMode::All) {
-            std::lock_guard<std::mutex> lock{_mutex};
-            _value = value;
-            notify(mode);
+            perform([&](T&){_value = value;}, mode);
         }
 
         T get_value() const {
@@ -33,9 +33,23 @@ namespace support {
         }
 
         void perform(std::function<void(T&)> operation, NotifyMode mode = NotifyMode::All) {
-            std::lock_guard<std::mutex> lock{_mutex};
-            operation(_value);
-            notify(mode);
+            std::vector<std::function<void()>> handlers;
+
+            {
+                std::lock_guard<std::mutex> lock{_mutex};
+                operation(_value);
+                handlers = take_fulfilled_expectations_handlers(mode);
+
+                if (mode == NotifyMode::All) {
+                    _condition.notify_all();
+                } else if (handlers.size() == 0) {
+                    _condition.notify_one();
+                }
+            }
+
+            for (auto&& handler : handlers) {
+                handler();
+            }
         }
 
         void wait(const T& value) {
@@ -72,18 +86,58 @@ namespace support {
             return _condition.wait_until(lock, timeout_time, [&]() {return matcher(_value);});
         }
 
-    private:
-        void notify(NotifyMode mode) {
-            if (mode == NotifyMode::All) {
-                _condition.notify_all();
-            } else {
-                _condition.notify_one();
+        class ConditionBuilder {
+        public:
+            ConditionBuilder(std::function<bool(const T&)> matcher, ConditionVariable<T>& condition_variable)
+                : _matcher{std::move(matcher)}
+                , _condition_variable{condition_variable} {}
+            ConditionBuilder& then(std::function<void()> handler) {
+                bool call_handler = false;
+                {
+                    std::lock_guard<std::mutex> lock{_condition_variable._mutex};
+                    if (_matcher(_condition_variable._value)) {
+                        call_handler = true;
+                    } else {
+                        _condition_variable._expectations.push_back(std::make_pair(_matcher, std::move(handler)));
+                    }
+                }
+
+                if (call_handler) {
+                    handler();
+                }
+
+                return *this;
             }
+
+        private:
+            std::function<bool(const T&)> _matcher;
+            ConditionVariable<T>& _condition_variable;
+        };
+
+        ConditionBuilder when(std::function<bool(const T&)> matcher) {
+            return ConditionBuilder{std::move(matcher), *this};
+        }
+
+    private:
+        std::vector<std::function<void()>> take_fulfilled_expectations_handlers(NotifyMode mode) {
+            std::vector<std::function<void()>> return_value;
+            auto iter = _expectations.begin();
+            while (iter != _expectations.end()) {
+                if ((*iter).first(_value)) {
+                    return_value.push_back((*iter).second);
+                    iter = _expectations.erase(iter);
+                    if (mode == NotifyMode::One) break;
+                } else {
+                    ++iter;
+                }
+            }
+            return return_value;
         }
 
         mutable std::mutex _mutex;
         T _value;
         std::condition_variable _condition;
+        std::vector<std::pair<std::function<bool(const T&)>, std::function<void()>>> _expectations;
     };
 
     namespace operations {
@@ -109,6 +163,11 @@ namespace support {
     }  //  namespace operations
 
     namespace matchers {
+        template <typename T>
+        std::function<bool(const T&)> equal(const T& value) {
+            return std::bind([](const T& member, const T& value){return member == value;}, std::placeholders::_1, value);
+        }
+
         template <typename T>
         std::function<bool(const T&)> greater_than(const T& value) {
             return std::bind([](const T& member, const T& value){return member > value;}, std::placeholders::_1, value);

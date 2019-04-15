@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -7,6 +7,9 @@
 #include <ctime>
 #include <string>
 #include <cctype>
+#include <random>
+
+#include <boost/lexical_cast.hpp>
 
 #include "support/util/StringUtil.h"
 
@@ -34,11 +37,12 @@ namespace support {
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "abcdefghijklmnopqrstuvwxyz"};
 
-        unsigned time_seed = static_cast<unsigned int>(time(0));
-        srand(time_seed);
+        static std::random_device rd;
+        static std::mt19937 mt(rd());
+        static std::uniform_int_distribution<> rand_int(0, static_cast<int>(alphanumeric_chars.length()) - 1);
 
         for (unsigned i = 0; i < size; ++i) {
-            random_string += alphanumeric_chars[rand() % (static_cast<int>(alphanumeric_chars.length()) - 1)];
+            random_string += alphanumeric_chars[rand_int(mt)];
         }
 
         return random_string;
@@ -244,4 +248,8 @@ namespace support {
         return output;
     }
 
+    template<>
+    std::string to_string<const boost::uuids::uuid>(const boost::uuids::uuid& id) {
+        return boost::lexical_cast<std::string>(id);
+    }
 }  // namespace support

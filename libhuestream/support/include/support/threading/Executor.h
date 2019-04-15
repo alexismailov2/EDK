@@ -1,10 +1,11 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 #pragma once
 
 #include <functional>
+#include <chrono>
 
 #include "support/util/Operation.h"
 
@@ -31,6 +32,14 @@ namespace support {
          * @param operation_type Specifies if executor allowed to disacard this request on cancellation and destruction.
          */
         virtual support::Operation execute(std::function<void()> invocable, OperationType operation_type = OperationType::CANCELABLE) = 0;
+
+        /**
+         * Schedule a task after certain point of time. After each task execution, executor filters all the tasks that need
+         * to be executed after that point of time and executes them using Executor::schedule method.
+         * @param time_point time point after which the task could be executed
+         * @param invocable Function to be executed.
+         */
+        virtual void schedule(std::chrono::steady_clock::time_point time_point, std::function<void()> invocable, OperationType operation_type = OperationType::CANCELABLE) = 0;
 
         /**
          * Wait for all requests to be executed.

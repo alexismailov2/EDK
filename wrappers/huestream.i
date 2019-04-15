@@ -67,8 +67,10 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
 %shared_ptr(std::vector<std::shared_ptr<huestream::Color>>)
 %shared_ptr(huestream::Location)
 %shared_ptr(std::vector<std::shared_ptr<huestream::Location>>)
+%shared_ptr(huestream::IArea)
+%shared_ptr(std::vector<std::shared_ptr<huestream::IArea>>)
 %shared_ptr(huestream::Area)
-%shared_ptr(std::vector<std::shared_ptr<huestream::Area>>)
+%shared_ptr(huestream::CuboidArea)
 %shared_ptr(huestream::Light)
 %shared_ptr(std::vector<std::shared_ptr<huestream::Light>>)
 %shared_ptr(huestream::Scene)
@@ -130,6 +132,7 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
 %shared_ptr(std::vector<std::shared_ptr<huestream::AnimationEffect>>)
 %shared_ptr(huestream::ColorAnimationEffect)
 %shared_ptr(huestream::LightSourceEffect)
+%shared_ptr(huestream::SphereLightSourceEffect)
 %shared_ptr(huestream::RadialEffect)
 %shared_ptr(huestream::AreaEffect)
 %shared_ptr(huestream::LightIteratorEffect)
@@ -220,7 +223,9 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
 #include <huestream/common/data/Light.h>
 #include <huestream/common/data/Scene.h>
 #include <huestream/common/data/Group.h>
+#include <huestream/common/data/IArea.h>
 #include <huestream/common/data/Area.h>
+#include <huestream/common/data/CuboidArea.h>
 #include <huestream/common/data/BridgeSettings.h>
 #include <huestream/common/data/Bridge.h>
 #include <huestream/common/data/HueStreamData.h>
@@ -268,6 +273,7 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
 #include <huestream/effect/effects/base/ColorAnimationEffect.h>
 #include <huestream/effect/effects/base/RadialEffect.h>
 #include <huestream/effect/effects/LightSourceEffect.h>
+#include <huestream/effect/effects/SphereLightSourceEffect.h>
 #include <huestream/effect/effects/MultiChannelEffect.h>
 #include <huestream/effect/effects/AreaEffect.h>
 #include <huestream/effect/effects/LightIteratorEffect.h>
@@ -297,7 +303,7 @@ using namespace huestream;
 %template(SceneVector) std::vector<shared_ptr<huestream::Scene>>;
 %template(GroupVector) std::vector<shared_ptr<huestream::Group>>;
 %template(BridgeVector) std::vector<shared_ptr<huestream::Bridge>>;
-%template(AreaVector) std::vector<shared_ptr<huestream::Area>>;
+%template(AreaVector) std::vector<shared_ptr<huestream::IArea>>;
 %template(ColorVector) std::vector<shared_ptr<huestream::Color>>;
 %template(LocationVector) std::vector<shared_ptr<huestream::Location>>;
 %template(ChannelVector) std::vector<shared_ptr<huestream::Channel>>;
@@ -324,6 +330,7 @@ using namespace huestream;
 %include <huestream/common/data/Location.h>
 %attribute(huestream::Location, double, X, GetX, SetX);
 %attribute(huestream::Location, double, Y, GetY, SetY);
+%attribute(huestream::Location, double, Z, GetZ, SetZ);
 
 %ignore huestream::Colors; 
 %include <huestream/common/data/Color.h>
@@ -347,11 +354,17 @@ using namespace huestream;
 %attribute(huestream::Group, string, Name, GetName, SetName);
 %attribute(huestream::Group, huestream::LightListPtr, Lights, GetLights, SetLights);
 
+%include <huestream/common/data/IArea.h>
 %include <huestream/common/data/Area.h>
 %attribute(huestream::Area, huestream::Location, TopLeft, GetTopLeft, SetTopLeft);
 %attribute(huestream::Area, huestream::Location, BottomRight, GetBottomRight, SetBottomRight);
 %attribute(huestream::Area, string, Name, GetName, SetName);
 %attribute(huestream::Area, bool, IsInverted, Inverted, SetInverted);
+%include <huestream/common/data/CuboidArea.h>
+%attribute(huestream::CuboidArea, huestream::Location, TopFrontLeft, GetTopFrontLeft, SetTopFrontLeft);
+%attribute(huestream::CuboidArea, huestream::Location, BottomBackRight, GetBottomBackRight, SetBottomBackRight);
+%attribute(huestream::CuboidArea, string, Name, GetName, SetName);
+%attribute(huestream::CuboidArea, bool, IsInverted, Inverted, SetInverted);
 
 %include <huestream/common/data/BridgeSettings.h>
 %include <huestream/common/data/Bridge.h>
@@ -482,6 +495,11 @@ namespace huestream {
     %attribute(huestream::LightSourceEffect, huestream::AnimationPtr, Radius, GetRadius, SetRadius);
     %attribute(huestream::LightSourceEffect, huestream::AnimationPtr, X, GetX, SetX);
     %attribute(huestream::LightSourceEffect, huestream::AnimationPtr, Y, GetY, SetY);
+
+%include <huestream/effect/effects/SphereLightSourceEffect.h>
+    %attribute(huestream::SphereLightSourceEffect, huestream::AnimationPtr, Radius, GetRadius, SetRadius);
+    %attribute(huestream::SphereLightSourceEffect, huestream::AnimationPtr, X, GetX, SetX);
+    %attribute(huestream::SphereLightSourceEffect, huestream::AnimationPtr, Y, GetY, SetY);
 
 %include <huestream/effect/effects/base/RadialEffect.h>
     %attribute(huestream::RadialEffect, double, Angle, GetAngle, SetAngle);

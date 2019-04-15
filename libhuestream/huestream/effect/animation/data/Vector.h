@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -15,7 +15,10 @@ namespace huestream {
     private:
         double _x;
         double _y;
+        double _z;
     public:
+        Vector(const double x, const double y, const double z = 0);
+
         Vector(const Point &from, const Point &to);
 
         Vector(const Location &from, const Location &to);
@@ -24,12 +27,17 @@ namespace huestream {
 
         const double &get_y() const;
 
+        const double &get_z() const;
 
         int GetQuadrant() const;
 
         double GetLength() const;
 
         double GetAngle() const;
+
+        double GetAnglePhi() const;
+
+        double GetAngleTheta() const;
     };
 }  // namespace huestream
 

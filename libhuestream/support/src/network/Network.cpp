@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -9,7 +9,10 @@
 
 #include "support/network/_test/Network.h"  // NOLINT(build/include)
 
+#if defined(ENABLE_JNI)
 #include "support/jni/core/Core.h"
+#include "support/jni/core/HueJNIEnv.h"
+#endif
 
 #if defined(CONSOLE_SUPPORT)
 #elif defined(_WIN32)
@@ -233,6 +236,27 @@ namespace support {
         return false;
     }  // Network::is_wifi_connected()
 
+    std::string Network::get_local_interface_name(uint32_t ip_address) {
+        auto ifs = get_network_interfaces();
+        string interface_name;
+
+        for (auto& network_interface : ifs) {
+            if (network_interface.get_adapter_type() == NetworkAdapterType::NETWORK_ADAPTER_TYPE_WIRELESS ||
+                network_interface.get_adapter_type() == NetworkAdapterType::NETWORK_ADAPTER_TYPE_WIRED) {
+                if (network_interface.get_is_connected()) {
+                    if (network_interface.is_private()) {
+                        if (network_interface.is_in_subnet(ip_address)) {
+                            interface_name = network_interface.get_name();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return interface_name;
+    }
+
     namespace detail {
 #if defined(_WIN32)
         static std::pair<bool, SOCKET> create_socket(int family, int protocol) {
@@ -429,23 +453,31 @@ namespace support {
 
         return network_interfaces;
     }
+
+    void Network::set_interface_for_socket(int socket, const std::string& interface_name) {
+        // NOT APPLICABLE
+        (void)socket;
+        (void)interface_name;
+    }
 #elif defined(ANDROID)
+
+    jobject fileDescriptor_N2J(JNIEnv* env, int file_descriptor);
+    void bind_socket_to_network(JNIEnv* env, jobject j_socket_fd, const std::string& interface_name);
+
     boost::optional<NetworkInterface> get_wifi_network_interface(JNIEnv* env) {
         jmethodID j_get_wifi_util
                   = env->GetStaticMethodID(
                         jni::g_cls_ref_wifi_util_factory, "getWifiUtil",
                         "()Lcom/philips/lighting/hue/sdk/wrapper/utilities/WifiUtil;");
 
-        jobject j_wifi_util = env->CallStaticObjectMethod(jni::g_cls_ref_wifi_util_factory, j_get_wifi_util);
-
-        jclass cls = env->GetObjectClass(j_wifi_util);
+        JNILocalRef<jobject> j_wifi_util{env->CallStaticObjectMethod(jni::g_cls_ref_wifi_util_factory, j_get_wifi_util)};
+        JNILocalRef<jclass> cls{env->GetObjectClass(j_wifi_util)};
 
         jmethodID j_get_is_enabled = env->GetMethodID(
                 cls, "isEnabled",
                 GET_METHOD_SIGNATURE("", GET_FULLY_QUALIFIED_CLASS_SIGNATURE(JNI_JAVA_CLASS_BOOLEAN)));
 
-        jobject j_is_enabled_obj = env->CallObjectMethod(j_wifi_util, j_get_is_enabled);
-
+        JNILocalRef<jobject> j_is_enabled_obj{env->CallObjectMethod(j_wifi_util, j_get_is_enabled)};
         auto is_up = huesdk_jni_core::to<boost::optional<bool>>(j_is_enabled_obj);
 
         if (is_up._value == boost::none) {
@@ -459,10 +491,9 @@ namespace support {
                         cls, "getName",
                         GET_METHOD_SIGNATURE("", GET_FULLY_QUALIFIED_CLASS_SIGNATURE(JNI_JAVA_CLASS_STRING)));
 
-        jobject j_name_obj = env->CallObjectMethod(j_wifi_util, j_get_name);
+        JNILocalRef<jobject> j_name_obj{env->CallObjectMethod(j_wifi_util, j_get_name)};
         if (j_name_obj != nullptr) {
-            name = support::jni::util::string_J2N(env, (jstring)j_name_obj);
-
+            name = support::jni::util::string_J2N(env, (jstring)j_name_obj.get());
         } else {
             HUE_LOG << HUE_NETWORK <<  HUE_WARN << "Network (wifi): Could not get name for interface from Java, retrieve failed" << HUE_ENDL;
             return boost::none;
@@ -474,9 +505,9 @@ namespace support {
         jmethodID j_get_ip
            = env->GetMethodID(cls, "getIpV4Address", GET_METHOD_SIGNATURE("", GET_FULLY_QUALIFIED_CLASS_SIGNATURE(JNI_JAVA_CLASS_STRING)));
 
-        jobject j_ip_obj = env->CallObjectMethod(j_wifi_util, j_get_ip);
+        JNILocalRef<jobject> j_ip_obj{env->CallObjectMethod(j_wifi_util, j_get_ip)};
         if (j_ip_obj != nullptr) {
-            ip_address = support::jni::util::string_J2N(env, (jstring)j_ip_obj);
+            ip_address = support::jni::util::string_J2N(env, (jstring)j_ip_obj.get());
         } else {
             HUE_LOG << HUE_NETWORK <<  HUE_WARN << "Network: Could not get ip for interface from Java, retrieve failed" << HUE_ENDL;
             return boost::none;
@@ -489,8 +520,7 @@ namespace support {
                 cls, "isWifiOnAndConnected",
                 GET_METHOD_SIGNATURE("", GET_FULLY_QUALIFIED_CLASS_SIGNATURE(JNI_JAVA_CLASS_BOOLEAN)));
 
-        jobject j_is_connected_obj = env->CallObjectMethod(j_wifi_util, j_get_is_connected);
-
+        JNILocalRef<jobject> j_is_connected_obj{env->CallObjectMethod(j_wifi_util, j_get_is_connected)};
         auto is_connected = huesdk_jni_core::to<boost::optional<bool>>(j_is_connected_obj);
 
         if (is_connected._value == boost::none) {
@@ -515,13 +545,12 @@ namespace support {
         // collect network network_interface data from Java, using NetUtil helper class
         // NetUtil helps to protect against Exceptions, and avoids unnecessary c++ code
 
-        bool has_attached = false;
-        JNIEnv* env = jni::getJNIEnv(&has_attached);
+        HueJNIEnv env;
 
         // get NetUtil instance from NativeTools
         jmethodID j_get_netutil = env->GetStaticMethodID(jni::g_cls_ref_tools, "getNetUtil", "()Lcom/philips/lighting/hue/sdk/wrapper/utilities/NetUtil;");
-        jobject j_netutil = env->CallStaticObjectMethod(jni::g_cls_ref_tools, j_get_netutil);
-        jclass j_netutil_cls = env->GetObjectClass(j_netutil);
+        JNILocalRef<jobject> j_netutil{env->CallStaticObjectMethod(jni::g_cls_ref_tools, j_get_netutil)};
+        JNILocalRef<jclass> j_netutil_cls{env->GetObjectClass(j_netutil)};
         jclass cls = j_netutil_cls;  // shorthand
 
         // first get number of available network interfaces, so we can start a loop
@@ -539,14 +568,13 @@ namespace support {
             // name
             jmethodID j_get_name = env->GetMethodID(cls, "getInterfaceName", "(I)[B");
 
-            jobject j_name_obj = env->CallObjectMethod(j_netutil, j_get_name, i);
+            JNILocalRef<jobject> j_name_obj{env->CallObjectMethod(j_netutil, j_get_name, i)};
             if (j_name_obj != nullptr) {
-                jbyteArray j_name = static_cast<jbyteArray>(j_name_obj);
+                jbyteArray j_name = static_cast<jbyteArray>(j_name_obj.get());
                 const char* n_name = jni::util::byteArrayToString(env, j_name);
                 if (n_name != nullptr) {
                     name = string(n_name);
                     delete n_name;
-                    env->DeleteLocalRef(j_name_obj);
                 } else {
                     HUE_LOG << HUE_NETWORK <<  HUE_ERROR << "Network: Could not get name for network_interface from Java, translate failed" << HUE_ENDL;
                 }
@@ -556,32 +584,30 @@ namespace support {
 
             // ip & type, prefer ipv4, use ipv6 as backup
             jmethodID j_get_ipv4 = env->GetMethodID(cls, "getInterfaceIPv4Address", "(I)[B");
-            jobject j_ip_obj = env->CallObjectMethod(j_netutil, j_get_ipv4, i);
-            if (j_ip_obj != nullptr) {
+            JNILocalRef<jobject> j_ipv4_obj{ env->CallObjectMethod(j_netutil, j_get_ipv4, i)};
+            if (j_ipv4_obj != nullptr) {
                 // first get ipv4
-                jbyteArray j_ip = static_cast<jbyteArray>(j_ip_obj);
+                jbyteArray j_ip = static_cast<jbyteArray>(j_ipv4_obj.get());
                 const char* n_ip = support::jni::util::byteArrayToString(env, j_ip);
                 if (n_ip != nullptr) {
                     ip = string(n_ip);
                     // leave type at IPv4
                     delete n_ip;
-                    env->DeleteLocalRef(j_ip_obj);
                 } else {
                     HUE_LOG << HUE_NETWORK <<  HUE_ERROR << "Network: Could not get ipv4 for network_interface from Java, translate failed" << HUE_ENDL;
                 }
             } else {
                 // ipv4 failed, get ipv6
                 jmethodID j_get_ipv6 = env->GetMethodID(cls, "getInterfaceIPv6Address", "(I)[B");
-                j_ip_obj = env->CallObjectMethod(j_netutil, j_get_ipv6, i);
-                if (j_ip_obj != nullptr) {
-                    jbyteArray j_ip = static_cast<jbyteArray>(j_ip_obj);
+                JNILocalRef<jobject> j_ipv6_obj{env->CallObjectMethod(j_netutil, j_get_ipv6, i)};
+                if (j_ipv6_obj != nullptr) {
+                    jbyteArray j_ip = static_cast<jbyteArray>(j_ipv6_obj.get());
                     const char* n_ip = support::jni::util::byteArrayToString(env, j_ip);
                     if (n_ip != nullptr) {
                         ip = string(n_ip);
                         // set type to IPv6
                         inet_type = INET_IPV6;
                         delete n_ip;
-                        env->DeleteLocalRef(j_ip_obj);
                     } else {
                         HUE_LOG << HUE_NETWORK <<  HUE_ERROR << "Network: Could not get ipv6 for network_interface from Java, translate failed" << HUE_ENDL;
                     }
@@ -633,18 +659,71 @@ namespace support {
             }
         }
 
-        if (has_attached) {
-            // detach from JavaVM
-            support::jni::getJavaVM()->DetachCurrentThread();
-        }
-
         // return vector
         return network_interfaces;
     }
+
+    void Network::set_interface_for_socket(int socket, const std::string& interface_name) {
+        HueJNIEnv env;
+        JNILocalRef<jobject> j_socket_fd{fileDescriptor_N2J(env, socket)};
+
+        if (j_socket_fd != nullptr) {
+            bind_socket_to_network(env, j_socket_fd, interface_name);
+        }
+    }
+
+    jobject fileDescriptor_N2J(JNIEnv* env, int file_descriptor) {
+        JNILocalRef<jclass> file_descriptor_class{env->FindClass("java/io/FileDescriptor")};
+        if (file_descriptor_class == NULL) {
+            return nullptr;
+        }
+
+        // construct a new FileDescriptor
+        jmethodID file_descriptor_constructor = env->GetMethodID(file_descriptor_class, "<init>", "()V");
+        if (file_descriptor_constructor == NULL) {
+            return nullptr;
+        }
+        jobject j_file_descriptor = env->NewObject(file_descriptor_class, file_descriptor_constructor);
+
+        jmethodID j_method = env->GetMethodID(file_descriptor_class, "setInt$", "(I)V");
+        if (j_method != nullptr) {
+            env->CallVoidMethod(j_file_descriptor, j_method, file_descriptor);
+            // clear possible exception, that might occur in future versions of Android, where this call is no longer allowed
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                HUE_LOG << HUE_NETWORK << HUE_ERROR << "Network: Could set file descriptor" << HUE_ENDL;
+                return nullptr;
+            }
+        } else {
+            HUE_LOG << HUE_NETWORK << HUE_ERROR << "Network: Could not get file descriptor setter method" << HUE_ENDL;
+            return nullptr;
+        }
+
+        return j_file_descriptor;
+    }
+
+    void bind_socket_to_network(JNIEnv* env, jobject j_socket_fd, const std::string& interface_name) {
+        JNILocalRef<jobject> j_interface_name{support::jni::util::string_N2J(env, interface_name.c_str())};
+
+        jmethodID j_get_wifi_util
+            = env->GetStaticMethodID(
+                jni::g_cls_ref_wifi_util_factory, "getWifiUtil",
+                "()Lcom/philips/lighting/hue/sdk/wrapper/utilities/WifiUtil;");
+
+        JNILocalRef<jobject> j_wifi_util{env->CallStaticObjectMethod(jni::g_cls_ref_wifi_util_factory, j_get_wifi_util)};
+
+        JNILocalRef<jclass> cls{env->GetObjectClass(j_wifi_util)};
+
+        jmethodID j_method = env->GetMethodID(
+            cls, "networkBindSocket", "(Ljava/io/FileDescriptor;Ljava/lang/String;)V");
+
+        env->CallVoidMethod(j_wifi_util, j_method, j_socket_fd, j_interface_name.get());
+    }
+
 #else
     const std::vector<NetworkInterface> Network::get_network_interfaces() {
         std::vector<NetworkInterface> network_interfaces;
-        
+
         HUE_LOG << HUE_NETWORK <<  HUE_DEBUG << "Network: get all network interfaces" << HUE_ENDL;
         if (_default_network_interface_set) {
             network_interfaces.push_back(_default_network_interface);
@@ -655,38 +734,47 @@ namespace support {
         ifaddrs *if_addr_it = nullptr;
         // Get all network interfaces
         int result = getifaddrs(&if_addr);
-        
+
         if (result != -1) {
             HUE_LOG << HUE_NETWORK << HUE_DEBUG << "Network: network interfaces retrieved; check for results" << HUE_ENDL;
-            
+
             for (if_addr_it = if_addr; if_addr_it != nullptr; if_addr_it = if_addr_it->ifa_next) {
                 HUE_LOG << HUE_NETWORK <<  HUE_DEBUG << "Network: network_interface found, name: " << if_addr_it->ifa_name << HUE_ENDL;
-            
+
                 // Get inet type
                 NetworkInetType inet_type = if_addr_it->ifa_addr->sa_family == AF_INET ? INET_IPV4 : INET_IPV6;
 
                 string ip;
+                string netmask;
                 // Resolve ip address
                 switch (inet_type) {
                     case INET_IPV4: {
                         char ip4[INET_ADDRSTRLEN];
+                        char nm[INET_ADDRSTRLEN];
 
                         in_addr addr4 = reinterpret_cast<sockaddr_in*>(if_addr_it->ifa_addr)->sin_addr;
+                        in_addr addr_nm = reinterpret_cast<sockaddr_in*>(if_addr_it->ifa_netmask)->sin_addr;
                         // Convert to ipv4 string
                         inet_ntop(AF_INET, &addr4, ip4, INET_ADDRSTRLEN);
+                        inet_ntop(AF_INET, &addr_nm, nm, INET_ADDRSTRLEN);
 
                         ip = string(ip4);
+                        netmask = string(nm);
                         break;
                     }
 
                     case INET_IPV6: {
                         char ip6[INET6_ADDRSTRLEN];
+                        char nm[INET6_ADDRSTRLEN];
 
                         in6_addr addr6 = reinterpret_cast<sockaddr_in6*>(if_addr_it->ifa_addr)->sin6_addr;
+                        in6_addr addr_nm = reinterpret_cast<sockaddr_in6*>(if_addr_it->ifa_addr)->sin6_addr;
                         // Convert to ipv6 string
                         inet_ntop(AF_INET6, &addr6, ip6, INET6_ADDRSTRLEN);
+                        inet_ntop(AF_INET6, &addr_nm, nm, INET6_ADDRSTRLEN);
 
                         ip = string(ip6);
+                        netmask = string(nm);
                         break;
                     }
                 }
@@ -696,6 +784,7 @@ namespace support {
                 // build NetworkInterface struct
                 NetworkInterface network_interface;
                 network_interface.set_ip(ip);
+                network_interface.set_netmask(netmask);
                 network_interface.set_name(string(if_addr_it->ifa_name));
                 network_interface.set_inet_type(inet_type);
                 network_interface.set_up(if_addr_it->ifa_flags & IFF_UP);
@@ -705,13 +794,19 @@ namespace support {
 
                 network_interfaces.push_back(network_interface);
             }
-            
+
             freeifaddrs(if_addr);
         } else {
             HUE_LOG << HUE_NETWORK <<  HUE_ERROR << "Network: error retrieving network interfaces" << HUE_ENDL;
         }
-        
+
         return network_interfaces;
+    }
+
+    void Network::set_interface_for_socket(int socket, const std::string& interface_name) {
+        // NOT APPLICABLE
+        (void)socket;
+        (void)interface_name;
     }
 #endif
 

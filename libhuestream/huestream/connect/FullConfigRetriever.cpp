@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -221,7 +221,7 @@ namespace huestream {
                 auto coordinates = *i;
                 auto light = GetLightInfo(i->name());
                 group->AddLight(lightId, coordinates[0].as_float(), coordinates[1].as_float(),
-                    light.GetName(), light.GetModel(), light.Reachable());
+                    coordinates[2].as_float(), light.GetName(), light.GetModel(), light.Reachable());
                 if (light.Reachable()) {
                     avgBri += light.GetBrightness();
                     numReachableLights++;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -72,4 +72,13 @@ namespace support {
         std::vector<Operation> _operations;
     };
 
+    class CancelableOperation : public Operation {
+    public:
+        using Operation::Operation;
+
+    private:
+        bool is_cancelable() const final {
+            return true;
+        }
+    };
 }  // namespace support

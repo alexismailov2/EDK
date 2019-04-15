@@ -1,11 +1,12 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
 #include <huestream/effect/animation/animations/ConstantAnimation.h>
 #include <huestream/effect/animation/animations/SequenceAnimation.h>
 #include <huestream/effect/animation/animations/TweenAnimation.h>
+#include <huestream/common/data/CuboidArea.h>
 #include <huestream_example_gui_win/BrightnessSawEffect.h>
 
 #include <string>
@@ -34,7 +35,7 @@ namespace huestream {
         SetOpacityAnimation(alphaAnimation);
         SetSpeedAnimation(speedAnimation);
 
-        AddArea(Area::FrontHalf);
+        AddArea(CuboidArea::Front);
     }
 
 }  // namespace huestream

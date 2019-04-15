@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -19,16 +19,19 @@
 
 #include "support/util/VectorOperations.h"
 #include "support/util/Provider.h"
+#include "support/signals/SynchronousSignal.h"
 
 #define FUNCTION_RETURN_TYPE(Function, Args) typename std::result_of<Function(Args...)>::type
 
-    namespace support {
+namespace support {
 
     class Thread;
+    class OperationalQueue;
 
     using ThreadPoolTask = std::function<void()>;
 
     class ThreadPool final {
+        friend class OperationalQueue;
     public:
         /**
          @param finish_tasks_on_close on close, all tasks are executed before exiting
@@ -64,21 +67,17 @@
             return future;
         }
 
+
+        void set_tick_interval(std::chrono::milliseconds interval);
+        Subscription subscribe_for_tick_events(std::function<void()> handler);
+
     protected:
+        void process_tick();
+
         /**
          thread pool thread main even_loop
          */
         void event_loop();
-
-        /**
-        Check whether tasks should be executed.
-        Conditions:
-        - close() or destructor has not been called
-        OR:
-        - threadpool is configured that all tasks should be executed on closing
-        - tasks list is not empty
-        */
-        bool should_execute_tasks() const;
 
         /**
          Shutdown thread pool. After calling this method object is in invalid state,
@@ -88,11 +87,15 @@
 
     private:
         std::queue<ThreadPoolTask> _tasks;
-        std::vector<std::unique_ptr<Thread>>        _threads;
-        std::mutex                 _tasks_mutex;
-        std::condition_variable    _tasks_condition;
-        std::atomic<bool>          _close;
-        bool                       _should_finish_tasks_on_close;
+        std::vector<std::unique_ptr<Thread>> _threads;
+        std::mutex _tasks_mutex;
+        std::condition_variable _tasks_condition;
+        std::atomic<bool> _close;
+        bool _should_finish_tasks_on_close;
+        std::mutex _last_tick_time_point_mutex;
+        std::chrono::steady_clock::time_point _last_tick_time_point;
+        std::atomic<std::chrono::milliseconds> _tick_interval;
+        SynchronousSignal<> _tick_signal;
     };
 
     using GlobalThreadPool = Provider<std::shared_ptr<ThreadPool>>;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 /** @file */
@@ -121,9 +121,14 @@ namespace huestream {
         virtual ~Group();
 
         /**
-         add a light to this group
+         [deprecated] add a light to this group (z coordinate forced to 0) 
          */
         void AddLight(std::string id, double x, double y, std::string name = "", std::string model = "", bool reachable = true);
+
+        /**
+         add a light to this group
+         */
+        void AddLight(std::string id, double x, double y, double z, std::string name = "", std::string model = "", bool reachable = true);
 
         /**
          get readable version of the owner name

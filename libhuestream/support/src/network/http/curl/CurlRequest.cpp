@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -13,8 +13,11 @@
 #include "support/network/http/HttpRequestConst.h"
 #include "support/network/http/HttpRequestParams.h"
 #include "support/network/http/util/X509Certificate.h"
+#include "support/network/Network.h"
 #include "support/network/NetworkConfiguration.h"
 #include "support/util/StringUtil.h"
+
+using std::string;
 
 namespace support {
 
@@ -30,6 +33,7 @@ namespace support {
         _form_post = nullptr;
         _resolve_list = nullptr;
         _callback = std::move(callback);
+        _interface_name = data.interface_name;
         _verify_ssl = data.verify_ssl;
         _verify_common_name_manually = false;
         _common_name = data.common_name;
@@ -40,16 +44,20 @@ namespace support {
 
         _error_buffer[0] = '\0';
 
+        _progress_callback = std::move(data.progress_callback);
+
         setup_options(data);
         setup_tls(data);
         setup_tls_common_name(data);
         setup_proxy(data);
         append_user_request_headers(data);
         setup_request_headers();
-        setup_post_body(data);
+        if (data.method == "POST" || data.method == "PUT") {
+            setup_post_body(data);
+        }
     }
 
-    CURLM* CurlRequest::get_handle() const {
+    CURL* CurlRequest::get_handle() const {
         return _curl;
     }
 
@@ -89,6 +97,10 @@ namespace support {
         _is_complete.set_value();
     }
 
+    string CurlRequest::get_interface_name() {
+        return _interface_name;
+    }
+
     // appends a buffer to a string in non-quadratic time
     static size_t write_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata) {
         std::string* str = static_cast<string*>(userdata);
@@ -100,6 +112,15 @@ namespace support {
         str->append(ptr, size);
         return size;
     }
+
+    int CurlRequest::curl_xferinfo_function(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
+                                        curl_off_t ultotal, curl_off_t ulnow) {
+        auto request = static_cast<CurlRequest*>(clientp);
+        request->_progress_callback(static_cast<int64_t>(dltotal), static_cast<int64_t>(dlnow),
+            static_cast<int64_t>(ultotal), static_cast<int64_t>(ulnow));
+        return 0;
+    }
+
 
 #ifdef VERBOSE_HTTP_LOGGING
     static int log_callback(CURL*, curl_infotype type, char *data, size_t size, void*)  {
@@ -129,6 +150,7 @@ namespace support {
 
     void CurlRequest::setup_options(const HttpRequestParams& data) {
         curl_easy_setopt(_curl, CURLOPT_URL, data.url.c_str());
+        curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, data.method.c_str());
         curl_easy_setopt(_curl, CURLOPT_HEADERDATA, &_header_buffer);
         curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_body_buffer);
         curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, write_callback);
@@ -146,6 +168,12 @@ namespace support {
 
         if (!NetworkConfiguration::get_reuse_connections()) {
             curl_easy_setopt(_curl, CURLOPT_FORBID_REUSE, 1L);
+        }
+
+        if (_progress_callback) {
+            curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0);
+            curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, CurlRequest::curl_xferinfo_function);
+            curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
         }
     }
 
@@ -298,11 +326,12 @@ namespace support {
 
     void CurlRequest::setup_post_body(const HttpRequestParams& data) {
         if (data.file == nullptr) {
-            curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, data.method.c_str());
-
             if (!data.body.empty()) {
                 curl_easy_setopt(_curl, CURLOPT_POSTFIELDSIZE,  data.body.size());
                 curl_easy_setopt(_curl, CURLOPT_COPYPOSTFIELDS, data.body.c_str());
+            } else {
+                curl_easy_setopt(_curl, CURLOPT_POSTFIELDSIZE,  0);
+                curl_easy_setopt(_curl, CURLOPT_COPYPOSTFIELDS, "");
             }
         } else {
             struct curl_httppost* last_item = nullptr;
@@ -387,5 +416,4 @@ namespace support {
         mbedtls_x509_crl_free(&_crl);
         mbedtls_x509_crt_free(&_crt);
     }
-
 }  // namespace support

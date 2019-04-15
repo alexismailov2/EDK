@@ -74,8 +74,8 @@ namespace HueStreamExampleWPF
         {
             var effect = new BrightnessSawEffect("zaag", 1);
             effect.PrepareEffect();
+            _hueStream.AddEffect(effect);
             effect.Enable();
-
         }
 
         public void ShutDown()

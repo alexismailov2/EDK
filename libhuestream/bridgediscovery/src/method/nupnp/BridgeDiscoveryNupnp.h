@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -28,6 +28,8 @@ namespace huesdk {
         @see IBridgeDiscoveryMethod.h
         */
         BridgeDiscoveryClassType get_type() const override;
+
+        static std::string get_bridge_discovery_nupnp_url();
 
     protected:
         /**

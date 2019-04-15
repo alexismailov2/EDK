@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -25,7 +25,7 @@ namespace support {
     public:
         CurlRequest(const HttpRequestParams &data, HttpRequestCallback callback);
 
-        CURLM *get_handle() const;
+        CURL *get_handle() const;
 
         void send_response(CURLcode curl_code);
 
@@ -33,8 +33,11 @@ namespace support {
 
         void set_as_complete();
 
+        std::string get_interface_name();
+
     private:
         CURL *_curl;
+
         struct curl_slist *_header_list;
         struct curl_httppost *_form_post;
 
@@ -43,6 +46,8 @@ namespace support {
         std::string _body_buffer;
 
         HttpRequestCallback _callback;
+
+        std::string _interface_name;
 
         HttpRequestError _error;
         HttpResponse     _response;
@@ -70,6 +75,8 @@ namespace support {
         std::string _common_name;
         std::vector<std::string> _trusted_certs;
 
+        HttpRequestProgressCallback _progress_callback;
+
         /* curl will write error messages here */
         char _error_buffer[CURL_ERROR_SIZE];
 
@@ -95,6 +102,9 @@ namespace support {
 
         static CURLcode curl_sslctx_function(CURL* curl, void* sslctx, void* data);
         static int mbedtls_x509parse_verify(void* data, mbedtls_x509_crt* cert, int path_cnt, uint32_t* flags);
+        static int curl_xferinfo_function(void *clientp,
+                                          curl_off_t dltotal,   curl_off_t dlnow,
+                                          curl_off_t ultotal,   curl_off_t ulnow);
     };
 
 }  // namespace support

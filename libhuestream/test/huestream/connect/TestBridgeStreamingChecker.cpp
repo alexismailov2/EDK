@@ -70,8 +70,8 @@ class TestBridgeStreamingChecker : public testing::Test {
   static void InitGroup(GroupPtr group, std::string nr) {
       group->SetId(nr);
       group->SetName("group " + nr);
-      group->AddLight("1", 0.1, 0.1, "L1", "LTC001");
-      group->AddLight("2", 0.2, 0.2, "L2", "LTC001");
+      group->AddLight("1", 0.1, 0.1, 0.1, "L1", "LTC001");
+      group->AddLight("2", 0.2, 0.2, 0.2, "L2", "LTC001");
   }
 
   void Expect_FullConfigRetriever_Execute_Once() {
@@ -163,7 +163,7 @@ TEST_F(TestBridgeStreamingChecker, WhenNothingChanges_NoFeedbackMessage) {
 }
 
 TEST_F(TestBridgeStreamingChecker, WhenNotSelectedGroupChanges_NoFeedbackMessage) {
-    _actualBridge->GetGroups()->at(1)->AddLight("9", 0.9, 0.9, "", "");
+    _actualBridge->GetGroups()->at(1)->AddLight("9", 0.9, 0.9, 0.9, "", "");
     Expect_FullConfigRetriever_Execute_Once();
     _bridgeStreamingChecker->Check(_currentBridge);
     _mockFullConfigRetriever->ExecuteRetrieveCallback(OPERATION_SUCCESS, _actualBridge);
@@ -219,7 +219,7 @@ TEST_F(TestBridgeStreamingChecker, WhenRetrieverLightRemoved_LIGHTS_UPDATED) {
 }
 
 TEST_F(TestBridgeStreamingChecker, WhenRetrieverLightAdded_LIGHTS_UPDATED) {
-    _actualBridge->GetGroups()->at(0)->AddLight("4", 0.4, 0.4, "", "");
+    _actualBridge->GetGroups()->at(0)->AddLight("4", 0.4, 0.4, 0.4, "", "");
     ExecuteCheckAndExpectOneFeedbackMessageOfType(FeedbackMessage::ID_LIGHTS_UPDATED);
 }
 
@@ -303,7 +303,7 @@ TEST_F(TestBridgeStreamingChecker, WhenRetrieverOtherGroupOwnerChanged_GROUPLIST
 }
 
 TEST_F(TestBridgeStreamingChecker, WhenRetrieverLightAndGroupAdded_Two_Messages) {
-    _actualBridge->GetGroups()->at(0)->AddLight("4", 0.4, 0.4, "", "");
+    _actualBridge->GetGroups()->at(0)->AddLight("4", 0.4, 0.4, 0.4, "", "");
     _actualBridge->GetGroups()->push_back(std::make_shared<Group>());
     ExecuteCheckAndExpectTwoFeedbackMessagesOfType(FeedbackMessage::ID_GROUPLIST_UPDATED,
         FeedbackMessage::ID_LIGHTS_UPDATED);
@@ -313,7 +313,7 @@ TEST_F(TestBridgeStreamingChecker, WhenRetrieverLightAndGroupAddedAndConnected_T
     _currentBridge->SetIsValidIp(false);
     _currentBridge->GetGroups()->at(0)->SetActive(false);
     _actualBridge->GetGroups()->at(0)->SetOwner("anOtherUser");
-    _actualBridge->GetGroups()->at(0)->AddLight("4", 0.4, 0.4, "", "");
+    _actualBridge->GetGroups()->at(0)->AddLight("4", 0.4, 0.4, 0.4, "", "");
     _actualBridge->GetGroups()->push_back(std::make_shared<Group>());
     ExecuteCheckAndExpectThreeFeedbackMessagesOfType(FeedbackMessage::ID_BRIDGE_CONNECTED,
         FeedbackMessage::ID_GROUPLIST_UPDATED, FeedbackMessage::ID_LIGHTS_UPDATED);

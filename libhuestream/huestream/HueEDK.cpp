@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -32,7 +32,7 @@ namespace huestream {
     }
 
     void HueEDK::deinit() {
-        support::HttpRequest::set_http_client(nullptr);
+        support::HttpRequest::set_default_http_client(nullptr);
 
         GlobalQueueExecutor::set(nullptr);
         GlobalQueueDispatcher::set(nullptr);

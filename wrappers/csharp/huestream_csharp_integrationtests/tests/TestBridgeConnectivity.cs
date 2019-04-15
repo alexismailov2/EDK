@@ -21,8 +21,6 @@ namespace huestream_tests
         [TearDown]
         public void TearDown()
         {
-            CleanupUser();
-            PushLink(false);
             _hue_stream.ShutDown();
             
             ClearPersistenceData();
@@ -273,24 +271,6 @@ namespace huestream_tests
             _hue_stream.ConnectBridgeAsync();
             
             Assert.IsTrue(waitHandle.WaitOne(CONNECTION_TIMEOUT_MS), "Bridge search did not start");
-        }
-        
-        [Test]
-        public void ConnectManual_Success_ResetStreamAndDisablePushlink_ConnectFromPersistence_AuthenticationStarted_AbortConnection_StreamStopped()
-        {
-            _hue_stream.ConnectManualBridgeInfo(_bridge);
-            CheckStreamConnectionValid(_hue_stream);
-            
-            ResetStream();
-            CleanupUser();
-            PushLink(false);
-            
-            WaitHandle waitHandle = GetWaitHandleForMessage(FeedbackMessage.Id.ID_START_AUTHORIZING);
-            _hue_stream.ConnectBridgeAsync();
-            Assert.IsTrue(waitHandle.WaitOne(CONNECTION_TIMEOUT_MS), "Bridge authorization did not start");
-            
-            _hue_stream.AbortConnecting();
-            CheckStreamNotConnected(_hue_stream);
         }
         
         [Test]

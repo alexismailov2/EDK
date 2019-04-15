@@ -71,6 +71,7 @@ option(BUILD_WRAPPERS "Build wrappers" OFF)
 option(BUILD_TEST_COV "Build tests with coverage" OFF)
 option(BUILD_WITH_RTTI "Build with RTTI support" ON)
 option(BUILD_WITH_EXCEPTIONS "Build with exception support" ON)
+option(ENABLE_JNI "Enable JNI" ${BUILD_WRAPPERS})
 
 #============================================
 # SHARED/STATIC settings

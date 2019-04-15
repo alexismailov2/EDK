@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -72,6 +72,10 @@ public:
     friend void swap(JNILocalRef& a, JNILocalRef& b) {
         using std::swap;
         swap(a._localRef, b._localRef);
+    }
+
+    operator T() const {
+        return _localRef;
     }
 
 private:

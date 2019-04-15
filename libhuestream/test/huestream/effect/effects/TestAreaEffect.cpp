@@ -1,6 +1,7 @@
 #include <huestream/effect/effects/AreaEffect.h>
 #include <huestream/effect/effects/base/Effect.h>
 #include <huestream/effect/animation/animations/ConstantAnimation.h>
+#include <huestream/common/data/Area.h>
 #include "gtest/gtest.h"
 #include "test/huestream/common/TestSerializeBase.h"
 #include "test/huestream/_mock/MockTimeManager.h"

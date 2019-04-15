@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 #pragma once
@@ -59,6 +59,16 @@ namespace support {
          @return body content
          */
         virtual std::string get_body() const = 0;
+
+        /**
+         set true if you want to treat this request as external and to not influence bridge connection state
+         */
+        virtual void set_external(bool is_external) = 0;
+
+        /**
+         returns true if request is for external use (doesnt influence bridge connection state)
+         */
+        virtual bool is_external() const = 0;
     };
 }  // namespace support
 

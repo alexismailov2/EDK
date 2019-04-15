@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -9,6 +9,9 @@
 #include <memory>
 #include <vector>
 #include <string>
+
+#define HUESDK_LIB_NETWORK_HTTP_RESPONSE_STATUS_CODE_OK (200)
+#define HUESDK_LIB_NETWORK_HTTP_RESPONSE_STATUS_CODE_NO_CONTENT (204)
 
 namespace support {
     

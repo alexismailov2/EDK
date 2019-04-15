@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 /** @file */
@@ -31,15 +31,23 @@ namespace huestream {
      */
     PROP_DEFINE(Location, double, y, Y);
 
+    /**
+    set z coordinate
+    */
+    PROP_DEFINE(Location, double, z, Z);
+
     public:
         Location();
+
+        Location(double x, double y);
 
         /**
          constructor
          @param x X coordinate
          @param y Y coordinate
+         @param z Z coordinate
          */
-        Location(double x, double y);
+        Location(double x, double y, double z);
 
         /**
          destructor

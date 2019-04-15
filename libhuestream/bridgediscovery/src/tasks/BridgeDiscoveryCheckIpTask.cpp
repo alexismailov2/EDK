@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -38,13 +38,13 @@ namespace {
 }  // namespace
 
 namespace huesdk {
-    BridgeDiscoveryCheckIpTask::BridgeDiscoveryCheckIpTask(const string &ip) : _ip(ip) {
+    BridgeDiscoveryCheckIpTask::BridgeDiscoveryCheckIpTask(const std::shared_ptr<BridgeDiscoveryResult> &input) : _input(input) {
     }
 
     void BridgeDiscoveryCheckIpTask::execute(Task::CompletionHandler done) {
         // support the format `ip_address:http_port:https_port`
-        auto ip = _ip;
-        auto ip_with_ports = support::split(_ip, { ":" });
+        std::string ip = _input->get_ip();
+        auto ip_with_ports = support::split(ip, { ":" });
         if (ip_with_ports.size() > 1) {
             // we're only interested in the http port here
             ip = ip_with_ports[0] + ":" + ip_with_ports[1];
@@ -64,11 +64,11 @@ namespace huesdk {
 
     void BridgeDiscoveryCheckIpTask::parse_config_response(HttpRequestError *error, IHttpResponse *response) {
         if (error != nullptr && response != nullptr && error->get_code() != HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS) {
-            _result.ip = _ip;
+            _result.ip = _input->get_ip();
             _result.reachable = false;
             _result.is_bridge = false;
         } else if (response != nullptr) {
-            _result = BridgeDiscoveryMethodUtil::parse_bridge_config_result(_ip, response->get_body());
+            _result = BridgeDiscoveryMethodUtil::parse_bridge_config_result(_input, response->get_body());
         }
     }
 }  // namespace huesdk

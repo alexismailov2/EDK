@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -410,7 +410,10 @@ namespace support {
 
     }
 
-    IHttpClient::Handle ObjcHttpClient::start_request(const support::HttpRequestParams &data, HttpRequestCallback callback) {
+    IHttpClient::Handle ObjcHttpClient::start_request(const HttpRequestParams &data, HttpRequestCallback callback) {
+        if (!data.interface_name.empty()) {
+            assert("Not supported on this platform");
+        }
         return static_cast<Handle>(new ObjcHttpRequest(data, callback));
     }
 

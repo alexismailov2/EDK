@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -7,8 +7,11 @@
 
 #include <functional>
 #include <set>
+#include <thread>
+#include <atomic>
 
 #include "support/threading/ConditionVariable.h"
+#include "support/util/Operation.h"
 
 namespace support {
     class SynchronousDispatcher {

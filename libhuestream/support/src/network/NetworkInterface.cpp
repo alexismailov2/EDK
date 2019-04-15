@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -14,26 +14,25 @@ using std::regex;
 using std::regex_search;
 using std::smatch;
 using std::string;
+using std::string;
 
 namespace support {
 
-    NetworkInterface::NetworkInterface() {
-        _inet_type = NetworkInetType::INET_IPV4;
-        _up = false;
-        _loopback = false;
-        _adapter_type = NetworkAdapterType::NETWORK_ADAPTER_TYPE_UNKNOWN;
-        _is_connected = false;
-    }
 
-    NetworkInterface::NetworkInterface(const string& ip,
+    NetworkInterface::NetworkInterface() : NetworkInterface("", NetworkInetType::INET_IPV4, "", false, false, NetworkAdapterType::NETWORK_ADAPTER_TYPE_UNKNOWN, false) {}
+    NetworkInterface::NetworkInterface(string ip, NetworkInetType inet_type) : NetworkInterface(std::move(ip), inet_type, "", false, false, NetworkAdapterType::NETWORK_ADAPTER_TYPE_UNKNOWN, false) {}
+
+    NetworkInterface::NetworkInterface(string ip,
                                        NetworkInetType inet_type,
-                                       const string& name,
+                                       string name,
                                        bool up,
                                        bool loopback,
                                        NetworkAdapterType adapter_type,
                                        bool is_connected) :
-        _name(name),
-        _ip(ip),
+        _name(std::move(name)),
+        _ip(std::move(ip)),
+        _ipv4_num(ip_to_uint(_ip)),
+        _netmask_num(0),
         _inet_type(inet_type),
         _up(up),
         _loopback(loopback),
@@ -51,11 +50,18 @@ namespace support {
     const string& NetworkInterface::get_ip() const {
         return _ip;
     }
-    
+
     void NetworkInterface::set_ip(const string& ip) {
         _ip = string(ip);
+        if (ip.length() <= 15) {
+            _ipv4_num = ip_to_uint(ip);
+        }
     }
-    
+
+    void NetworkInterface::set_netmask(const string& netmask) {
+        _netmask_num = ip_to_uint(netmask);
+    }
+
     NetworkInetType NetworkInterface::get_inet_type() const {
         return _inet_type;
     }
@@ -85,18 +91,17 @@ namespace support {
             // Only IPV4 supported for now
             return false;
         }
-        
+
+        static std::regex ip_regex{"^([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})$"};
         smatch result;
         // Split the ip into pieces
-        if (!regex_search(_ip, result, regex("^([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})$"))) {
+        if (!regex_search(_ip, result, ip_regex)) {
             return false;
         }
 
         // Get all bytes from the ip address
         int b1 = atoi(string(result[1].first, result[1].second).c_str());
         int b2 = atoi(string(result[2].first, result[2].second).c_str());
-        //  unsigned char b3 = atoi(string(result[3].first, result[3].second).c_str())
-        //  unsigned char b4 = atoi(string(result[4].first, result[4].second).c_str())
 
         // 10.x.x.x
         // 127.0.0.1
@@ -117,6 +122,36 @@ namespace support {
         return false;
     }
 
+    uint32_t NetworkInterface::ip_to_uint(const string& ip) {
+        int a, b, c, d;
+        uint32_t addr = 0;
+
+        if (sscanf(ip.c_str(), "%d.%d.%d.%d", &a, &b, &c, &d) != 4)
+            return 0;
+
+        addr = a << 24;
+        addr |= b << 16;
+        addr |= c << 8;
+        addr |= d;
+
+        return addr;
+    }
+
+    bool NetworkInterface::is_in_subnet(uint32_t ip) {
+        if (_inet_type != INET_IPV4 && _netmask_num == 0 && _ipv4_num != 0) {
+            // Only IPV4 supported for now
+            return false;
+        }
+
+        if (ip == 0) {
+            return false;
+        }
+
+        uint32_t net_lower = (_ipv4_num & _netmask_num);
+        uint32_t net_upper = (net_lower | (~_netmask_num));
+        return (ip >= net_lower && ip <= net_upper);
+    }
+
     NetworkAdapterType NetworkInterface::get_adapter_type() const {
         return _adapter_type;
     }
@@ -135,9 +170,9 @@ namespace support {
 
     std::vector<NetworkInterface> prioritize(
             std::vector<NetworkInterface> network_interfaces) {
-        boost::range::partition(network_interfaces, [](NetworkInterface interface) {
-            return interface.get_adapter_type() == NetworkAdapterType::NETWORK_ADAPTER_TYPE_WIRELESS
-                   && interface.get_is_connected();
+        boost::range::partition(network_interfaces, [](NetworkInterface network_interface) {
+            return network_interface.get_adapter_type() == NetworkAdapterType::NETWORK_ADAPTER_TYPE_WIRELESS
+                   && network_interface.get_is_connected();
         });
 
         return network_interfaces;

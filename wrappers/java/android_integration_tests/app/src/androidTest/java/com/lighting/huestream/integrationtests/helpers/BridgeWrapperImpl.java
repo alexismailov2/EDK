@@ -83,7 +83,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
     @Override
     public void cleanupUser() {
         try {
-            JSONArray response = Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName));
+            JSONArray response = new JSONArray(Network.performDeleteRequest(buildApiUrl("config/whitelist/" + _userName)).body);
             getSuccessNode(response);
         } catch (JSONException e) {
             Assert.fail("JSONException popped up");
@@ -97,7 +97,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
             for(Integer groupId : groups) {
                 String url = buildApiUrl("groups/" + groupId.toString());
 
-                JSONArray response = Network.performDeleteRequest(url);
+                JSONArray response = new JSONArray(Network.performDeleteRequest(url).body);
                 getSuccessNode(response);
             }
         }
@@ -105,7 +105,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
 
     private String getLightRBGColor_internal(ILightID lightId) throws JSONException {
         final String stipUrl = "http://" + _ip4Address + ":" + _tcpPort + "/stip/devices/" + lightId.getMac();
-        final JSONObject response = Network.performGetRequest(stipUrl);
+        final JSONObject response = new JSONObject(Network.performGetRequest(stipUrl).body);
         Assert.assertNotNull("Stip Light status response is null", response);
 
         final JSONObject stateNode = (JSONObject) response.get("state");
@@ -149,7 +149,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
 
 
     private List<ILightID> getLLCLightsIDs_internal() throws JSONException {
-        JSONObject lightsResponse = Network.performGetRequest(buildApiUrl("lights"));
+        JSONObject lightsResponse = new JSONObject(Network.performGetRequest(buildApiUrl("lights")).body);
         List<ILightID> result = new ArrayList<>();
 
         Iterator<String> lightIdIterator = lightsResponse.keys();
@@ -179,8 +179,8 @@ class BridgeWrapperImpl implements IBridgeWrapper {
         JSONObject request = new JSONObject();
         request.put("lights", lightsArray);
 
-        JSONArray response = Network.performUpdateRequest(buildApiUrl("groups/" + targetGroupId), request, Network.UPDATE_REQUEST.PUT);
-        getSuccessNode(response);
+        Network.Response response = Network.performUpdateRequest(buildApiUrl("groups/" + targetGroupId), request, Network.UPDATE_REQUEST.PUT);
+        getSuccessNode(new JSONArray(response));
     }
 
 
@@ -198,7 +198,8 @@ class BridgeWrapperImpl implements IBridgeWrapper {
         JSONObject request = new JSONObject();
         request.put("locations", (Object) locationsNode);
 
-        JSONArray response = Network.performUpdateRequest(buildApiUrl("groups/" + groupId), request, Network.UPDATE_REQUEST.PUT);
+        JSONArray response = new JSONArray(
+                Network.performUpdateRequest(buildApiUrl("groups/" + groupId), request, Network.UPDATE_REQUEST.PUT).body);
         Assert.assertNotNull("Update locations response is null", response);
 
         for (int i = 0; i < response.length(); ++i) {
@@ -217,8 +218,8 @@ class BridgeWrapperImpl implements IBridgeWrapper {
         request.put("lights", (Object) lightsArray);
         request.put("class", "TV");
 
-        JSONArray response = Network.performUpdateRequest(buildApiUrl("groups"), request, Network.UPDATE_REQUEST.POST);
-        JSONObject successNode = (JSONObject) getSuccessNode(response);
+        Network.Response response = Network.performUpdateRequest(buildApiUrl("groups"), request, Network.UPDATE_REQUEST.POST);
+        JSONObject successNode = (JSONObject) getSuccessNode(new JSONArray(response.body));
 
         String groupIDValue = (String)successNode.get("id");
         Assert.assertNotNull("Can not find group id", groupIDValue);
@@ -227,7 +228,7 @@ class BridgeWrapperImpl implements IBridgeWrapper {
     }
 
     List<Integer> getAllEntertainmentGroups() throws JSONException {
-        JSONObject groupsResponse = Network.performGetRequest(buildApiUrl("groups"));
+        JSONObject groupsResponse = new JSONObject(Network.performGetRequest(buildApiUrl("groups")).body);
         Assert.assertNotNull("Groups JSON object is NULL", groupsResponse);
         List<Integer> result = new ArrayList<>();
 

@@ -5,12 +5,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-using ::testing::Return;
-using ::testing::_;
-using ::testing::Sequence;
-using ::testing::Property;
-using ::testing::AllOf;
-using ::testing::Pointee;
+using ::testing::AtLeast;
 
 namespace huestream {
     class TestConnectionMonitor : public testing::Test {
@@ -38,20 +33,20 @@ namespace huestream {
     };
 
 TEST_F(TestConnectionMonitor, Start_KicksCheckerPeriodically) {
-    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge1)).Times(2);
-    _connectionMonitor->Start(_bridge1, 500);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1250));
+    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge1)).Times(AtLeast(1));
+    _connectionMonitor->Start(_bridge1, 50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
 
 TEST_F(TestConnectionMonitor, Start_OverridesPreviousSettings) {
-    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge1)).Times(2);
-    _connectionMonitor->Start(_bridge1, 500);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1250));
+    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge1)).Times(AtLeast(1));
+    _connectionMonitor->Start(_bridge1, 50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge2)).Times(4);
-    _connectionMonitor->Start(_bridge2, 250);
-    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(250 * 4 + 250 * 0.5)));
+    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge2)).Times(AtLeast(1));
+    _connectionMonitor->Start(_bridge2, 50);
+    EXPECT_CALL(*_mockBridgeStateChecker, Check(_bridge1)).Times(0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
-
 
 }  // namespace huestream

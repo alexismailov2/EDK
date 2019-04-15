@@ -24,9 +24,19 @@ public class Network {
         PUT
     }
 
+    public static class Response {
+        public Response(String body, int code) {
+            this.body = body;
+            this.code = code;
+        }
+
+        public final String body;
+        public final int code;
+    }
+
     private static final String TAG = Network.class.getName();
 
-    public static JSONArray performUpdateRequest(final String fullUrl, final String serializedRequest, final UPDATE_REQUEST type) {
+    public static Response performUpdateRequest(final String fullUrl, final String serializedRequest, final UPDATE_REQUEST type) {
         try {
             URL url = new URL(fullUrl);
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
@@ -40,56 +50,49 @@ public class Network {
             writer.flush();
             writer.close();
 
-            final String jsonString = extractFromStream(httpConnection.getInputStream());
-            return new JSONArray(jsonString);
+            return new Response(extractFromStream(httpConnection.getInputStream()), httpConnection.getResponseCode());
         } catch (MalformedURLException e) {
             Log.w(TAG,"Malformed url, when doing the request: " + e);
         } catch (IOException e) {
             Log.w(TAG, "IOException when opening url connection: " + e);
-        } catch (JSONException e) {
-            Log.w(TAG, "Can not parse incoming JSON: " + e);
         }
 
         return null;
     }
 
-    public static JSONArray performUpdateRequest(final String fullUrl, final JSONObject request, final UPDATE_REQUEST type) {
+    public static Response performUpdateRequest(final String fullUrl, final JSONObject request, final UPDATE_REQUEST type) {
         return performUpdateRequest(fullUrl, request.toString(), type);
     }
 
-    public static JSONArray performDeleteRequest(final String fullUrl) {
+    public static Response performDeleteRequest(final String fullUrl) {
         try {
             URL url = new URL(fullUrl);
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setRequestMethod("DELETE");
 
             final String jsonString = extractFromStream(httpConnection.getInputStream());
-            return new JSONArray(jsonString);
+            return new Response(jsonString, httpConnection.getResponseCode());
         } catch (MalformedURLException e) {
             Log.w(TAG, "Malformed url, when doing the request: " + e);
         } catch (IOException e) {
             Log.w(TAG, "IOException when opening url connection: " + e);
-        } catch (JSONException e) {
-            Log.w(TAG, "Can not parse incoming JSON: " + e);
         }
 
         return null;
     }
 
-    public static JSONObject performGetRequest(final String fullUrl) {
+    public static Response performGetRequest(final String fullUrl) {
         try {
             URL url = new URL(fullUrl);
             HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
             httpConnection.setRequestMethod("GET");
 
             final String jsonString = extractFromStream(httpConnection.getInputStream());
-            return new JSONObject(jsonString);
+            return new Response(jsonString, httpConnection.getResponseCode());
         } catch (MalformedURLException e) {
             Log.w(TAG, "Malformed url, when doing the request: " + e);
         } catch (IOException e) {
             Log.w(TAG, "IOException when opening url connection: " + e);
-        } catch (JSONException e) {
-            Log.w(TAG, "Can not parse incoming JSON: " + e);
         }
 
         return null;

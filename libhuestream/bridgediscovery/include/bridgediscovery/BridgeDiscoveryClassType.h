@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -12,7 +12,8 @@ namespace huesdk {
         BRIDGE_DISCOVERY_CLASS_TYPE_UPNP   = 1,
         BRIDGE_DISCOVERY_CLASS_TYPE_NUPNP  = 2,
         BRIDGE_DISCOVERY_CLASS_TYPE_IPSCAN = 3,
-    }  BridgeDiscoveryClassType;  // typedef enum BridgeDiscoveryClassType
+        BRIDGE_DISCOVERY_CLASS_TYPE_MDNS = 4
+    }  BridgeDiscoveryClassType;
 
 }  // namespace huesdk
 

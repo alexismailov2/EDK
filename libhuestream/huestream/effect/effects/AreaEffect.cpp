@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -36,11 +36,11 @@ namespace huestream {
     void AreaEffect::RenderUpdate() {
     }
 
-    void AreaEffect::AddArea(const Area &area) {
-        _areas->push_back(std::make_shared<Area>(area));
+    void AreaEffect::AddArea(const IArea &area) {
+        _areas->push_back(area.Clone());
     }
 
-    void AreaEffect::SetArea(const Area &area) {
+    void AreaEffect::SetArea(const IArea &area) {
         _areas->clear();
         AddArea(area);
     }
@@ -55,7 +55,7 @@ namespace huestream {
 
     void AreaEffect::Deserialize(JSONNode *node) {
         ColorAnimationEffect::Deserialize(node);
-        DeserializeList<AreaListPtr, Area>(node, &_areas, AttributeAreas);
+        DeserializeList<AreaListPtr, IArea>(node, &_areas, AttributeAreas);
     }
 
 

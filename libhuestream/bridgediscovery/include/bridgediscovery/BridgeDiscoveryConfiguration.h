@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -35,7 +35,7 @@ namespace huesdk {
 
         /**
          Set the bridge discovery URL
-         @param url The base URL for bridge discovery (e.g. "https://www.meethue.com")
+         @param url The URL for bridge discovery (e.g. "https://discovery.meethue.com")
          */
         static BridgeDiscoveryReturnCode set_bridge_discovery_url(const char* url);
         

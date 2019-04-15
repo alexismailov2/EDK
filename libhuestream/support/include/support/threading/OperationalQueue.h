@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright (C) 2018 Philips Lighting Holding B.V.
+Copyright (C) 2019 Signify Holding
 All Rights Reserved.
 ********************************************************************************/
 #pragma once
@@ -13,6 +13,8 @@ All Rights Reserved.
 #include <mutex>
 #include <string>
 #include <thread>
+
+#include "support/signals/SynchronousSignal.h"
 
 namespace support {
     class ThreadPool;
@@ -90,6 +92,11 @@ namespace support {
          * @return Whether the current tread is the processing thread
          */
         bool this_thread_is_processing_thread();
+
+        /**
+         * @return Thread pool from which this operational queue borrows thread
+         */
+        std::shared_ptr<ThreadPool> get_thread_pool() const;
 
     protected:
         struct TicketDescriptor {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -20,6 +20,7 @@ namespace huesdk {
         static constexpr auto DISCOVERY_STATUS = "status";
 
         static constexpr auto NUPNP_METHOD = "nupnp";
+        static constexpr auto MDNS_METHOD = "mdns";
         static constexpr auto UPNP_METHOD = "upnp";
         static constexpr auto IPSCAN_METHOD = "ipscan";
 

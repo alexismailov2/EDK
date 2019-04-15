@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -116,7 +116,9 @@ namespace support_unittests {
     }
 
     void MockHttpRequest::thread_request(string method, string body, HttpRequestCallback callback) {
-        fake_process(get_request_params(method, body, nullptr));
+        _request_data = get_request_params(method, body, nullptr);
+
+        fake_process(_request_data);
 
         // Get fake delay
         unsigned int delay     = fake_delay();
@@ -181,6 +183,10 @@ namespace support_unittests {
 
     void MockHttpRequest::default_set_verify_ssl(bool verify) {
         HttpRequestBase::set_verify_ssl(verify);
+    }
+
+    HttpRequestParams MockHttpRequest::get_request_data() const {
+        return _request_data;
     }
 
 }  // namespace support_unittests

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (C) 2018 Philips Lighting Holding B.V.
+ Copyright (C) 2019 Signify Holding
  All Rights Reserved.
  ********************************************************************************/
 
@@ -94,16 +94,13 @@ namespace huesdk {
                     = std::chrono::system_clock::now() - _task_events_data.start_of_task.value();
             }
 
-            std::unordered_set<std::string> ips_to_check;
             for (auto&& result_entry : results) {
                 HUE_LOG << HUE_CORE << HUE_DEBUG << "BridgeDiscovery: submitting IP check for: "
                         << std::string(result_entry->get_unique_id()) << ", ip: " << std::string(result_entry->get_ip())
                         << HUE_ENDL;
-                ips_to_check.emplace(result_entry->get_ip());
             }
 
-            auto check_ip_job = create_job<BridgeDiscoveryCheckIpArrayTask>(
-                    std::vector<std::string> {ips_to_check.begin(), ips_to_check.end()});
+            auto check_ip_job = create_job<BridgeDiscoveryCheckIpArrayTask>(results);
             check_ip_job->run([this, done](BridgeDiscoveryCheckIpArrayTask* task) {
                 std::vector<std::shared_ptr<BridgeDiscoveryResult>> discovery_ipcheck_results;
                 for (const auto &result_entry : task->get_result()) {

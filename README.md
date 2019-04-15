@@ -108,7 +108,7 @@ Make sure to install cmake and be able to execute it from command line. Since cm
 commandline as well (to clone external archives mbedtls and curl), make sure that the PATH environment variable is also
 pointing to the git install directory.
 
-Tested development environment is VS2015 with both 32 and 64 bit compilers.
+Tested development environments are VS2015 and VS2017 with both 32 and 64 bit compilers.
 
 Open command prompt and execute the following to generate VS projects.
 
@@ -116,13 +116,10 @@ Open command prompt and execute the following to generate VS projects.
 cd root-of-repo
 mkdir build
 cd build
-cmake -G "Visual Studio 14 2015 Win64" ..
+cmake -G "Visual Studio 15 2017 Win64" ..
 ```
 
 Open the generated VS solution and build.
-
-(Visual Studio 2017 should work too but you may have to silence TR1 namespace warnings until googletest releases a fix for that, i.e.
-`cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_CXX_FLAGS=/D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING ..`)
 
 ### Windows CLION
 Secondary development environment is clion. We used MINGW-w64 as both 32 and 64 bit compiler in clion. Works with cmake files directly.
@@ -276,7 +273,16 @@ Many parts of the library can be customized. Some common examples are explained 
 
 ## Important security notice
 
-During first time connection to the bridge, if the user authorizes the application, the EDK will receive a username and clientkey. When releasing an application to the public, the developer is responsible to store this information safely. The default implementation in the EDK just saves it to a file. This is not acceptable for releasing a production application, unless it is on a platform where files are be stored in a sandbox inaccessible by other applications.
+During first time connection to the bridge, if the user authorizes the application, the EDK will receive a username and clientkey. When releasing an application to the public, the developer is responsible to store this information safely.
+
+The default implementation will save it to an encrypted file. The developer is responsible for creating and storing the key. Key should be injected in `Config` object before creating the `HueStream` instance, although it is possible to change the key during the runtime. The key is stored in `AppConfig` object.
+
+```c++
+auto config = make_shared<Config>(_appName, _deviceName, PersistenceEncryptionKey("EncryptionKey"), _language, _region);
+auto huestream = make_shared<HueStream>(config);
+```
+
+Default `IBridgeStorageAccessor` implementation, `BridgeFileStorageAccessor`, will use the key to encrypt/decrypt bridge data. Should the empty key be provided, no encryption/decryption will be performed. Data is encrypted using AES256 algorithm.
 
 Like most key classes in the EDK, the default implementation `BridgeFileStorageAccessor` can be replaced by a custom implementation without making changes to the library. To do this, inject your own implementation of `IBridgeStorageAccessor` before creating the huestream instance.
 
@@ -290,17 +296,9 @@ support::Factory<std::unique_ptr<huestream::BridgeStorageAccessor>(const std::st
 auto huestream = std::make_shared<HueStream>(config);
 ```
 
-The library supports file encryption. The developer is responsible for creating and storing the key. Key should be injected in `Config` object before creating the `HueStream` instance, although it is possible to change the key during the runtime. The key is stored in `AppConfig` object.
-
-```c++
-auto config = make_shared<Config>(_appName, _deviceName, PersistenceEncryptionKey("EncryptionKey"), _language, _region);
-auto huestream = make_shared<HueStream>(config);
-```
-
-Default `IBridgeStorageAccessor` implementation, `BridgeFileStorageAccessor`, will use the key to encrypt/decrypt bridge data. Should the empty key be provided, no encryption/decryption will be performed. Data is encrypted using AES256 algorithm.
-
 ## `tools`
 The EDK has a small simulator for the HUE streaming interface. It is based on nodejs.
+Note: this tool is temporarily removed and is expected to be added back later.
 
 ### on windows
 Make sure to install nodejs: `https://nodejs.org/en/download/`
@@ -393,9 +391,17 @@ The following external libraries are used in certain build variants:
 
 * Boost
   * Version: 1.65.1
-  * Package is part of this repository and can be found in `3rd_party/boost`
+  * Package is automatically downloaded during compilation
+
+* Mdns: mDNSResponder
+  * Package is automatically downloaded during compilation
 
 ### Changelog
+1.32.0
+- Support for vertical light location
+- Support for mdns bridge discovery
+- Various fixes and improvements
+
 1.29.0
 - Performance optimization for supporting large scripts
 - Ability to provide EventNotifier object to subscribe to bridge discovery event notifications 

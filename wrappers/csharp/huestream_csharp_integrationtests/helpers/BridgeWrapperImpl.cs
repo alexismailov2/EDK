@@ -51,9 +51,9 @@ namespace huestream_tests
 
             foreach (int groupId in groups)
             {
-                String url = BuildApiUrl("groups/" + groupId.ToString());
-                JArray response = Network.PerformDeleteRequest(url);
-                GetSuccessNode(response);
+                String url = BuildApiUrl("groups/" + groupId);
+                var response = Network.PerformDeleteRequest(url);
+                GetSuccessNode((JArray) response.body);
             }
         }
 
@@ -74,7 +74,7 @@ namespace huestream_tests
         public String GetLightRGBColor(ILightID lightId)
         {
             String stipUrl = "http://" + _ip4Address + ":" + _tcpPort + "/stip/devices/" + lightId.GetMac();
-            JObject response = Network.PerformGetRequest(stipUrl);
+            var response = (JObject) Network.PerformGetRequest(stipUrl).body;
 
             Assert.IsNotNull(response, "Stip Light status response is null");
 
@@ -89,7 +89,7 @@ namespace huestream_tests
 
         public List<ILightID> GetLLCLightsIDs()
         {
-            JObject lightsResponse = Network.PerformGetRequest(BuildApiUrl("lights"));
+            var lightsResponse = (JObject) Network.PerformGetRequest(BuildApiUrl("lights")).body;
             var result = new List<ILightID>();
 
             foreach (var keyValue in lightsResponse)
@@ -123,8 +123,8 @@ namespace huestream_tests
                 ["lights"] = lightsArray
             };
 
-            JArray response = Network.PerformUpdateRequest(BuildApiUrl("groups/" + targetGroupId), request, Network.UPDATE_REQUEST.PUT);
-            GetSuccessNode(response);
+            var response = Network.PerformUpdateRequest(BuildApiUrl("groups/" + targetGroupId), request, Network.UPDATE_REQUEST.PUT);
+            GetSuccessNode((JArray) response.body);
         }
 
         public void SetLightsCoordinates(int groupId, List<ILightCoordinate> lightCoordinates)
@@ -145,10 +145,10 @@ namespace huestream_tests
             {
                 ["locations"] = locationsNode
             };
-            JArray response = Network.PerformUpdateRequest(BuildApiUrl("groups/" + groupId), request, Network.UPDATE_REQUEST.PUT);
-            Assert.NotNull(response, "Update locations response is null");
+            var response = Network.PerformUpdateRequest(BuildApiUrl("groups/" + groupId), request, Network.UPDATE_REQUEST.PUT);
+            Assert.NotNull(response.body, "Update locations response is null");
 
-            foreach (var node in response)
+            foreach (var node in (JArray) response.body)
             {
                 var lightNode = (JObject)node;
                 Assert.NotNull(lightNode, "Invalid response format");
@@ -160,8 +160,8 @@ namespace huestream_tests
 
         public void CleanUpUser()
         {
-            JArray response = Network.PerformDeleteRequest(BuildApiUrl("config/whitelist/" + _userName));
-            GetSuccessNode(response);
+            var response = Network.PerformDeleteRequest(BuildApiUrl("config/whitelist/" + _userName));
+            GetSuccessNode((JArray) response.body);
         }
 
         int CreateEntertainmentGroup()
@@ -175,8 +175,8 @@ namespace huestream_tests
                 ["class"] = "TV"
             };
 
-            JArray response = Network.PerformUpdateRequest(BuildApiUrl("groups"), request, Network.UPDATE_REQUEST.POST);
-            JObject successNode = (JObject)GetSuccessNode(response);
+            var response = Network.PerformUpdateRequest(BuildApiUrl("groups"), request, Network.UPDATE_REQUEST.POST);
+            JObject successNode = (JObject)GetSuccessNode((JArray) response.body);
 
             var groupIDValue = (String)successNode["id"];
             Assert.NotNull(groupIDValue, "Can not find group id");
@@ -186,7 +186,7 @@ namespace huestream_tests
 
         List<int> GetAllEntertainmentGroups()
         {
-            JObject groupsResponse = Network.PerformGetRequest(BuildApiUrl("groups"));
+            JObject groupsResponse = (JObject)Network.PerformGetRequest(BuildApiUrl("groups")).body;
             Assert.NotNull(groupsResponse, "Groups JSON object is NULL");
 
             var result = new List<int>();
