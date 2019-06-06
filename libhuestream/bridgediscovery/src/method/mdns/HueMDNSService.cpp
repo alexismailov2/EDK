@@ -24,21 +24,21 @@ using huesdk::HueMDNSService;
 using huesdk::IHueMDNSService;
 using huesdk::MDNSResponderProvider;
 
-static void service_resolve_result_handler(DNSServiceRef ref, DNSServiceFlags flags, uint32_t interface_index,
+static void DNSSD_API service_resolve_result_handler(DNSServiceRef ref, DNSServiceFlags flags, uint32_t interface_index,
                                   DNSServiceErrorType error, const char *fullname, const char *host, uint16_t port,
                                   uint16_t txt_len,  const unsigned char *txt_record, void *context) {
     auto mdns_service = reinterpret_cast<HueMDNSService*>(context);
     mdns_service->on_resolve_result_ready(ref, flags, interface_index, error, fullname, host, port, txt_len, txt_record);
 }
 
-static void service_browse_result_handler(DNSServiceRef ref, DNSServiceFlags flags, uint32_t interface_index,
+static void DNSSD_API service_browse_result_handler(DNSServiceRef ref, DNSServiceFlags flags, uint32_t interface_index,
                             DNSServiceErrorType error, const char* name, const char* type,
                             const char* domain, void* context) {
     auto mdns_service = reinterpret_cast<HueMDNSService*>(context);
     mdns_service->on_browse_result_ready(ref, flags, interface_index, error, name, type, domain);
 }
 
-static void service_queryrecord_result_handler(DNSServiceRef ref, DNSServiceFlags flags, uint32_t interface_index,
+static void DNSSD_API service_queryrecord_result_handler(DNSServiceRef ref, DNSServiceFlags flags, uint32_t interface_index,
                                                DNSServiceErrorType error, const char *fullname,  uint16_t record_type,
                                                uint16_t record_class, uint16_t record_data_len, const void *record_data,
                                                uint32_t ttl, void *context) {

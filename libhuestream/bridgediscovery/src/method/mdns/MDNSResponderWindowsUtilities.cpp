@@ -8,6 +8,7 @@
 
 #include "method/mdns/MDNSResponderPlatformUtilities.h"
 #include "mdns_responder/mDNSWindows/mDNSWin32.h"
+#include "mdns_responder/mDNSShared/dns_sd.h"
 
 using huesdk::MDNSResponderPlatformUtilities;
 
@@ -20,7 +21,7 @@ std::shared_ptr<mDNS_PlatformSupport> MDNSResponderPlatformUtilities::create_mdn
     return std::unique_ptr<mDNS_PlatformSupport>{new mDNS_PlatformSupport{}};
 }
 
-extern "C" void UDPSocketNotification(SOCKET sock, LPWSANETWORKEVENTS event, void *context);
+extern "C" void DNSSD_API UDPSocketNotification(SOCKET sock, LPWSANETWORKEVENTS event, void *context);
 
 static void mDNSAddToFDSet(int *nfds, fd_set *readfds, SOCKET s) {
     if (*nfds < s + 1) *nfds = static_cast<int>(s) + 1;
