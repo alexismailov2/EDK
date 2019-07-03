@@ -30,7 +30,6 @@ namespace support {
 
     void QueueDispatcher::shutdown() {
         _executor->shutdown();
-        get_operational_queue()->get_thread_pool()->shutdown();
     }
 
     std::shared_ptr<OperationalQueue> QueueDispatcher::get_operational_queue() const {

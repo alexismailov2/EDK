@@ -36,6 +36,7 @@ namespace huestream {
 
         GlobalQueueExecutor::get()->shutdown();
         GlobalQueueDispatcher::get()->shutdown();
+        GlobalQueueDispatcher::get()->get_operational_queue()->get_thread_pool()->shutdown();
         GlobalThreadPool::get()->shutdown();
         
         GlobalQueueExecutor::set(nullptr);
