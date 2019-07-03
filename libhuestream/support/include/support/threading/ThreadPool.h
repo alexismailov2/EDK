@@ -71,6 +71,8 @@ namespace support {
         void set_tick_interval(std::chrono::milliseconds interval);
         Subscription subscribe_for_tick_events(std::function<void()> handler);
 
+        void shutdown();
+
     protected:
         void process_tick();
 
@@ -78,13 +80,7 @@ namespace support {
          thread pool thread main even_loop
          */
         void event_loop();
-
-        /**
-         Shutdown thread pool. After calling this method object is in invalid state,
-         so it must be called just from the class destructor.
-         */
-        void shutdown();
-
+        
     private:
         std::queue<ThreadPoolTask> _tasks;
         std::vector<std::unique_ptr<Thread>> _threads;
