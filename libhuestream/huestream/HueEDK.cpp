@@ -34,6 +34,11 @@ namespace huestream {
     void HueEDK::deinit() {
         support::HttpRequest::set_default_http_client(nullptr);
 
+        GlobalQueueExecutor::get()->shutdown();
+        GlobalQueueDispatcher::get()->shutdown();
+        GlobalQueueDispatcher::get()->get_operational_queue()->get_thread_pool()->shutdown();
+        GlobalThreadPool::get()->shutdown();
+        
         GlobalQueueExecutor::set(nullptr);
         GlobalQueueDispatcher::set(nullptr);
         GlobalThreadPool::set(nullptr);
