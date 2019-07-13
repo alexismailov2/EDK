@@ -13,7 +13,7 @@ if(NOT EXISTS ${LIBRARY_PATH})
             PREFIX ${EXTERNAL_LIBRARIES_BUILD_PATH}
             URL ${mdns_responder_URL}
             UPDATE_COMMAND ""
-            PATCH_COMMAND cd ${CMAKE_SOURCE_DIR}/3rd_party/mdns_responder && git apply --whitespace=nowarn --ignore-space-change --ignore-whitespace --no-index ${CMAKE_SOURCE_DIR}/cmake/patches/mdns_responder.patch
+            PATCH_COMMAND cd ${CMAKE_SOURCE_DIR} && git apply -v --whitespace=nowarn --ignore-space-change --ignore-whitespace --no-index --directory=${CMAKE_SOURCE_DIR}/3rd_party/mdns_responder --unsafe-paths ${CMAKE_SOURCE_DIR}/cmake/patches/mdns_responder.patch
             SOURCE_DIR "${EXTERNAL_LIBRARIES_SOURCE_PATH}/mdns_responder"
             CMAKE_ARGS ${COMMON_ARGS} -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS} -DINSTALL_DESTINATION=include/mdns_responder -DCMAKE_PREFIX_PATH=${EXTERNAL_LIBRARIES_INSTALL_PATH} -DCMAKE_INSTALL_PREFIX=${EXTERNAL_LIBRARIES_INSTALL_PATH} -DFOUNDATION=${FOUNDATION} -DANDROID_TOOLCHAIN_PREFIX=${ANDROID_TOOLCHAIN_PREFIX} -DAPPLE_PLATFORM=${APPLE_PLATFORM}
             BUILD_BYPRODUCTS ${MDNS_RESPONDER_PATH}
