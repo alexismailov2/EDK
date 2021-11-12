@@ -118,13 +118,11 @@ void Connect::Load() {
 
 void Connect::StartStream(StreamPtr stream) {
     unique_lock<mutex> lock(_mutex);
-    _isIdle = false;
     _connectionFlow->StartStream(stream);
 }
 
 void Connect::StopStream(StreamPtr stream) {
     unique_lock<mutex> lock(_mutex);
-    _isIdle = false;
     _connectionFlow->StopStream(stream);
 }
 
@@ -187,7 +185,7 @@ void Connect::TranslateBridgeStatusToConnectionResult(const BridgeStatus status)
     case BRIDGE_BUSY:
         _result = ActionRequired;
         break;
-    case BRIDGE_READY: 
+    case BRIDGE_READY:
         _result = ReadyToStart;
         break;
     case BRIDGE_STREAMING:

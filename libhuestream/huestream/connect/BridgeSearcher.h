@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_CONNECT_BRIDGESEARCHER_H_
 #define HUESTREAM_CONNECT_BRIDGESEARCHER_H_
 
-#include <huestream/connect/ConnectionFlow.h>
-#include <bridgediscovery/BridgeDiscovery.h>
+#include "huestream/connect/ConnectionFlow.h"
+#include "bridgediscovery/BridgeDiscovery.h"
 
 #include <vector>
 #include <memory>

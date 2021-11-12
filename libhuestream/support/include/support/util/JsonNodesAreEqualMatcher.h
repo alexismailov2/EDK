@@ -6,7 +6,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <libjson/libjson.h>
+#include "libjson/libjson.h"
 
 namespace support {
 

@@ -71,6 +71,10 @@ std::map<FeedbackMessage::Id, FeedbackMessage::FeedbackType> FeedbackMessage::id
     {ID_LIGHTS_UPDATED,                         FEEDBACK_TYPE_INFO},
     {ID_GROUPLIST_UPDATED,                      FEEDBACK_TYPE_INFO},
     {ID_GROUP_LIGHTSTATE_UPDATED,               FEEDBACK_TYPE_INFO},
+    {ID_ZONELIST_UPDATED,                       FEEDBACK_TYPE_INFO},
+    {ID_ZONE_SCENELIST_UPDATED,                 FEEDBACK_TYPE_INFO},
+    {ID_INVALID_EVENTING_CONNECTION,            FEEDBACK_TYPE_INFO},
+    {ID_BRIDGE_REFRESHED,                       FEEDBACK_TYPE_INFO},
     {ID_INTERNAL_ERROR,                         FEEDBACK_TYPE_USER}
 };
 
@@ -121,6 +125,10 @@ std::map<FeedbackMessage::Id, std::string> FeedbackMessage::idTagMap = {
     {ID_LIGHTS_UPDATED,                         "ID_LIGHTS_UPDATED"},
     {ID_GROUPLIST_UPDATED,                      "ID_GROUPLIST_UPDATED"},
     {ID_GROUP_LIGHTSTATE_UPDATED,               "ID_GROUP_LIGHTSTATE_UPDATED"},
+    {ID_ZONELIST_UPDATED,                       "ID_ZONELIST_UPDATED"},
+    {ID_ZONE_SCENELIST_UPDATED,                 "ID_ZONE_SCENELIST_UPDATED"},
+    {ID_INVALID_EVENTING_CONNECTION,            "ID_INVALID_EVENTING_CONNECTION"},
+    {ID_BRIDGE_REFRESHED,                       "ID_BRIDGE_REFRESHED"},
     {ID_INTERNAL_ERROR,                         "ID_INTERNAL_ERROR"}
 };
 

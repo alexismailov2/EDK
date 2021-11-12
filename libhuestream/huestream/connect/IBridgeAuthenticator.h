@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_CONNECT_IBRIDGEAUTHENTICATOR_H_
 #define HUESTREAM_CONNECT_IBRIDGEAUTHENTICATOR_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/config/AppSettings.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/config/AppSettings.h"
 
 #include <memory>
 

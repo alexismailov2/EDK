@@ -19,6 +19,7 @@
 #include <huestream/effect/lightscript/Timeline.h>
 #include <huestream/stream/UdpConnector.h>
 #include <huestream/stream/DtlsConnector.h>
+#include <support/network/NetworkConfiguration.h>
 
 #include <math.h>
 
@@ -360,9 +361,11 @@ void CStreamTestDlg::InitializeHueStream(bool useUDP, const std::string language
     if (useUDP) {
         AddDebugMsg("Initialized with UDP");
         config->SetStreamingMode(huestream::STREAMING_MODE_UDP);
+		support::NetworkConfiguration::set_use_http2(false);
     } else {
         AddDebugMsg("Initialized with default configuration");
         config->SetStreamingMode(huestream::STREAMING_MODE_DTLS);
+		support::NetworkConfiguration::set_use_http2(true);
     }
 
     //Choose whether to start streaming immediately at bridge connection (default true)
@@ -446,7 +449,7 @@ LRESULT CStreamTestDlg::OnHuestreamFeedback(WPARAM wParam, LPARAM lParam)
         m_effectPlayer->Stop();
         StopRenderLightsOnUI();
     }
-    
+
     delete message;
     return LRESULT();
 }
@@ -497,7 +500,7 @@ void CStreamTestDlg::ChangeMode(bool useUDP) {
 
     m_effectPlayer->Stop();
     m_huestream->ShutDown();
-    
+
     InitializeHueStream(useUDP, GetLanguage());
     InitializeEffectPlayerAndTimeline();
 }
@@ -518,13 +521,13 @@ void CStreamTestDlg::OnBnClickedButtonConnect() {
         m_huestream->ConnectBridgeAsync();
         break;
     case huestream::ActionRequired:
-    case huestream::ReadyToStart: 
+    case huestream::ReadyToStart:
         m_huestream->StartAsync();
         break;
     case huestream::Streaming:
         m_huestream->StopAsync();
         break;
-    default: 
+    default:
         break;
     }
 }

@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <string>
 #include <future>
+#include <codecvt>
 
 #include "support/network/http/curl/CurlRequest.h"
 #include "support/network/http/HttpRequestConst.h"
@@ -55,6 +56,18 @@ namespace support {
         if (data.method == "POST" || data.method == "PUT") {
             setup_post_body(data);
         }
+
+                _expect_event_stream = false;
+
+                // Check if request contain event stream
+                for (auto it = data.headers.begin(); it != data.headers.end(); it++) {
+                    if (it->first == "Accept" && it->second == "text/event-stream") {
+                        _expect_event_stream = true;
+                    }
+                }
+
+                _done_writing_header = false;
+                _is_writing_header = false;
     }
 
     CURL* CurlRequest::get_handle() const {
@@ -68,7 +81,11 @@ namespace support {
         _response.set_status_code(static_cast<unsigned int>(http_code));
         _response.set_body(_body_buffer);
         _response.set_certificate_chain(_certificate_chain);
-        process_response_headers();
+        process_response_headers(_response);
+
+        long local_port;
+        curl_easy_getinfo(_curl, CURLINFO_LOCAL_PORT, &local_port);
+        _response.set_local_port(local_port);
 
         if (curl_code != CURLE_OK) {
             HUE_LOG << HUE_NETWORK << HUE_DEBUG << "CurlRequest: curl error: " << _error_buffer << HUE_ENDL;
@@ -79,12 +96,47 @@ namespace support {
 
         cleanup();
 
+        if (_file_to_write.is_open()) {
+            _file_to_write.close();
+            _response.set_file_size(_file_to_write_size);
+
+            if (_md5.Active()) {
+                std::string digest = _md5.Finish(true);
+                _response.set_md5_digest(digest);
+            }
+        }
+
         _dispatcher.post([this]{
             _callback(_error, _response);
         });
 
         _callback_posted.set_value();
     }
+
+        void CurlRequest::send_stream_response() {
+                long http_code = 0; // NOLINT
+                curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+                HttpResponse response;
+
+                response.set_status_code(static_cast<unsigned int>(http_code));
+                response.set_body(_body_buffer);
+                response.set_certificate_chain(_certificate_chain);
+                process_response_headers(response);
+
+                long local_port;
+                curl_easy_getinfo(_curl, CURLINFO_LOCAL_PORT, &local_port);
+                response.set_local_port(local_port);
+
+                HttpRequestError error;
+                error.set_message(std::string("request on going stream"));
+                error.set_code(HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
+
+                _dispatcher.post([this, error, response]
+                {
+                    _callback(error, response);
+                });
+        }
 
     void CurlRequest::wait_for_completion() {
         _is_complete_future.wait();
@@ -102,15 +154,54 @@ namespace support {
     }
 
     // appends a buffer to a string in non-quadratic time
-    static size_t write_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata) {
-        std::string* str = static_cast<string*>(userdata);
+    size_t CurlRequest::write_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata) {
+                CurlRequest* request = static_cast<CurlRequest*>(userdata);
+                std::string& str = request->_is_writing_header ? request->_header_buffer : request->_body_buffer;
         size_t size = memb_size * nmemb;
-        if (str->capacity() < str->size() + size) {
+        if (str.capacity() < str.size() + size) {
             // double the size every time it needs growing
-            str->reserve((str->size() + size) * 2);
+            str.reserve((str.size() + size) * 2);
         }
-        str->append(ptr, size);
+        str.append(ptr, size);
+
+                // We need this in sse case because as soon as we're done writing the header we can start sending data to the client
+                if (!request->_is_writing_header) {
+                    request->_done_writing_header = true;
+                }
+
+                if (request->_expect_event_stream && request->_done_writing_header) {
+                    request->send_stream_response();
+                    // No need to buffer indefinitely in this case, the client will deal with it
+                    str.clear();
+                }
+
         return size;
+    }
+
+    // appends buffer to a file
+    size_t CurlRequest::write_file_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata) {
+        CurlRequest* request = static_cast<CurlRequest*>(userdata);
+        size_t size = memb_size * nmemb;
+
+        if (request->_file_to_write.is_open()) {
+            request->_file_to_write.write(ptr, size);
+            request->_file_to_write_size += size;
+        }
+
+        if (request->_md5.Active()) {
+            request->_md5.Update(reinterpret_cast<uint8_t*>(ptr), size);
+        }
+
+        return size;
+    }
+
+    size_t CurlRequest::header_write_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata) {
+        CurlRequest* request = static_cast<CurlRequest*>(userdata);
+        request->_is_writing_header = true;
+        size_t res = write_callback(ptr, memb_size, nmemb, userdata);
+        request->_is_writing_header = false;
+
+        return res;
     }
 
     int CurlRequest::curl_xferinfo_function(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
@@ -120,7 +211,6 @@ namespace support {
             static_cast<int64_t>(ultotal), static_cast<int64_t>(ulnow));
         return 0;
     }
-
 
 #ifdef VERBOSE_HTTP_LOGGING
     static int log_callback(CURL*, curl_infotype type, char *data, size_t size, void*)  {
@@ -151,15 +241,23 @@ namespace support {
     void CurlRequest::setup_options(const HttpRequestParams& data) {
         curl_easy_setopt(_curl, CURLOPT_URL, data.url.c_str());
         curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, data.method.c_str());
-        curl_easy_setopt(_curl, CURLOPT_HEADERDATA, &_header_buffer);
-        curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_body_buffer);
-        curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, write_callback);
-        curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_callback);
+        curl_easy_setopt(_curl, CURLOPT_HEADERDATA, this);
+        curl_easy_setopt(_curl, CURLOPT_WRITEDATA, this);
+        curl_easy_setopt(_curl, CURLOPT_HEADERFUNCTION, header_write_callback);
+        curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, data.file_name.empty() ? write_callback : write_file_callback);
         curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, data.connect_timeout);
         curl_easy_setopt(_curl, CURLOPT_TIMEOUT, data.request_timeout);
         curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(_curl, CURLOPT_ERRORBUFFER, _error_buffer);
+
+        if (NetworkConfiguration::use_http2()) {
+            curl_easy_setopt(_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0/*CURL_HTTP_VERSION_2TLS*/); // See https://curl.haxx.se/docs/http2.html
+            curl_easy_setopt(_curl, CURLOPT_PIPEWAIT, 1L); // See https://curl.haxx.se/docs/http2.html
+        }
+        //int res = curl_easy_setopt(_curl, CURLOPT_TCP_KEEPALIVE, 1L);
+        //res = curl_easy_setopt(_curl, CURLOPT_TCP_KEEPIDLE, 5L);
+        //res = curl_easy_setopt(_curl, CURLOPT_TCP_KEEPINTVL, 5L);
 
 #ifdef VERBOSE_HTTP_LOGGING
         curl_easy_setopt(_curl, CURLOPT_VERBOSE, 1L);
@@ -174,6 +272,27 @@ namespace support {
             curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0);
             curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, CurlRequest::curl_xferinfo_function);
             curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, this);
+        }
+
+        if (!data.file_name.empty()) {
+            _file_to_write_size = 0;
+#ifdef WIN32
+            // We need to use the wstring version of this function otherwise if the file name contain non ascii char, it will fail on Windows
+            std::wstring fileName = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>("", L"").from_bytes(data.file_name);
+
+            if (fileName.empty()) {
+                HUE_LOG << HUE_NETWORK << HUE_ERROR << std::string("Unable to convert file name: ") << data.file_name << HUE_ENDL;
+            }
+            else {
+                _file_to_write.open(fileName, std::fstream::out | std::fstream::binary | std::fstream::trunc);
+            }
+#else
+            _file_to_write.open(data.file_name.c_str(), std::fstream::out | std::fstream::binary | std::fstream::trunc);
+#endif
+            if (data.generate_md5_digest) {
+                // Generate md5 checksum for the file while downloading it.
+                _md5.Init();
+            }
         }
     }
 
@@ -380,7 +499,7 @@ namespace support {
         }
     }
 
-    void CurlRequest::process_response_headers() {
+    void CurlRequest::process_response_headers(HttpResponse& response) {
         std::istringstream response_stream(_header_buffer);
         std::string field;
 
@@ -392,7 +511,7 @@ namespace support {
             if (seperator_pos != std::string::npos) {
                 auto key = field.substr(0, seperator_pos);
                 auto value = support::trim(field.substr(seperator_pos + 1));
-                _response.add_header_field(key.c_str(), value.c_str());
+                                response.add_header_field(key.c_str(), value.c_str());
             }
         }
     }

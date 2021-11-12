@@ -7,10 +7,10 @@
 #ifndef HUESTREAM_EFFECT_LIGHTSCRIPT_ACTION_H_
 #define HUESTREAM_EFFECT_LIGHTSCRIPT_ACTION_H_
 
-#include <huestream/effect/effects/base/AnimationEffect.h>
-#include <huestream/common/data/Color.h>
-#include <huestream/common/data/Light.h>
-#include <huestream/effect/animation/ActionPlayer.h>
+#include "huestream/effect/effects/base/AnimationEffect.h"
+#include "huestream/common/data/Color.h"
+#include "huestream/common/data/Light.h"
+#include "huestream/effect/animation/ActionPlayer.h"
 
 #include <memory>
 #include <string>

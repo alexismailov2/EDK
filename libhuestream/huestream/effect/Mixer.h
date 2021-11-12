@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_EFFECT_MIXER_H_
 #define HUESTREAM_EFFECT_MIXER_H_
 
-#include <huestream/common/data/Group.h>
-#include <huestream/effect/IMixer.h>
-#include <huestream/config/AppSettings.h>
+#include "huestream/common/data/Group.h"
+#include "huestream/effect/IMixer.h"
+#include "huestream/config/AppSettings.h"
 
 #include <memory>
 #include <mutex>

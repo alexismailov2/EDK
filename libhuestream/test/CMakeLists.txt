@@ -142,4 +142,4 @@ endif()
 
 if (WIN32)
     copy_libs_to_output(huestream_tests "${shared_libs}")
-endif ()
+endif()

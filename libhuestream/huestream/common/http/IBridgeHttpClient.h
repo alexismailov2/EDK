@@ -17,8 +17,9 @@ namespace huestream {
     class IBridgeHttpClient {
     public:
         virtual ~IBridgeHttpClient() = default;
-        virtual HttpRequestPtr ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body = {}) = 0;
-        virtual void ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body, HttpRequestCallback callback) = 0;
+        virtual HttpRequestPtr ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body = {}, bool supportEvent = false) = 0;
+        virtual int32_t ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body, HttpRequestCallback callback, bool supportEvent = false) = 0;
+        virtual void CancelHttpRequest(int32_t requestId) = 0;
     };
 
     typedef std::shared_ptr<IBridgeHttpClient> BridgeHttpClientPtr;

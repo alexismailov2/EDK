@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_COMMON_DATA_IAREA_H_
 #define HUESTREAM_COMMON_DATA_IAREA_H_
 
-#include <huestream/common/serialize/Serializable.h>
-#include <huestream/common/data/Location.h>
+#include "huestream/common/serialize/Serializable.h"
+#include "huestream/common/data/Location.h"
 
 #include <memory>
 

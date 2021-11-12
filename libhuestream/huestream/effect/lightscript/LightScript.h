@@ -7,11 +7,11 @@
 #ifndef HUESTREAM_EFFECT_LIGHTSCRIPT_LIGHTSCRIPT_H_
 #define HUESTREAM_EFFECT_LIGHTSCRIPT_LIGHTSCRIPT_H_
 
-#include <huestream/common/serialize/Serializable.h>
-#include <huestream/effect/effects/base/Effect.h>
-#include <huestream/effect/lightscript/Action.h>
-#include <huestream/common/data/Location.h>
-#include <huestream/effect/lightscript/Timeline.h>
+#include "huestream/common/serialize/Serializable.h"
+#include "huestream/effect/effects/base/Effect.h"
+#include "huestream/effect/lightscript/Action.h"
+#include "huestream/common/data/Location.h"
+#include "huestream/effect/lightscript/Timeline.h"
 
 #include <stdarg.h>
 

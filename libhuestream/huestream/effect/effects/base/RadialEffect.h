@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_BASE_RADIALEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_BASE_RADIALEFFECT_H_
 
-#include <huestream/effect/animation/Player.h>
-#include <huestream/effect/effects/base/Effect.h>
-#include <huestream/effect/effects/base/ColorAnimationEffect.h>
+#include "huestream/effect/animation/Player.h"
+#include "huestream/effect/effects/base/Effect.h"
+#include "huestream/effect/effects/base/ColorAnimationEffect.h"
 
 #include <string>
 

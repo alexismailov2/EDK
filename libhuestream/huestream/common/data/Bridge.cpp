@@ -37,20 +37,23 @@ PROP_IMPL(Bridge, BridgeSettingsPtr, bridgeSettings, BridgeSettings);
 PROP_IMPL(Bridge, std::string, name, Name);
 PROP_IMPL(Bridge, std::string, modelId, ModelId);
 PROP_IMPL(Bridge, std::string, apiversion, Apiversion);
+PROP_IMPL(Bridge, std::string, swversion, Swversion);
 PROP_IMPL(Bridge, std::string, id, Id);
 PROP_IMPL(Bridge, std::string, ipAddress, IpAddress);
-PROP_IMPL(Bridge, std::string, tcpPort, TcpPort);
 PROP_IMPL(Bridge, std::string, sslPort, SslPort);
 PROP_IMPL_BOOL(Bridge, bool, isValidIp, IsValidIp);
 PROP_IMPL_BOOL(Bridge, bool, isAuthorized, IsAuthorized);
 PROP_IMPL_BOOL(Bridge, bool, isBusy, IsBusy);
 PROP_IMPL(Bridge, std::string, clientKey, ClientKey);
-PROP_IMPL(Bridge, std::string, user, User);
+PROP_IMPL_ON_UPDATE_CALL(Bridge, std::string, user, User, OnUserChange);
 PROP_IMPL(Bridge, GroupListPtr, groups, Groups);
 PROP_IMPL(Bridge, std::string, selectedGroup, SelectedGroup);
 PROP_IMPL(Bridge, int, maxNoStreamingSessions, MaxNoStreamingSessions);
-PROP_IMPL_GET(Bridge, bool, isUsingSsl, IsUsingSsl);
 PROP_IMPL(Bridge, std::string, certificate, Certificate);
+PROP_IMPL(Bridge, std::string, appId, AppId);
+PROP_IMPL(Bridge, support::HttpRequestError::ErrorCode, lastHttpErrorCode, LastHttpErrorCode);
+PROP_IMPL(Bridge, int32_t, lastHttpStatusCode, LastHttpStatusCode);
+PROP_IMPL(Bridge, ZoneListPtr, zones, Zones);
 
 Bridge::Bridge(BridgeSettingsPtr bridgeSettings)
     : Bridge("", "", false, bridgeSettings) {
@@ -59,15 +62,17 @@ Bridge::Bridge(BridgeSettingsPtr bridgeSettings)
 Bridge::Bridge(std::string id, std::string ip, bool ipValid, BridgeSettingsPtr bridgeSettings) :
     _bridgeSettings(bridgeSettings),
     _apiversion(""),
+        _swversion(""),
     _id(id),
     _ipAddress(ip),
     _isValidIp(ipValid),
     _isAuthorized(false),
     _isBusy(false),
     _groups(std::make_shared<GroupList>()),
+    _zones(std::make_shared<ZoneList>()),
     _selectedGroup(NO_SELECTED_GROUP),
     _maxNoStreamingSessions(0),
-    _isUsingSsl(false) {
+    _lastHttpErrorCode(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS){
 }
 
 void Bridge::Clear() {
@@ -76,6 +81,7 @@ void Bridge::Clear() {
     SetIsValidIp(false);
     SetIsBusy(false);
     SetUser("");
+        SetAppId("");
     SetId("");
     SetIpAddress("");
     SetApiversion("");
@@ -83,6 +89,8 @@ void Bridge::Clear() {
     SetClientKey("");
     SetSelectedGroup("");
     SetGroups(std::make_shared<GroupList>());
+    SetZones(std::make_shared<ZoneList>());
+    SetLastHttpErrorCode(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
 }
 
 BridgeStatus Bridge::GetStatus() const {
@@ -117,7 +125,7 @@ BridgeStatus Bridge::GetStatus() const {
         return BRIDGE_BUSY;
     }
 
-    if (GetGroup()->Active() && GetGroup()->GetOwner() == GetUser()) {
+    if (GetGroup()->Active() && GetGroup()->GetOwner() == GetAppId()) {
         return BRIDGE_STREAMING;
     }
 
@@ -178,13 +186,15 @@ bool Bridge::IsValidClientKey() const {
     return _clientKey.length() == 32;
 }
 
-bool Bridge::IsSupportingHttps() const {
-    ApiVersion thisVersion(_apiversion);
-    ApiVersion minVersion(_bridgeSettings->GetSupportedHttpsApiVersionMajor(),
-        _bridgeSettings->GetSupportedHttpsApiVersionMinor(),
-        _bridgeSettings->GetSupportedHttpsApiVersionBuild());
+bool Bridge::IsSupportingClipV2() const {
+    if (_swversion.empty())
+    {
+        return false;
+    }
 
-    return thisVersion.IsValid() && thisVersion >= minVersion && (_modelId.empty() || IsValidModelId());
+    long int swversion = std::strtol(_swversion.c_str(), nullptr, 10);
+
+    return swversion >= _bridgeSettings->GetSupportedClipV2SwVersion() && (_modelId.empty() || IsValidModelId());
 }
 
 bool Bridge::IsGroupSelected() const {
@@ -224,15 +234,19 @@ bool Bridge::IsAuthorizedForStreaming() const {
 }
 
 bool Bridge::SelectGroupIfOnlyOneOption() {
-    if (_groups->size() == 1) {
-        _selectedGroup = _groups->at(0)->GetId();
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    GroupListPtr groupList = _groups;
+    if (groupList->size() == 1) {
+        _selectedGroup = groupList->at(0)->GetId();
         return true;
     }
     return false;
 }
 
 bool Bridge::SelectGroup(std::string id) {
-    for (auto i = _groups->begin(); i != _groups->end(); ++i) {
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    GroupListPtr groupList = _groups;
+    for (auto i = groupList->begin(); i != groupList->end(); ++i) {
         if ((*i)->GetId() == id) {
             SetSelectedGroup(id);
             return true;
@@ -253,8 +267,10 @@ LightListPtr Bridge::GetGroupLights() const {
     return group->GetLights();
 }
 
-GroupPtr Bridge::GetGroupById(std::string id) const {
-    for (auto i = _groups->begin(); i != _groups->end(); ++i) {
+GroupPtr Bridge::GetGroupById(const std::string& id) const {
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    GroupListPtr groupList = _groups;
+    for (auto i = groupList->begin(); i != groupList->end(); ++i) {
         if ((*i)->GetId() == id) {
             return (*i);
         }
@@ -262,8 +278,24 @@ GroupPtr Bridge::GetGroupById(std::string id) const {
     return nullptr;
 }
 
+ZonePtr Bridge::GetZoneById(const std::string& id) const
+{
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    ZoneListPtr zoneList = _zones;
+    for (auto i = zoneList->begin(); i != zoneList->end(); ++i)
+    {
+        if ((*i)->GetId() == id)
+        {
+            return (*i);
+        }
+    }
+    return nullptr;
+}
+
 void Bridge::DeleteGroup(std::string id) {
-    for (auto i = _groups->begin(); i != _groups->end(); ++i) {
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    GroupListPtr groupList = _groups;
+    for (auto i = groupList->begin(); i != groupList->end(); ++i) {
         if ((*i)->GetId() == id) {
             _groups->erase(i);
             break;
@@ -273,8 +305,10 @@ void Bridge::DeleteGroup(std::string id) {
 
 GroupListPtr Bridge::GetGroupsOwnedByOtherClient() const {
     auto groups = std::make_shared<GroupList>();
-    for (auto i = _groups->begin(); i != _groups->end(); ++i) {
-        if ((*i)->Active() && (*i)->GetOwner() != _user) {
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    GroupListPtr groupList = _groups;
+    for (auto i = groupList->begin(); i != groupList->end(); ++i) {
+        if ((*i)->Active() && (*i)->GetOwner() != _appId) {
             groups->push_back(*i);
         }
     }
@@ -283,7 +317,9 @@ GroupListPtr Bridge::GetGroupsOwnedByOtherClient() const {
 
 int Bridge::GetCurrentNoStreamingSessions() const {
     int sessions = 0;
-    for (auto i = _groups->begin(); i != _groups->end(); ++i) {
+    // Always make a copy of the pointer because the original one could be changed from another thread.
+    GroupListPtr groupList = _groups;
+    for (auto i = groupList->begin(); i != groupList->end(); ++i) {
         if ((*i)->Active()) {
             sessions++;
         }
@@ -291,42 +327,56 @@ int Bridge::GetCurrentNoStreamingSessions() const {
     return sessions;
 }
 
-std::ostringstream Bridge::GetStreamApiRootUrl() const {
+void Bridge::GetStreamApiRootUrl(std::ostringstream& aOSS, bool useClipV2, bool eventing) const {
+      aOSS << GetUrl().c_str();
+
+        if (useClipV2 && IsSupportingClipV2()) {
+            if (eventing)   {
+                aOSS << "/eventstream/clip/v2";
+            }
+            else {
+                aOSS << "/clip/v2/resource";
+            }
+        }   else {
+            aOSS << "/api/";
+        }
+}
+
+std::string Bridge::GetApiRootUrl(bool useClipV2, bool eventing) const {
     std::ostringstream oss;
+    GetStreamApiRootUrl(oss, useClipV2, eventing);
+    return oss.str();
+}
 
-    auto protocol = _isUsingSsl ? "https" : "http";
-    oss << protocol << "://" << _ipAddress;
-
-    if (_isUsingSsl) {
-        if (!_sslPort.empty()) {
-            oss << ":" << _sslPort;
-        }
-    } else {
-        if (!_tcpPort.empty()) {
-            oss << ":" << _tcpPort;
-        }
+std::string Bridge::GetBaseUrl(bool useClipV2, bool eventing) const {
+    std::ostringstream oss;
+    GetStreamApiRootUrl(oss, useClipV2, eventing);
+    if (!useClipV2 && !_user.empty()) {
+                oss << _user;
+                oss << "/";
     }
 
-    oss << "/api/";
-
-    return oss;
+    return oss.str();
 }
 
-std::string Bridge::GetApiRootUrl() const {
-    return GetStreamApiRootUrl().str();
-}
+std::string Bridge::GetUrl() const
+{
+    std::ostringstream oss;
 
-std::string Bridge::GetBaseUrl() const {
-    auto oss = GetStreamApiRootUrl();
-    if (!_user.empty()) {
-        oss << _user << "/";
+    auto protocol = "https";
+    oss << protocol << "://" << _ipAddress;
+
+    if (!_sslPort.empty())
+    {
+        oss << ":" << _sslPort;
     }
 
     return oss.str();
 }
 
 std::string Bridge::GetSmallConfigUrl() const {
-    auto oss = GetStreamApiRootUrl();
+    std::ostringstream oss;
+    GetStreamApiRootUrl(oss);
 
     oss << "config/";
 
@@ -334,27 +384,53 @@ std::string Bridge::GetSmallConfigUrl() const {
 }
 
 std::string Bridge::GetSelectedGroupUrl() const {
-    auto oss = GetStreamApiRootUrl();
-    oss << _user << "/" << "groups/" << _selectedGroup;
+    std::ostringstream oss;
+
+        if (IsSupportingClipV2()) {
+                GetStreamApiRootUrl(oss, true, false);
+                oss << "/" << "entertainment_configuration/" << _selectedGroup;
+        }
+        else
+        {
+                GetStreamApiRootUrl(oss);
+                oss << _user << "/" << "groups/" << _selectedGroup;
+        }
 
     return oss.str();
 }
 
 std::string Bridge::GetSelectedGroupActionUrl() const {
-    auto oss = GetStreamApiRootUrl();
-    oss << _user << "/" << "groups/" << _selectedGroup << "/" << "action";
+    std::ostringstream oss;
+
+        if (IsSupportingClipV2())
+        {
+            // TODO there's no group associated with an entertainment area on the bridge with clipv2. Replace with zone when it will be available.
+        }
+        else {
+                GetStreamApiRootUrl(oss);
+                oss << _user << "/" << "groups/" << _selectedGroup << "/" << "action";
+        }
 
     return oss.str();
+}
+
+std::string Bridge::GetAppIdUrl() const {
+    std::string url = GetUrl();
+    url += "/auth/v1";
+
+    return url;
 }
 
 void Bridge::Serialize(JSONNode *node) const {
     SerializeBase(node);
     SerializeList(node, AttributeGroups, _groups);
+    SerializeList(node, AttributeZones, _zones);
 }
 
 void Bridge::Deserialize(JSONNode *node) {
     DeserializeBase(node);
     DeserializeList<GroupListPtr, Group>(node, &_groups, AttributeGroups);
+    DeserializeList<ZoneListPtr, Zone>(node, &_zones, AttributeZones);
 }
 
 std::string Bridge::GetTypeName() const {
@@ -378,9 +454,9 @@ void Bridge::SerializeBase(JSONNode *node) const {
     SerializeValue(node, AttributeName, _name);
     SerializeValue(node, AttributeModelId, _modelId);
     SerializeValue(node, AttributeApiversion, _apiversion);
+    SerializeValue(node, AttributeSwversion, _swversion);
     SerializeValue(node, AttributeId, _id);
     SerializeValue(node, AttributeIpAddress, _ipAddress);
-    SerializeValue(node, AttributeTcpPort, _tcpPort);
     SerializeValue(node, AttributeSslPort, _sslPort);
     SerializeValue(node, AttributeIsValidIp, _isValidIp);
     SerializeValue(node, AttributeIsAuthorized, _isAuthorized);
@@ -388,7 +464,6 @@ void Bridge::SerializeBase(JSONNode *node) const {
     SerializeValue(node, AttributeUser, _user);
     SerializeValue(node, AttributeSelectedGroup, _selectedGroup);
     SerializeValue(node, AttributeMaxNoStreamingSessions, _maxNoStreamingSessions);
-    SerializeValue(node, AttributeIsUsingSsl, _isUsingSsl);
     SerializeValue(node, AttributeCertificate, _certificate);
 }
 
@@ -398,9 +473,9 @@ void Bridge::DeserializeBase(JSONNode *node) {
     DeserializeValue(node, AttributeName, &_name, "");
     DeserializeValue(node, AttributeModelId, &_modelId, "");
     DeserializeValue(node, AttributeApiversion, &_apiversion, "");
+    DeserializeValue(node, AttributeSwversion, &_swversion, "");
     DeserializeValue(node, AttributeId, &_id, "");
     DeserializeValue(node, AttributeIpAddress, &_ipAddress, "");
-    DeserializeValue(node, AttributeTcpPort, &_tcpPort, "");
     DeserializeValue(node, AttributeSslPort, &_sslPort, "");
     DeserializeValue(node, AttributeIsValidIp, &_isValidIp, false);
     DeserializeValue(node, AttributeIsAuthorized, &_isAuthorized, false);
@@ -408,18 +483,26 @@ void Bridge::DeserializeBase(JSONNode *node) {
     DeserializeValue(node, AttributeUser, &_user, "");
     DeserializeValue(node, AttributeSelectedGroup, &_selectedGroup, "");
     DeserializeValue(node, AttributeMaxNoStreamingSessions, &_maxNoStreamingSessions, 0);
-    DeserializeValue(node, AttributeIsUsingSsl, &_isUsingSsl, false);
     DeserializeValue(node, AttributeCertificate, &_certificate, "");
+
+    // Keep Clipv1 compatibility by assigning the app id to the same value than user id
+    SetAppId(_user);
 }
 
 BridgePtr Bridge::Clone() const {
     auto bridgeCopy = std::make_shared<Bridge>(*this);
     bridgeCopy->SetGroups(clone_list(_groups));
+    bridgeCopy->SetZones(clone_list(_zones));
     return bridgeCopy;
 }
 
-void Bridge::EnableSsl() {
-    _isUsingSsl = true;
+void Bridge::OnUserChange()
+{
+    // Keep Clipv1 compatibility by assigning the app id to the same value than the user id
+    if (!IsSupportingClipV2())
+    {
+        SetAppId(GetUser());
+    }
 }
 
 }  // namespace huestream

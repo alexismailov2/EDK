@@ -168,14 +168,14 @@ namespace huestream {
         EXPECT_CALL(*_messageDispatcher, Queue(_));
         ASSERT_TRUE(_connect->IsReady());
         _connect->StartStream(nullptr);
-        ASSERT_FALSE(_connect->IsReady());
+        // Here we don't check _connect->IsReady() because it won't be false. It will only be set to false asynchronously.
     }
 
     TEST_F(TestConnect, StopStream) {
         EXPECT_CALL(*_messageDispatcher, Queue(_));
         ASSERT_TRUE(_connect->IsReady());
         _connect->StopStream(nullptr);
-        ASSERT_FALSE(_connect->IsReady());
+        // Here we don't check _connect->IsReady() because it won't be false. It will only be set to false asynchronously.
     }
 
     TEST_F(TestConnect, OnBridgeMonitorEvent) {

@@ -1,8 +1,8 @@
 diff --git a/include/mbedtls/config.h b/include/mbedtls/config.h
-index 6fc9c772..5138b414 100644
+index d370dbff5..e277b1e93 100644
 --- a/include/mbedtls/config.h
 +++ b/include/mbedtls/config.h
-@@ -53,7 +53,10 @@
+@@ -56,7 +56,10 @@
   *
   * Comment to disable the use of assembly code.
   */
@@ -13,8 +13,8 @@ index 6fc9c772..5138b414 100644
 +#endif
  
  /**
-  * \def MBEDTLS_HAVE_SSE2
-@@ -1401,7 +1404,7 @@
+  * \def MBEDTLS_NO_UDBL_DIVISION
+@@ -2273,7 +2276,7 @@
   *
   * This modules adds support for the AES-NI instructions on x86-64
   */
@@ -23,7 +23,7 @@ index 6fc9c772..5138b414 100644
  
  /**
   * \def MBEDTLS_AES_C
-@@ -2002,7 +2005,7 @@
+@@ -3015,7 +3018,7 @@
   *
   * This modules adds support for the VIA PadLock on x86.
   */
@@ -32,11 +32,18 @@ index 6fc9c772..5138b414 100644
  
  /**
   * \def MBEDTLS_PEM_PARSE_C
-@@ -2595,6 +2598,6 @@
- #include MBEDTLS_USER_CONFIG_FILE
- #endif
- 
--#include "check_config.h"
-+#include "mbedtls/check_config.h"
- 
- #endif /* MBEDTLS_CONFIG_H */
+  
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2ab2e01eb..68c43a24c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -198,7 +198,7 @@ if(CMAKE_COMPILER_IS_GNU)
+         endif()
+     endif()
+     if (GCC_VERSION VERSION_GREATER 7.0 OR GCC_VERSION VERSION_EQUAL 7.0)
+-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat-overflow=2 -Wformat-truncation=2")
++      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat-overflow=2 -Wformat-truncation=1")
+     endif()
+     set(CMAKE_C_FLAGS_RELEASE     "-O2")
+     set(CMAKE_C_FLAGS_DEBUG       "-O0 -g3")
+

@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_COMMON_DATA_GROUP_H_
 #define HUESTREAM_COMMON_DATA_GROUP_H_
 
-#include <huestream/common/data/Light.h>
-#include <huestream/common/data/Scene.h>
+#include "huestream/common/data/Light.h"
+#include "huestream/common/data/Scene.h"
 
 #include <map>
 #include <vector>
@@ -21,9 +21,12 @@ namespace huestream {
      class of entertainment group, indicating by what reference it has been created
      */
     enum GroupClass {
-        GROUPCLASS_TV,      ///< Screen is used as reference point (e.g. for video)
-        GROUPCLASS_FREE,    ///< No reference point is used  (e.g. for audio)
-        GROUPCLASS_OTHER    ///< Unknown (application defined) reference point
+        GROUPCLASS_TV,
+        GROUPCLASS_FREE,
+        GROUPCLASS_SCREEN,      ///< Channels are organized around content from a screen
+        GROUPCLASS_MUSIC,       ///< Channels are organized for music synchronization
+        GROUPCLASS_3DSPACE,     ///< Channels are organized to provide 3d spacial effects
+        GROUPCLASS_OTHER        ///< General use case
     };
 
     /**
@@ -51,6 +54,12 @@ namespace huestream {
     PROP_DEFINE(Group, std::string, id, Id);
 
     /**
+     Id representing the grouped light resource of this group
+     @note mostly internal use, imported from bridge
+    */
+    PROP_DEFINE(Group, std::string, groupedLightId, GroupedLightId);
+
+    /**
      Set user given name of this group
      @note mostly internal use, imported from bridge
      */
@@ -63,10 +72,16 @@ namespace huestream {
     PROP_DEFINE(Group, GroupClass, classType, ClassType);
 
     /**
-     Set list of lights in this group
+     Set list of light channels in this group
      @note mostly internal use, imported from bridge
      */
     PROP_DEFINE(Group, LightListPtr, lights, Lights);
+
+    /**
+     Set list of physical lights in this group
+     @note mostly internal use, imported from bridge
+    */
+    PROP_DEFINE(Group, LightListPtr, physicalLights, PhysicalLights);
 
     /**
      Set whether this group is currently being streamed to
@@ -121,14 +136,16 @@ namespace huestream {
         virtual ~Group();
 
         /**
-         [deprecated] add a light to this group (z coordinate forced to 0) 
+         [deprecated] add a light to this group (z coordinate forced to 0)
          */
-        void AddLight(std::string id, double x, double y, std::string name = "", std::string model = "", bool reachable = true);
+        void AddLight(std::string id, double x, double y, std::string name = "", std::string model = "", std::string archetype = "", bool reachable = true);
 
         /**
          add a light to this group
          */
-        void AddLight(std::string id, double x, double y, double z, std::string name = "", std::string model = "", bool reachable = true);
+        void AddLight(std::string id, double x, double y, double z, std::string name = "", std::string model = "", std::string archetype = "", bool reachable = true);
+
+        void AddLight(Light& light);
 
         /**
          get readable version of the owner name
@@ -145,13 +162,13 @@ namespace huestream {
          */
         std::string GetOwnerDeviceName() const;
 
-        void Serialize(JSONNode *node) const override;
+        virtual void Serialize(JSONNode *node) const override;
 
-        void Deserialize(JSONNode *node) override;
+        virtual void Deserialize(JSONNode *node) override;
 
-        std::string GetTypeName() const override;
+        virtual std::string GetTypeName() const override;
 
-        Group* Clone();
+        virtual Group* Clone();
 
     private:
         double Clip(double value, double min, double max) const;

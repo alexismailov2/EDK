@@ -9,8 +9,8 @@
 #include <iterator>
 #include <vector>
 
-#include <boost/range/algorithm/find_if.hpp>
-#include <boost/range/distance.hpp>
+#include "boost/range/algorithm/find_if.hpp"
+#include "boost/range/distance.hpp"
 
 namespace support {
     namespace duplicates {

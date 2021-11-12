@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_BASE_ANIMATION_H_
 #define HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_BASE_ANIMATION_H_
 
-#include <huestream/common/serialize/Serializable.h>
-#include <huestream/effect/animation/data/TweenType.h>
+#include "huestream/common/serialize/Serializable.h"
+#include "huestream/effect/animation/data/TweenType.h"
 
 
 #include <stdarg.h>

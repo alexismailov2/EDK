@@ -6,12 +6,12 @@
 #ifndef HUESTREAM_CONNECT_ICONNECTIONFLOWFACTORY_H_
 #define HUESTREAM_CONNECT_ICONNECTIONFLOWFACTORY_H_
 
-#include <huestream/connect/MessageDispatcher.h>
-#include <huestream/connect/IBridgeSearcher.h>
-#include <huestream/connect/IBridgeAuthenticator.h>
-#include <huestream/connect/IBridgeStorageAccessor.h>
-#include <bridgediscovery/BridgeInfo.h>
-#include <huestream/connect/IFullConfigRetriever.h>
+#include "huestream/connect/MessageDispatcher.h"
+#include "huestream/connect/IBridgeSearcher.h"
+#include "huestream/connect/IBridgeAuthenticator.h"
+#include "huestream/connect/IBridgeStorageAccessor.h"
+#include "bridgediscovery/BridgeInfo.h"
+#include "huestream/connect/IFullConfigRetriever.h"
 
 #include <memory>
 
@@ -29,7 +29,7 @@ namespace huestream {
 
             virtual BridgeStorageAccessorPtr GetStorageAccesser() = 0;
 
-            virtual ConfigRetrieverPtr CreateConfigRetriever(bool useForcedActivation = true, ConfigType configType = ConfigType::Full) = 0;
+            virtual ConfigRetrieverPtr CreateConfigRetriever(bool useForcedActivation = true, ConfigType configType = ConfigType::Full, bool useClipV2 = false) = 0;
         };
 
         typedef std::shared_ptr<IConnectionFlowFactory> ConnectionFlowFactoryPtr;

@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_CONNECT_FEEDBACKMESSAGE_H_
 #define HUESTREAM_CONNECT_FEEDBACKMESSAGE_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/common/language/IMessageTranslator.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/common/language/IMessageTranslator.h"
 
 #include <memory>
 #include <string>
@@ -73,6 +73,10 @@ namespace huestream {
                 ID_LIGHTS_UPDATED,                         ///< lights in the group have changed
                 ID_GROUPLIST_UPDATED,                      ///< list of entertainment groups has changed
                 ID_GROUP_LIGHTSTATE_UPDATED,               ///< home automation light state of the group has changed
+                ID_ZONELIST_UPDATED,                       ///< list of zones has changed
+                ID_ZONE_SCENELIST_UPDATED,
+                ID_INVALID_EVENTING_CONNECTION,
+                ID_BRIDGE_REFRESHED,
                 ID_INTERNAL_ERROR                          ///< should not happen on a production system
             };
 

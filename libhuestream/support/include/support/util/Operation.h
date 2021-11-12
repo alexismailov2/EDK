@@ -8,6 +8,7 @@
 #include <memory>
 #include <algorithm>
 #include <vector>
+#include <stdexcept>
 
 #include "support/util/Proxy.h"
 

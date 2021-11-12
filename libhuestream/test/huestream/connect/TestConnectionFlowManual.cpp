@@ -212,26 +212,22 @@ TEST_F(TestConnectionFlow_Manual, api_version_empty__expect_small_and_full_confi
     set_manual_load_retrieve_config(3, 1);
 }
 
-TEST_F(TestConnectionFlow_Manual, ManualBridgeHasSslEnabled__SmallConfigHasOldApi__SslStillEnabled) {
+TEST_F(TestConnectionFlow_Manual, ManualBridge__SmallConfigHasOldApi) {
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_storage_accessor_load_return_data();
     // small config returns bridge with old api
     expect_small_config_retrieval_return_data(1);
 
-    EXPECT_FALSE(_bridges->at(4)->GetIsUsingSsl());
-    _bridges->at(4)->EnableSsl();
-
     set_manual(4);
     expect_initiate_full_config_retrieval();
 
     _messageDispatcher->ExecutePendingActions();
-    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.22.0");
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
+    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.24.0");
 }
 
 INSTANTIATE_TEST_CASE_P(manual_bridge_https, TestConnectionFlow_Manual, Values(true, false));
 
-TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridgesSslDisabled__SmallConfigHasNewApi__SslEnabled) {
+TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridges__SmallConfigHasNewApi) {
     bool connect_by_ip = GetParam();
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
@@ -239,7 +235,6 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridgesSslDisable
     // small config returns bridge with new api
     expect_small_config_retrieval_return_data(4);
 
-    EXPECT_FALSE(_bridges->at(4)->GetIsUsingSsl());
     if (connect_by_ip) {
         expect_message(FeedbackMessage::ID_START_AUTHORIZING, FeedbackMessage::FEEDBACK_TYPE_INFO);
         expect_message(FeedbackMessage::ID_PRESS_PUSH_LINK, FeedbackMessage::FEEDBACK_TYPE_USER);
@@ -253,10 +248,9 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridgesSslDisable
     }
 
     _messageDispatcher->ExecutePendingActions();
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 }
 
-TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridgeSslDisabled__SmallConfigHasNewApi__SslEnabled) {
+TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridge__SmallConfigHasNewApi) {
     bool connect_by_ip = GetParam();
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
@@ -267,9 +261,7 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridgeSslDisabled__
     _persistentData->SetActiveBridge(_bridges->at(4)->Clone());
     _persistentData->GetActiveBridge()->SetUser("HSJKHSDKJHKJDHIUHHFYU&e213");
     _persistentData->GetActiveBridge()->SetClientKey("00000000000000000000000000000000");
-    EXPECT_FALSE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 
-    EXPECT_FALSE(_bridges->at(4)->GetIsUsingSsl());
     if (connect_by_ip) {
         expect_message(FeedbackMessage::ID_START_AUTHORIZING, FeedbackMessage::FEEDBACK_TYPE_INFO);
         expect_message(FeedbackMessage::ID_PRESS_PUSH_LINK, FeedbackMessage::FEEDBACK_TYPE_USER);
@@ -283,23 +275,20 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridgeSslDisabled__
     }
 
     _messageDispatcher->ExecutePendingActions();
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 }
 
-TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridgeHasSslEnabled__SmallConfigHasOldApi__SslStillEnabled) {
+TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridge__SmallConfigHasOldApi) {
     bool connect_by_ip = GetParam();
 
     auto bridge_with_old_api = std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
     bridge_with_old_api->SetModelId("BSB002");
-    bridge_with_old_api->SetApiversion("1.22.0");
+    bridge_with_old_api->SetApiversion("1.24.0");
+		bridge_with_old_api->SetSwversion("1940094000");
     bridge_with_old_api->SetId(_bridges->at(4)->GetId());
-    EXPECT_FALSE(bridge_with_old_api->GetIsUsingSsl());
 
     _persistentData->SetActiveBridge(_bridges->at(4)->Clone());
-    _persistentData->GetActiveBridge()->EnableSsl();
     _persistentData->GetActiveBridge()->SetUser("HSJKHSDKJHKJDHIUHHFYU&e213");
     _persistentData->GetActiveBridge()->SetClientKey("00000000000000000000000000000000");
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_storage_accessor_load_return_data();
@@ -319,11 +308,10 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridgeHasSslEnabled
     }
 
     _messageDispatcher->ExecutePendingActions();
-    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.22.0");
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
+    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.24.0");
 }
 
-TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridges__OldModelId__SmallConfigHasNewApi__SslStillDisabled__BridgeSearchStarts) {
+TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridges__OldModelId__SmallConfigHasNewApi__BridgeSearchStarts) {
     bool connect_by_ip = GetParam();
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
@@ -333,7 +321,6 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridges__OldModel
     expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_on_searcher_search_new(false);
 
-    EXPECT_FALSE(_bridges->at(5)->GetIsUsingSsl());
     EXPECT_FALSE(_bridges->at(5)->IsValidModelId());
     if (connect_by_ip) {
         _connectionFlow->ConnectToBridgeWithIp(_bridges->at(5)->GetIpAddress());
@@ -342,8 +329,5 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__NoExistingBridges__OldModel
         set_manual(5);
     }
 
-    EXPECT_FALSE(_bridges->at(5)->GetIsUsingSsl());
-
     _messageDispatcher->ExecutePendingActions();
-    EXPECT_FALSE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 }

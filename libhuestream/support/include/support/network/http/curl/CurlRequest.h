@@ -12,12 +12,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "support/network/http/HttpResponse.h"
 #include "support/network/http/HttpRequestError.h"
 #include "support/network/http/HttpRequestParams.h"
 #include "support/threading/ThreadPool.h"
 #include "support/threading/QueueDispatcher.h"
+#include "support/crypto/HashMD5.h"
 
 namespace support {
 
@@ -34,6 +36,8 @@ namespace support {
         void set_as_complete();
 
         std::string get_interface_name();
+
+                bool expect_event_stream() const { return _expect_event_stream; }
 
     private:
         CURL *_curl;
@@ -77,8 +81,16 @@ namespace support {
 
         HttpRequestProgressCallback _progress_callback;
 
+                bool _expect_event_stream;
+                bool _is_writing_header;
+                bool _done_writing_header;
+
         /* curl will write error messages here */
         char _error_buffer[CURL_ERROR_SIZE];
+
+        std::ofstream _file_to_write;
+        size_t _file_to_write_size;
+        HashMD5 _md5;
 
         void setup_options(const HttpRequestParams &data);
 
@@ -96,15 +108,21 @@ namespace support {
 
         HttpRequestError::ErrorCode parse_error_code(CURLcode curl_code);
 
-        void process_response_headers();
+        void process_response_headers(HttpResponse& response);
 
         void cleanup();
+
+                void send_stream_response();
 
         static CURLcode curl_sslctx_function(CURL* curl, void* sslctx, void* data);
         static int mbedtls_x509parse_verify(void* data, mbedtls_x509_crt* cert, int path_cnt, uint32_t* flags);
         static int curl_xferinfo_function(void *clientp,
                                           curl_off_t dltotal,   curl_off_t dlnow,
                                           curl_off_t ultotal,   curl_off_t ulnow);
+
+                static size_t write_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata);
+                static size_t write_file_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata);
+                static size_t header_write_callback(char *ptr, size_t memb_size, size_t nmemb, void* userdata);
     };
 
 }  // namespace support

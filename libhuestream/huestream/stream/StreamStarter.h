@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_STREAM_STREAMSTARTER_H_
 #define HUESTREAM_STREAM_STREAMSTARTER_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/stream/IStreamStarter.h>
-#include <huestream/common/http/IBridgeHttpClient.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/stream/IStreamStarter.h"
+#include "huestream/common/http/IBridgeHttpClient.h"
 
 namespace huestream {
 

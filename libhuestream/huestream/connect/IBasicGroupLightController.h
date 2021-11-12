@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_CONNECT_IBASICGROUPLIGHTCONTROLLER_H_
 #define HUESTREAM_CONNECT_IBASICGROUPLIGHTCONTROLLER_H_
 
-#include <huestream/common/data/Bridge.h>
+#include "huestream/common/data/Bridge.h"
 
 #include <memory>
 #include <string>

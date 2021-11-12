@@ -25,11 +25,12 @@ public:
 
         auto existingBridge = std::make_shared<Bridge>("001788FFFE2007DD", "192.168.1.37", true, std::make_shared<BridgeSettings>());
         existingBridge->SetModelId("BSB002");
-        existingBridge->SetApiversion("1.22.0");
+        existingBridge->SetApiversion("1.24.0");
+        existingBridge->SetSwversion("1940094000");
         existingBridge->SetUser("HSJKHSDKJHKJDHIUHHFYU&e213");
         existingBridge->SetClientKey("00000000000000000000000000000000");
         existingBridge->SetIsAuthorized(true);
-        
+
         _existingBridgeData = std::make_shared<HueStreamData>(std::make_shared<BridgeSettings>());
         _existingBridgeData->SetActiveBridge(existingBridge);
     }
@@ -37,7 +38,8 @@ public:
     void addAnotherKnownBridge(std::string id) {
         auto existingBridge = std::make_shared<Bridge>(id, "192.168.1.44", true, std::make_shared<BridgeSettings>());
         existingBridge->SetModelId("BSB002");
-        existingBridge->SetApiversion("1.23.0");
+        existingBridge->SetApiversion("1.25.0");
+        existingBridge->SetSwversion("1940094000");
         existingBridge->SetUser("fdsajfklasdjfkldsa");
         existingBridge->SetClientKey("00000000000001337000000000000000");
         existingBridge->SetIsAuthorized(true);
@@ -130,11 +132,12 @@ public:
         finish_loading_execute_fullconfig_not_found_starts_bridgesearch(index);
 
         expect_message(FeedbackMessage::ID_FINISH_SEARCH_BRIDGES_FOUND, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_small_config_retrieval_return_data(index);
         expect_initiate_full_config_retrieval();
         finish_search_with_three_bridges(get_last_searcher());
 
         retrieve_full_config(index, 1);
-        
+
         finish(_bridges->at(index));
     }
 
@@ -143,6 +146,7 @@ public:
         finish_loading_execute_fullconfig_not_found_starts_bridgesearch(index);
 
         expect_message(FeedbackMessage::ID_FINISH_SEARCH_BRIDGES_FOUND, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_small_config_retrieval_return_data(index);
         expect_initiate_full_config_retrieval();
         finish_search_with_three_bridges(get_last_searcher());
 
@@ -308,9 +312,8 @@ TEST_F(TestConnectionFlow_ExistingBridge, load_only) {
 
 INSTANTIATE_TEST_CASE_P(existing_https_bridge, TestConnectionFlow_ExistingBridge, Values(true, false));
 
-TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SslDisabled__SmallConfigHasNewApi__SslEnabled) {
+TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SmallConfigHasNewApi) {
     _persistentData->SetActiveBridge(_bridges->at(4));
-    EXPECT_FALSE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_storage_accessor_load_return_data();
@@ -327,20 +330,16 @@ TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SslDisabled__Smal
     expect_message(FeedbackMessage::ID_PRESS_PUSH_LINK, FeedbackMessage::FEEDBACK_TYPE_USER);
     expect_on_authenticator_authenticate(4);
     _messageDispatcher->ExecutePendingActions();
-
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 }
 
-TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SslEnabled__SmallConfigHasOldApi__SslStillEnabled) {
+TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SmallConfigHasOldApi) {
     auto bridge_with_old_api = std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
     bridge_with_old_api->SetModelId("BSB002");
-    bridge_with_old_api->SetApiversion("1.22.0");
+    bridge_with_old_api->SetApiversion("1.24.0");
+    bridge_with_old_api->SetSwversion("1940094000");
     bridge_with_old_api->SetId(_bridges->at(4)->GetId());
-    EXPECT_FALSE(bridge_with_old_api->GetIsUsingSsl());
 
     _persistentData->SetActiveBridge(_bridges->at(4));
-    _persistentData->GetActiveBridge()->EnableSsl();
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
 
     expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_storage_accessor_load_return_data();
@@ -359,6 +358,5 @@ TEST_P(TestConnectionFlow_ExistingBridge, ExistingHttpsBridge__SslEnabled__Small
     expect_on_authenticator_authenticate(4);
     _messageDispatcher->ExecutePendingActions();
 
-    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.22.0");
-    EXPECT_TRUE(_persistentData->GetActiveBridge()->GetIsUsingSsl());
+    EXPECT_EQ(_persistentData->GetActiveBridge()->GetApiversion(), "1.24.0");
 }

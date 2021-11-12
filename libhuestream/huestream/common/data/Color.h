@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_COMMON_DATA_COLOR_H_
 #define HUESTREAM_COMMON_DATA_COLOR_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/common/serialize/Serializable.h>
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/common/serialize/Serializable.h"
 
 #include <stdarg.h>
 
@@ -36,7 +36,15 @@ namespace huestream {
 
         Color(double red, double green, double blue, double alpha);
 
+        Color(const double xy[2], double brightness, double maxBrightness = 254);
+
+        Color(int ct, double brightness, double maxBrightness);
+
         std::vector<double> GetRGBA() const;
+
+        void GetYxy(double &Y, double &x, double &y) const;
+
+        void GetRawRGB(double& _r, double& _g, double& _b) const;
 
         double GetCurrentBrightness() const;
 
@@ -50,8 +58,15 @@ namespace huestream {
 
         std::string GetTypeName() const override;
 
+        bool operator==(const Color& color) const;
+
     private:
         double Clamp(double value);
+        void SetXY(const double xy[2], double brightness, double maxBrightness = 254);
+
+        double _rawRed;
+        double _rawGreen;
+        double _rawBlue;
     };
 
 #if defined(GNU) && (GCC_MAJOR < 5) || defined(__clang__)

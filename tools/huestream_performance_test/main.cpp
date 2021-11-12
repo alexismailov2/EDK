@@ -52,8 +52,8 @@ std::shared_ptr<SequenceEffect> CreateEffect() {
     _effect->Enable();
     _effect->SetMode(huestream::SequenceModeAll);
     _effect->SetBri(1);
-    _effect->AddColor(Color(0, 0, 0));
-    _effect->AddColor(Color(1, 1, 1));
+    _effect->AddColor(Color(0.0, 0.0, 0.0));
+    _effect->AddColor(Color(1.0, 1.0, 1.0));
     return _effect;
 }
 

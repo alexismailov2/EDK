@@ -6,10 +6,10 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_SPHERELIGHTSOURCEEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_SPHERELIGHTSOURCEEFFECT_H_
 
-#include <huestream/common/data/Color.h>
-#include <huestream/effect/animation/animations/base/Animation.h>
-#include <huestream/effect/animation/data/CurveData.h>
-#include <huestream/effect/effects/base/ColorAnimationEffect.h>
+#include "huestream/common/data/Color.h"
+#include "huestream/effect/animation/animations/base/Animation.h"
+#include "huestream/effect/animation/data/CurveData.h"
+#include "huestream/effect/effects/base/ColorAnimationEffect.h"
 
 #include <string>
 

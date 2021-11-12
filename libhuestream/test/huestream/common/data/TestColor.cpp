@@ -28,12 +28,15 @@ protected:
 };
 
 TEST_F(TestColor, GetBrightness) {
-    ASSERT_EQ(1, Color(1, 0, 0).GetCurrentBrightness());
-    ASSERT_EQ(1, Color(1, 1, 0).GetCurrentBrightness());
-    ASSERT_EQ(1, Color(1, 0, 1).GetCurrentBrightness());
-    ASSERT_EQ(1, Color(1, 0.5, 1).GetCurrentBrightness());
-    ASSERT_EQ(0.5, Color(0.5, 0, 0).GetCurrentBrightness());
+    ASSERT_EQ(1.0, Color(1.0, 0.0, 0.0).GetCurrentBrightness());
+    ASSERT_EQ(1.0, Color(1.0, 1.0, 0.0).GetCurrentBrightness());
+    ASSERT_EQ(1.0, Color(1.0, 0.0, 1.0).GetCurrentBrightness());
+    ASSERT_EQ(1.0, Color(1.0, 0.5, 1.0).GetCurrentBrightness());
+    ASSERT_EQ(0.5, Color(0.5, 0.0, 0.0).GetCurrentBrightness());
     ASSERT_EQ(0.5, Color(0.5, 0.1, 0.1).GetCurrentBrightness());
+
+    double xy[2] = {0.5018, 0.4152};
+		ASSERT_NEAR(0.06186248, Color(xy, 0.567).GetCurrentBrightness(), 0.001);
 }
 
 TEST_F(TestColor, SetBrightness) {
@@ -42,10 +45,13 @@ TEST_F(TestColor, SetBrightness) {
     SetBrightnessAndAssert(Color(0.5, 0.0, 0.0), 1.00, Color(1.0, 0.0, 0.0));
     SetBrightnessAndAssert(Color(0.7, 0.9, 0.4), 0.45, Color(0.35, 0.45, 0.2));
     SetBrightnessAndAssert(Color(0.7, 0.9, 0.4), 1.00, Color(0.777, 1.0, 0.444));
+
+    double xy[2] = {0.5018, 0.4152};
+    SetBrightnessAndAssert(Color(xy, 0.567), 1.00, Color(1.0, 0.33246053, 0.03478684));
 }
 
 TEST_F(TestColor, Clamp) {
-    Color color = Color(-0.5, 0.5, 3);
+    Color color = Color(-0.5, 0.5, 3.0);
     ASSERT_DOUBLE_EQ(color.GetR(), -0.5);
     ASSERT_DOUBLE_EQ(color.GetG(), 0.5);
     ASSERT_DOUBLE_EQ(color.GetB(), 3);
@@ -57,7 +63,7 @@ TEST_F(TestColor, Clamp) {
 }
 
 TEST_F(TestColor, GetRGBA) {
-    Color color(1, 0, 0);
+    Color color(1.0, 0.0, 0.0);
     std::vector<double> rgba = color.GetRGBA();
     ASSERT_EQ(4, rgba.size());
     ASSERT_EQ(color.GetAlpha(), rgba[3]);

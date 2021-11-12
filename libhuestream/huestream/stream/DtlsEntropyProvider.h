@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_STREAM_DTLSENTROPYPROVIDER_H_
 #define HUESTREAM_STREAM_DTLSENTROPYPROVIDER_H_
 
-#include <edtls/wrapper/mbedtls/EntropyProviderBase.h>
+#include "edtls/wrapper/mbedtls/EntropyProviderBase.h"
 
 namespace huestream {
 

@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_HTTP_HTTPCLIENTPROVIDER_H_
 #define HUESTREAM_COMMON_HTTP_HTTPCLIENTPROVIDER_H_
 
-#include <huestream/common/http/IHttpClient.h>
+#include "huestream/common/http/IHttpClient.h"
 
 namespace huestream {
 

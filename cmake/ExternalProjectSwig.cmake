@@ -11,7 +11,7 @@ if(DEFINED Swig_DIR AND NOT EXISTS ${Swig_DIR})
     message(FATAL_ERROR "Swig_DIR variable is defined but corresponds to non-existing directory")
 endif()
 
-if(WIN32)
+if(WIN32 OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set(SWIGWIN_URL "https://downloads.sourceforge.net/project/swig/swigwin/swigwin-${SWIG_VERSION}/swigwin-${SWIG_VERSION}.zip?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fswig%2Ffiles%2Fswigwin%2Fswigwin-${SWIG_VERSION}%2Fswigwin-${SWIG_VERSION}.zip%2Fdownload%3Fuse_mirror%3Dnetix&ts=1538981168")
     # binary SWIG for windows
     #------------------------------------------------------------------------------

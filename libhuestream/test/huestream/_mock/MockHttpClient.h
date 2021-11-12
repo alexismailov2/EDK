@@ -18,7 +18,7 @@ MATCHER_P3(MatchHttpRequest, method, url, body, "Request did not match") {
 };
 
 MATCHER_P4(MatchHttpRequestWithAccessToken, method, url, body, token, "Request did not match") {
-	return arg->GetMethod() == method && arg->GetUrl() == url && arg->GetBody() == body && arg->GetToken() == token;
+    return arg->GetMethod() == method && arg->GetUrl() == url && arg->GetBody() == body && arg->GetToken() == token;
 };
 
 namespace huestream {

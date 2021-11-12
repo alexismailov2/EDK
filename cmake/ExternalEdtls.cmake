@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 include(ExternalProjectUtils)
 
-set_external_library(edtls_client mbedtls)
+set_external_library(edtls_client FALSE mbedtls)
 
 if(NOT EXISTS ${LIBRARY_PATH})
     set_library_path(edtls_client   EDTLS_CLIENT_PATH "")
@@ -26,5 +26,5 @@ DOWNLOAD_COMMAND ""
     set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/edtls")
 endif(NOT EXISTS ${LIBRARY_PATH})
 
-expose_external_library()
+expose_external_library(STATIC)
 expose_additional_external_library(mbedcl_wrapper)

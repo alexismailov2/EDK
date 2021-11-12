@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_CONNECT_BRIDGEFILESTORAGEACCESSOR_H_
 #define HUESTREAM_CONNECT_BRIDGEFILESTORAGEACCESSOR_H_
 
-#include <huestream/connect/IBridgeStorageAccessor.h>
+#include "huestream/connect/IBridgeStorageAccessor.h"
 
 #include <string>
 

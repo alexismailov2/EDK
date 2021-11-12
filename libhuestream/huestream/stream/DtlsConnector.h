@@ -6,13 +6,13 @@
 #ifndef HUESTREAM_STREAM_DTLSCONNECTOR_H_
 #define HUESTREAM_STREAM_DTLSCONNECTOR_H_
 
-#include <huestream/stream/IConnector.h>
+#include "huestream/stream/IConnector.h"
 
 
-#include <edtls/client/IClientNotifier.h>
-#include <edtls/client/DTLSClient.h>
-#include <edtls/wrapper/IClientWrapper.h>
-#include <edtls/wrapper/mbedtls/MbedtlsClientPlatform.h>
+#include "edtls/client/IClientNotifier.h"
+#include "edtls/client/DTLSClient.h"
+#include "edtls/wrapper/IClientWrapper.h"
+#include "edtls/wrapper/mbedtls/MbedtlsClientPlatform.h"
 
 #include <memory>
 

@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_MANUALEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_MANUALEFFECT_H_
 
-#include <huestream/effect/effects/base/Effect.h>
+#include "huestream/effect/effects/base/Effect.h"
 
 #include <string>
 #include <map>

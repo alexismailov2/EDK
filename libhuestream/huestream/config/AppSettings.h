@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_CONFIG_APPSETTINGS_H_
 #define HUESTREAM_CONFIG_APPSETTINGS_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/stream/ProtocolSerializer.h>
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/stream/ProtocolSerializer.h"
 
 #include <memory>
 #include <string>
@@ -93,6 +93,12 @@ namespace huestream {
      @note default 15000 (15 seconds)
      */
     PROP_DEFINE(AppSettings, int, monitorIntervalNotStreamingMs, MonitorIntervalNotStreamingMs);
+
+		/**
+		set the bridge connection monitoring polling interval when clipV2 is used
+		@note default 15000 (15 seconds)
+		*/
+		PROP_DEFINE(AppSettings, int, monitorIntervalConnectionMs, MonitorIntervalConnectionMs);
 
     /**
      set the encryption key used to encrypt stored bridge information

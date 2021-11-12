@@ -15,7 +15,7 @@ All Rights Reserved.
 #include <vector>
 #include <utility>
 #include <cassert>
-#include <boost/optional.hpp>
+#include "boost/optional.hpp"
 
 #include "support/util/MakeUnique.h"
 #include "support/util/ExceptionUtil.h"

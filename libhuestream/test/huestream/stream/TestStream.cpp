@@ -81,7 +81,8 @@ class TestStream : public testing::Test {
         bridge->SetIsAuthorized(true);
         bridge->SetId("SOMEID");
         bridge->SetModelId("BSB002");
-        bridge->SetApiversion("1.22.0");
+        bridge->SetApiversion("1.24.0");
+        bridge->SetSwversion("1940094000");
         bridge->SetClientKey("DD129216F1A50E5D1C0CB356325745F2");
         return bridge;
     }

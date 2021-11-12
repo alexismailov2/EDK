@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_TIME_ITIMEMANAGER_H_
 #define HUESTREAM_COMMON_TIME_ITIMEMANAGER_H_
 
-#include <huestream/common/time/ITimeProvider.h>
+#include "huestream/common/time/ITimeProvider.h"
 
 #include <memory>
 

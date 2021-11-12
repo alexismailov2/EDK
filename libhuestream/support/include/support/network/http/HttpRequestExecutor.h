@@ -7,6 +7,7 @@ All Rights Reserved.
 #include <future>
 #include <memory>
 #include <map>
+#include <vector>
 
 #include "support/network/http/IHttpResponse.h"
 #include "support/network/http/HttpRequestError.h"
@@ -21,7 +22,7 @@ namespace support {
         class IRequestInfo {
         public:
             virtual ~IRequestInfo() = default;
-            virtual HttpRequest* get_request() = 0;
+            virtual std::shared_ptr<HttpRequest> get_request() = 0;
             virtual int retry_countdown() = 0;
         };
 
@@ -54,7 +55,7 @@ namespace support {
          */
         using Callback = std::function<void(const support::HttpRequestError& error, const IHttpResponse& response, std::shared_ptr<support::HttpRequestExecutor::IRequestInfo> request_info)>;
 
-        using HttpErrorDelegate = std::function<HttpErrorPostAction(support::HttpRequestError& error, const IHttpResponse& response, const std::shared_ptr<IRequestInfo>& request_info)>;
+        using HttpErrorDelegate = std::function<HttpErrorPostAction(support::HttpRequestError& error, const IHttpResponse& response, const std::shared_ptr<IRequestInfo>& request_info, const std::vector<HttpRequestError::ErrorCode>& errors_to_filter)>;
 
         /**
          constructor
@@ -99,7 +100,7 @@ namespace support {
          @param file the file to send with the request (optional)
          @return whether the operation succeded (for ex. if the executor is not started)
          */
-        bool add(HttpRequest* request, RequestType request_type, Callback callback, const char* resource_path, const char* body = nullptr, File* file = nullptr);
+        bool add(std::shared_ptr<HttpRequest> request, RequestType request_type, Callback callback, const char* resource_path, const char* body = nullptr, File* file = nullptr);
 
         /**
          add a request to be executed by giving the request_info object that was recieved on callback of a previous execution of the request
@@ -131,6 +132,12 @@ namespace support {
          */
         void request_canceled(HttpRequest* request);
 
+        /**
+         add error to filter in on retry.
+         @param error, the error for which to retry
+        */
+        void add_error_to_filter_on_retry(HttpRequestError::ErrorCode error);
+
     private:
         using RequestFuture = std::future<RequestInfo>;
 
@@ -141,10 +148,11 @@ namespace support {
         std::atomic<bool>           _stopped;
         std::mutex                  _request_map_mutex;
         std::condition_variable     _request_map_cond;
-        std::map<HttpRequest*, std::shared_ptr<IRequestInfo>> _request_map;
+        std::map<std::shared_ptr<HttpRequest>, std::shared_ptr<IRequestInfo>> _request_map;
         HttpErrorDelegate _http_error_delegate;
+        std::vector<HttpRequestError::ErrorCode> errors_to_filter;
 
-        static HttpErrorPostAction handle_http_error(support::HttpRequestError& error, const support::IHttpResponse& response, const std::shared_ptr<support::HttpRequestExecutor::IRequestInfo>& request_info);
+        static HttpErrorPostAction handle_http_error(support::HttpRequestError& error, const support::IHttpResponse& response, const std::shared_ptr<support::HttpRequestExecutor::IRequestInfo>& request_info, const std::vector<HttpRequestError::ErrorCode>& errors_to_filter);
 
         /**
          execute an HTTP request
@@ -163,16 +171,16 @@ namespace support {
         /**
          add a request to the map of requests
          */
-        void add_request(HttpRequest* request, std::shared_ptr<IRequestInfo> request_info);
+        void add_request(std::shared_ptr<HttpRequest> request, std::shared_ptr<IRequestInfo> request_info);
 
         /**
          remove a request from the map of requests
          */
-        void remove_request(HttpRequest* request);
+        void remove_request(std::shared_ptr<HttpRequest> request);
         /**
          get request from the map of requests
          */
-        HttpRequest* get_request(std::shared_ptr<IRequestInfo> request_info);
+         std::shared_ptr<HttpRequest> get_request(std::shared_ptr<IRequestInfo> request_info);
     };
 
 

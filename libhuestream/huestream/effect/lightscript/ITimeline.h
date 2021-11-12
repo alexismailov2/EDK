@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_LIGHTSCRIPT_ITIMELINE_H_
 #define HUESTREAM_EFFECT_LIGHTSCRIPT_ITIMELINE_H_
 
-#include <huestream/common/time/ITimeProvider.h>
+#include "huestream/common/time/ITimeProvider.h"
 #include <functional>
 #include <memory>
 

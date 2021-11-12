@@ -56,7 +56,7 @@ namespace support {
             info,
             debug
         } LogType;
-        
+
         typedef enum LogComponentType {
             unknown,
             network,
@@ -71,9 +71,11 @@ namespace support {
             test,
             ignore,
         } LogComponentType;
-        
+
+        typedef std::function<void(const std::string&, LogLevel level)> LogCallback;
+
         /**
-         The log entry is used by threads to compose their 
+         The log entry is used by threads to compose their
          log message. Each thread id gets its own entry
          */
         struct LogEntry {
@@ -95,7 +97,7 @@ namespace support {
              At startup only the console logger will be initialized, at INFO level
              */
             Log();
-        
+
             /**
              Copying and moving not allowed
              */
@@ -124,6 +126,8 @@ namespace support {
              */
             void set_storage_location(const char* storage_location);
 
+            void set_log_callback(LogCallback callback);
+
             /**
              Set log type for the thread entry
              @param log  The log
@@ -131,7 +135,7 @@ namespace support {
              @return The log
              */
             friend Log& operator << (Log& log, LogType type);
-            
+
             /**
              Set log component type for the thread entry
              @param log  The log
@@ -139,7 +143,7 @@ namespace support {
              @return The log
              */
             friend Log& operator << (Log& log, LogComponentType component);
-            
+
             /**
              Append message for the thread entry
              @param log The log
@@ -147,7 +151,7 @@ namespace support {
              @return The log
              */
             friend Log& operator << (Log& log, const char* msg);
-            
+
             /**
              Append message for the thread entry
              @param log The log
@@ -155,7 +159,7 @@ namespace support {
              @return The log
              */
             friend Log& operator << (Log& log, const string& msg);
-            
+
             /**
              Append integer value for the thread entry
              @param log  The log
@@ -163,7 +167,7 @@ namespace support {
              @return The log
              */
             friend Log& operator << (Log& log, int64_t val);
-            
+
             /**
              Append pointer value for the thread entry
              @param log  The log
@@ -181,14 +185,14 @@ namespace support {
              @see endl()
              */
             friend Log& operator << (Log& log, Log& (*fp)());
-            
+
             /**
-             When done composing, the global var endl should be used for 
+             When done composing, the global var endl should be used for
              finishing the log entry and pass the message to the loggers
              This method will be called by globar var and takes care of
              passing the message to all the active loggers. This construction
              allows to use the endl like used for std::cout:
-             
+
              HUE_LOG << HUE_SUPPORT <<  HUE_DEBUG << "this is a debug message" << HUE_ENDL;
              */
             Log& endl();
@@ -213,37 +217,39 @@ namespace support {
             /** ensure thread safety in managing the container */
             mutex                                 _thread_entries_mutex;
 
+            LogCallback                           _log_callback;
+
             /**
              Get entry by the current thread id
              If no entry exist, a new entry will be created
              @return The entry for the thread id
              */
             shared_ptr<LogEntry> get_thread_entry();
-            
+
             /**
-             Remove entry by the current thread id. This method will be called 
+             Remove entry by the current thread id. This method will be called
              when endl() has finished passing the logging message to the loggers
              */
             void remove_thread_entry();
-            
+
             /**
              Get log level by the log type
              @return The log level
              */
             static LogLevel get_level(LogType type);
-            
+
             /**
              Get log component by the log component type
              @return The Log component
              */
             static LogComponent get_component_from_type(LogComponentType type);
         };
-       
+
         /** global log, which has a similar implementation as std::cout */
         extern Log log;
         /** global endl, which has a similar implementation as std::endl */
         extern Log& endl();
-    
+
     }  // namespace log
 }  // namespace support
 

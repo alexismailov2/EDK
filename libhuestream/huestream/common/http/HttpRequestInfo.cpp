@@ -29,7 +29,9 @@ HttpRequestInfo::HttpRequestInfo(std::string method, std::string url, std::strin
     _receiveTimeout(support::HTTP_RECEIVE_TIMEOUT),
     _requestTimeout(support::HTTP_REQUEST_TIMEOUT),
     _enableLogging(true),
-    _securityLevel(support::HTTP_REQUEST_SECURITY_LEVEL_LOW) {
+    _securityLevel(support::HTTP_REQUEST_SECURITY_LEVEL_LOW),
+    _fileName(""),
+    _enableMd5DigestGeneration(false) {
 }
 
 PROP_IMPL(HttpRequestInfo, std::string, url, Url);
@@ -49,6 +51,9 @@ PROP_IMPL(HttpRequestInfo, support::HttpRequestSecurityLevel, securityLevel, Sec
 PROP_IMPL_BOOL(HttpRequestInfo, bool, enableSslVerification, SslVerificationEnabled);
 PROP_IMPL(HttpRequestInfo, std::string, expectedCommonName, ExpectedCommonName);
 PROP_IMPL(HttpRequestInfo, std::vector<std::string>, trustedCertificates, TrustedCertificates);
+PROP_IMPL(HttpRequestInfo, std::unordered_map<std::string COMMA std::string>, header, Header);
+PROP_IMPL(HttpRequestInfo, std::string, fileName, FileName);
+PROP_IMPL_BOOL(HttpRequestInfo, bool, enableMd5DigestGeneration, Md5DigestGenerationEnabled);
 
 void HttpRequestInfo::WaitUntilReady() {
     std::unique_lock<std::mutex> lock(_mutex);

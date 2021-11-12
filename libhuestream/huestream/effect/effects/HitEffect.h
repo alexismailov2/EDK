@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_HITEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_HITEFFECT_H_
 
-#include <huestream/effect/effects/base/RadialEffect.h>
+#include "huestream/effect/effects/base/RadialEffect.h"
 
 #include <string>
 

@@ -41,6 +41,7 @@ namespace huestream {
     }
 
     void Stream::SetRenderCallback(StreamRenderCallback callback) {
+        std::lock_guard<std::mutex> lock(_lock);
         _renderCallback = callback;
     }
 
@@ -75,6 +76,7 @@ namespace huestream {
         // Ok, now we are ready to connect
         _options = std::make_shared<StreamOptions>();
         _options->colorSpace = _streamSettings->GetStreamingColorSpace();
+				_options->useClipV2 = bridge->IsSupportingClipV2();
         UpdateBridgeGroup(bridge);
 
         return StartStreamingSession(bridge);
@@ -152,6 +154,8 @@ namespace huestream {
     }
 
     void Stream::Stop(BridgePtr bridge) {
+        std::lock_guard<std::mutex> lock(_lock);
+
         if (!_running) {
             return;
         }
@@ -195,6 +199,8 @@ namespace huestream {
     }
 
     void Stream::RenderSingleFrame() {
+        std::lock_guard<std::mutex> lock(_lock);
+
         if (!_running)
             return;
 

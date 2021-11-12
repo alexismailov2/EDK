@@ -25,9 +25,9 @@ void TestConnectionFlowBase::SetUp() {
     _bridges->at(3) = std::make_shared<Bridge>("001788FFFE2007DD", "192.168.1.36", true, std::make_shared<BridgeSettings>());
     _bridges->at(4) = std::make_shared<Bridge>("001788FFFE2007EE", "192.168.1.36", true, std::make_shared<BridgeSettings>());
     _bridges->at(5) = std::make_shared<Bridge>("001788FFFE2007FF", "192.168.1.36", true, std::make_shared<BridgeSettings>());
-    _bridges->at(0)->SetApiversion("1.22.0");
-    _bridges->at(1)->SetApiversion("1.22.0");
-    _bridges->at(2)->SetApiversion("1.22.0");
+    _bridges->at(0)->SetApiversion("1.24.0");
+    _bridges->at(1)->SetApiversion("1.24.0");
+    _bridges->at(2)->SetApiversion("1.24.0");
     _bridges->at(3)->SetApiversion("");
     _bridges->at(4)->SetApiversion("1.24.0");
     _bridges->at(5)->SetApiversion("1.24.0");
@@ -37,6 +37,12 @@ void TestConnectionFlowBase::SetUp() {
     _bridges->at(3)->SetModelId("BSB002");
     _bridges->at(4)->SetModelId("BSB002");
     _bridges->at(5)->SetModelId("BSB001");
+    _bridges->at(0)->SetSwversion("1940094000");
+    _bridges->at(1)->SetSwversion("1940094000");
+    _bridges->at(2)->SetSwversion("1940094000");
+    _bridges->at(3)->SetSwversion("1940094000");
+    _bridges->at(4)->SetSwversion("1940094000");
+    _bridges->at(5)->SetSwversion("1940094000");
 
     _searchers = std::make_shared<vector<shared_ptr<MockBridgeSearcher>>>();
     _authenticators = std::make_shared<vector<shared_ptr<MockBridgeAuthenticator>>>(6);
@@ -50,11 +56,11 @@ void TestConnectionFlowBase::SetUp() {
     _storageAccessor = std::make_shared<MockBridgeStorageAccessor>();
     _smallConfigRetriever = std::make_shared<MockConfigRetriever>();
     _fullConfigRetriever = std::make_shared<MockConfigRetriever>();
-    EXPECT_CALL(*_factory, CreateConfigRetriever(_, ConfigType::Small)).WillRepeatedly(Return(_smallConfigRetriever));
-    EXPECT_CALL(*_factory, CreateConfigRetriever(_, ConfigType::Full)).WillRepeatedly(Return(_fullConfigRetriever));
+    EXPECT_CALL(*_factory, CreateConfigRetriever(_, ConfigType::Small, false)).WillRepeatedly(Return(_smallConfigRetriever));
+    EXPECT_CALL(*_factory, CreateConfigRetriever(_, ConfigType::Full, false)).WillRepeatedly(Return(_fullConfigRetriever));
     _connectionFlow = std::make_shared<TestableConnectionFlow>(_factory, _stream, std::make_shared<BridgeSettings>(), _settings, _storageAccessor);
     ON_CALL(*_connectionFlow, NewMessage(_)).WillByDefault(Invoke(PrintDebugMsg));
-    
+
     //No need to verify ID_LIGHTS_UPDATED and ID_GROUP_LIGHTSTATE_UPDATED messages in connectionflow test
     EXPECT_CALL(*_connectionFlow, NewMessage(FbMessage(FeedbackMessage::ID_LIGHTS_UPDATED, FeedbackMessage::FEEDBACK_TYPE_INFO))).Times(AtLeast(0));
     EXPECT_CALL(*_connectionFlow, NewMessage(FbMessage(FeedbackMessage::ID_GROUP_LIGHTSTATE_UPDATED, FeedbackMessage::FEEDBACK_TYPE_INFO))).Times(AtLeast(0));
@@ -104,7 +110,7 @@ void TestConnectionFlowBase::expect_no_actions() {
             EXPECT_CALL(*authenticator, Authenticate(_, _, _)).Times(0);
         }
     }
-    EXPECT_CALL(*_fullConfigRetriever, Execute(_, _)).Times(0);
+    EXPECT_CALL(*_fullConfigRetriever, Execute(_, _, _)).Times(0);
 }
 
 void TestConnectionFlowBase::expect_on_searcher_search_new(bool bruteForce) {
@@ -295,6 +301,7 @@ void TestConnectionFlowBase::finish_authorization_successfully(int index) {
     authorize_bridge(index);
 
     expect_message(FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, FeedbackMessage::FEEDBACK_TYPE_INFO);
+		expect_small_config_retrieval_return_data(index);
     expect_initiate_full_config_retrieval();
 
     _authenticators->at(index)->authenticate_callback(_bridges->at(index));
@@ -314,7 +321,7 @@ void TestConnectionFlowBase::expect_small_config_retrieval_return_data(int bridg
 void TestConnectionFlowBase::expect_small_config_retrieval_return_data(BridgePtr bridge) {
     expect_message(FeedbackMessage::ID_START_RETRIEVING_SMALL, FeedbackMessage::FEEDBACK_TYPE_INFO);
     expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_SMALL, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    EXPECT_CALL(*_smallConfigRetriever, Execute(_, _)).Times(1).WillOnce(DoAll(InvokeArgument<1>(OPERATION_SUCCESS, bridge), Return(true)));
+    EXPECT_CALL(*_smallConfigRetriever, Execute(_, _, _)).Times(1).WillOnce(DoAll(InvokeArgument<1>(OPERATION_SUCCESS, bridge), Return(true)));
 }
 
 void TestConnectionFlowBase::expect_initiate_small_config_retrieval() {
@@ -370,7 +377,7 @@ void TestConnectionFlowBase::finish_with_stream_start(BridgePtr bridge, bool con
     expect_message(FeedbackMessage::ID_DONE_COMPLETED, FeedbackMessage::FEEDBACK_TYPE_INFO);
     checkUpdateMessages(connected, groupsUpdated, bridgeChanged);
     expect_message(FeedbackMessage::ID_USERPROCEDURE_FINISHED, FeedbackMessage::FEEDBACK_TYPE_INFO);
-    
+
     if (_settings->UseRenderThread()) {
         EXPECT_CALL(*_stream, StartWithRenderThread(bridge)).WillOnce(Invoke(ActivateBridge));
     } else {

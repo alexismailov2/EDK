@@ -110,8 +110,8 @@ protected:
 };
 
 TEST_F(TestMixer, AnEffectIsAppliedToLights) {
-    auto color1 = Color(1, 0, 0);
-    auto color2 = Color(0, 1, 0);
+    auto color1 = Color(1.0, 0.0, 0.0);
+    auto color2 = Color(0.0, 1.0, 0.0);
     auto foregroundLayer = EffectLayer0;
 
     AddEffectWithLayer(0);
@@ -164,7 +164,7 @@ TEST_F(TestMixer, ColorMixing_TransparentColorForegroundSolidBackground) {
 
 TEST_F(TestMixer, ColorMixing_SemiTransparentColorForegroundSolidBackground) {
     auto color1 = Color(0.2, 0.2, 0.2);
-    auto color2 = Color(0, 0, 0);
+    auto color2 = Color(0.0, 0.0, 0.0);
     auto semiTransparentColor1 = Color(1, 1, 1, 0.5);
     auto semiTransparentColor2 = Color(1, 1, 1, 0.2);
     auto resultColor1 = Color(0.6, 0.6, 0.6);
@@ -218,7 +218,7 @@ TEST_F(TestMixer, EffectIsNotCalledWhenNotEnabled) {
     AddEffectWithLayerNotRendered(0);
     SetExpectEffectNoGet(foregroundLayer);
     _mixer->Render();
-    AssertColors(Colors::Create(2, Color(0, 0, 0), Color(0, 0, 0)));
+    AssertColors(Colors::Create(2, Color(0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0)));
 }
 
 
@@ -230,7 +230,7 @@ TEST_F(TestMixer, RemoveEffectWhenStateOfEffectIsFinished) {
     _effects[0]->Finish();
     _mixer->Render();
 
-    AssertColors(Colors::Create(2, Color(0, 0, 0), Color(0, 0, 0)));
+    AssertColors(Colors::Create(2, Color(0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0)));
 }
 
 TEST_F(TestMixer, GroupChangeIsUpdatedToEffects) {
@@ -265,8 +265,8 @@ TEST_P(TestMixer, RemoveOrRetainColorAfterEffect) {
     _mixer = std::make_shared<Mixer>(appSettings);
     _mixer->SetGroup(_group);
 
-    auto color1 = Color(1, 0, 0);
-    auto color2 = Color(0, 1, 0);
+    auto color1 = Color(1.0, 0.0, 0.0);
+    auto color2 = Color(0.0, 1.0, 0.0);
     auto foregroundLayer = EffectLayer0;
 
     AddEffectWithLayer(0);
@@ -279,10 +279,10 @@ TEST_P(TestMixer, RemoveOrRetainColorAfterEffect) {
 
     _effects[0]->Finish();
     _mixer->Render();
-    
+
     if (GetParam()) {
         AssertColors(Colors::Create(2, color1, color2));
     } else {
-        AssertColors(Colors::Create(2, Color(0, 0, 0), Color(0, 0, 0)));
+        AssertColors(Colors::Create(2, Color(0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0)));
     }
 }

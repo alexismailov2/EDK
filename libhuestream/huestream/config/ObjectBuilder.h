@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_CONFIG_OBJECTBUILDER_H_
 #define HUESTREAM_CONFIG_OBJECTBUILDER_H_
 
-#include <huestream/common/serialize/ObjectBuilderBase.h>
-#include <huestream/common/data/BridgeSettings.h>
-#include <huestream/common/time/ITimeProvider.h>
+#include "huestream/common/serialize/ObjectBuilderBase.h"
+#include "huestream/common/data/BridgeSettings.h"
+#include "huestream/common/time/ITimeProvider.h"
 
 #include <memory>
 #include <string>

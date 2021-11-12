@@ -14,15 +14,20 @@
 namespace huestream {
 
     const std::map<GroupClass, std::string> Group::_classSerializeMap = {
-        { GROUPCLASS_TV,    "tv"    },
-        { GROUPCLASS_FREE,  "free"  },
-        { GROUPCLASS_OTHER, "other" }
+                { GROUPCLASS_TV,      "tv" },
+                { GROUPCLASS_FREE,    "free" },
+        { GROUPCLASS_SCREEN,  "screen" },
+        { GROUPCLASS_MUSIC,   "music" },
+                { GROUPCLASS_3DSPACE, "3dspace" },
+        { GROUPCLASS_OTHER,   "other" }
     };
 
     PROP_IMPL(Group, std::string, id, Id);
+    PROP_IMPL(Group, std::string, groupedLightId, GroupedLightId);
     PROP_IMPL(Group, std::string, name, Name);
     PROP_IMPL(Group, GroupClass, classType, ClassType);
     PROP_IMPL(Group, LightListPtr, lights, Lights);
+    PROP_IMPL(Group, LightListPtr, physicalLights, PhysicalLights);
     PROP_IMPL_BOOL(Group, bool, active, Active);
     PROP_IMPL(Group, std::string, owner, Owner);
     PROP_IMPL(Group, std::string, ownerName, OwnerName);
@@ -31,36 +36,43 @@ namespace huestream {
     PROP_IMPL_BOOL(Group, bool, onState, OnState);
     PROP_IMPL(Group, double, brightnessState, BrightnessState);
 
-    Group::Group() : _id(""), _name(""), _classType(GROUPCLASS_OTHER), _lights(std::make_shared<LightList>()), _active(false), _owner(""),
+    Group::Group() : _id(""), _groupedLightId(""), _name(""), _classType(GROUPCLASS_OTHER), _lights(std::make_shared<LightList>()), _physicalLights(std::make_shared<LightList>()), _active(false), _owner(""),
         _ownerName(""), _proxyNode({"","","","",true}), _scenes(std::make_shared<SceneList>()), _onState(true), _brightnessState(1.0) {
     }
 
     Group::~Group() {
     }
 
-    void Group::AddLight(std::string id, double x, double y, std::string name, std::string model, bool reachable) {
-        AddLight(id, x, y, 0.0, name, model, reachable);
+    void Group::AddLight(std::string id, double x, double y, std::string name, std::string model, std::string archetype, bool reachable) {
+        AddLight(id, x, y, 0.0, name, model, archetype, reachable);
     }
 
-    void Group::AddLight(std::string id, double x, double y, double z, std::string name, std::string model, bool reachable) {
-        if (_lights == nullptr) {
-            _lights = std::make_shared<LightList>();
-        }
-
+    void Group::AddLight(std::string id, double x, double y, double z, std::string name, std::string model, std::string archetype, bool reachable) {
         auto location = Location(Clip(x, -1, 1),
                                  Clip(y, -1, 1),
                                  Clip(z, -1, 1));
 
-        for (auto &light : *_lights) {
-            if (light->GetId() == id) {
-                light->SetPosition(location);
-                light->SetName(name);
-                light->SetModel(model);
-                light->SetReachable(reachable);
-                return;
-            }
+        Light newLight(id, location, name, model, archetype, reachable);
+        AddLight(newLight);
+    }
+
+    void Group::AddLight(Light& light) {
+      if (_lights == nullptr) {
+        _lights = std::make_shared<LightList>();
+      }
+
+      for (auto &oldLight : *_lights) {
+        if (oldLight->GetId() == light.GetId()) {
+          oldLight->SetPosition(light.GetPosition());
+          oldLight->SetName(light.GetName());
+          oldLight->SetModel(light.GetModel());
+          oldLight->SetReachable(light.Reachable());
+          oldLight->SetColor(light.GetColor());
+          return;
         }
-        _lights->push_back(std::make_shared<Light>(id, location, name, model, reachable));
+      }
+
+      _lights->push_back(std::shared_ptr<Light>(light.Clone()));
     }
 
     std::string Group::GetFriendlyOwnerName() const {
@@ -107,24 +119,29 @@ namespace huestream {
         Serializable::Serialize(node);
 
         SerializeValue(node, AttributeId, _id);
+        SerializeValue(node, AttributeGroupedLightId, _groupedLightId);
         SerializeValue(node, AttributeName, _name);
         SerializeClass(node);
         SerializeList(node, AttributeLights, _lights);
+        SerializeList(node, AttributePhysicalLights, _physicalLights);
         SerializeList(node, AttributeScenes, _scenes);
     }
 
     void Group::Deserialize(JSONNode *node) {
         Serializable::Deserialize(node);
         DeserializeValue(node, AttributeId, &_id, "");
+        DeserializeValue(node, AttributeGroupedLightId, &_groupedLightId, "");
         DeserializeValue(node, AttributeName, &_name, "");
         DeserializeClass(node);
         DeserializeList<LightListPtr, Light>(node, &_lights, AttributeLights);
+        DeserializeList<LightListPtr, Light>(node, &_physicalLights, AttributePhysicalLights);
         DeserializeList<SceneListPtr, Scene>(node, &_scenes, AttributeScenes);
     }
 
     Group* Group::Clone() {
         auto g = new Group(*this);
         g->SetLights(clone_list(_lights));
+        g->SetPhysicalLights(clone_list(_physicalLights));
         return g;
     }
 

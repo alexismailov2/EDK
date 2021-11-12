@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_LANGUAGE_DUMMYTRANSLATOR_H_
 #define HUESTREAM_COMMON_LANGUAGE_DUMMYTRANSLATOR_H_
 
-#include <huestream/common/language/IMessageTranslator.h>
+#include "huestream/common/language/IMessageTranslator.h"
 
 #include <string>
 #include <map>

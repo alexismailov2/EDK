@@ -24,11 +24,14 @@ namespace huestream {
         double _brightness = 0.0;
     };
 
-    class ConfigRetriever : public IConfigRetriever {
+    class ConfigRetriever : public IConfigRetriever, public std::enable_shared_from_this<ConfigRetriever> {
     public:
         explicit ConfigRetriever(const BridgeHttpClientPtr http, bool useForcedActivation = true, ConfigType configType = ConfigType::Full);
 
-        bool Execute(BridgePtr bridge, RetrieveCallbackHandler cb) override;
+        bool Execute(BridgePtr bridge, RetrieveCallbackHandler cb, FeedbackHandler fh) override;
+				void OnBridgeMonitorEvent(const FeedbackMessage& message) override {};
+				bool IsSupportingClipV2() override {return false;};
+        void RefreshBridgeConnection() override {};
 
     protected:
         ConfigType _configType;
@@ -82,6 +85,8 @@ namespace huestream {
         void ParseCapabilities() const;
 
         void Finish(OperationResult result);
+
+        double Clip(double value, double min, double max) const;
     };
 
     using FullConfigRetriever = ConfigRetriever;

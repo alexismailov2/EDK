@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_SEQUENCEEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_SEQUENCEEFFECT_H_
 
-#include <huestream/common/data/Area.h>
-#include <huestream/effect/effects/base/Effect.h>
+#include "huestream/common/data/Area.h"
+#include "huestream/effect/effects/base/Effect.h"
 
 #include <memory>
 #include <vector>

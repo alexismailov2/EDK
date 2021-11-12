@@ -15,6 +15,7 @@
 #include <huestream/common/data/Bridge.h>
 #include <huestream/common/data/Area.h>
 #include <huestream/common/data/CuboidArea.h>
+#include <huestream/common/data/Zone.h>
 #include <huestream/effect/effects/AreaEffect.h>
 #include <huestream/effect/effects/LightSourceEffect.h>
 #include <huestream/effect/effects/SphereLightSourceEffect.h>
@@ -57,6 +58,7 @@ std::shared_ptr<Serializable> ObjectBuilder::ConstructInstanceOf(std::string typ
     if (type == MultiChannelEffect::type) return std::make_shared<MultiChannelEffect>();
     if (type == Action::type) return std::make_shared<Action>();
     if (type == Scene::type) return std::make_shared<Scene>();
+    if (type == Zone::type) return std::make_shared<Zone>();
 
     return nullptr;
 }

@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_DATA_CURVEOPTIONS_H_
 #define HUESTREAM_EFFECT_ANIMATION_DATA_CURVEOPTIONS_H_
 
-#include <huestream/common/serialize/Serializable.h>
+#include "huestream/common/serialize/Serializable.h"
 
 #include <string>
 

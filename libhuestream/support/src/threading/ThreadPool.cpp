@@ -8,6 +8,7 @@
 
 #include "support/threading/ThreadPool.h"
 #include "support/threading/Thread.h"
+#include "support/util/VectorOperations.h"
 
 namespace support {
 

@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_STORAGE_FILESTORAGEACCESSOR_H_
 #define HUESTREAM_COMMON_STORAGE_FILESTORAGEACCESSOR_H_
 
-#include <huestream/common/storage/IStorageAccessor.h>
+#include "huestream/common/storage/IStorageAccessor.h"
 
 #include <string>
 

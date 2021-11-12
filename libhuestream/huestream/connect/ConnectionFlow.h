@@ -6,13 +6,13 @@
 #ifndef HUESTREAM_CONNECT_CONNECTIONFLOW_H_
 #define HUESTREAM_CONNECT_CONNECTIONFLOW_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/stream/IStream.h>
-#include <huestream/connect/FeedbackMessage.h>
-#include <huestream/connect/IConnectionFlowFactory.h>
-#include <huestream/connect/IConnectionFlow.h>
-#include <huestream/connect/IBridgeSearcher.h>
-#include <support/scheduler/Scheduler.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/stream/IStream.h"
+#include "huestream/connect/FeedbackMessage.h"
+#include "huestream/connect/IConnectionFlowFactory.h"
+#include "huestream/connect/IConnectionFlow.h"
+#include "huestream/connect/IBridgeSearcher.h"
+#include "support/scheduler/Scheduler.h"
 
 #include <memory>
 #include <string>
@@ -21,7 +21,7 @@
 
 namespace huestream {
 
-class ConnectionFlow: public IConnectionFlow {
+class ConnectionFlow: public IConnectionFlow, public std::enable_shared_from_this<ConnectionFlow> {
  public:
     ConnectionFlow(ConnectionFlowFactoryPtr factory, StreamPtr stream, BridgeSettingsPtr bridgeSettings, AppSettingsPtr appSettings, BridgeStorageAccessorPtr storageAccessor);
 
@@ -127,8 +127,6 @@ class ConnectionFlow: public IConnectionFlow {
     void ActivateStreaming();
 
     void DeactivateStreaming();
-
-    bool EvaluateBridgesSecurity(BridgeList bridges);
 
     void ClearBridge();
 

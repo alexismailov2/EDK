@@ -6,8 +6,6 @@
 #ifndef HUESTREAM_IHUESTREAM_H_
 #define HUESTREAM_IHUESTREAM_H_
 
-#include <edtls/wrapper/mbedtls/EntropyProviderBase.h>
-
 #include <memory>
 #include <string>
 

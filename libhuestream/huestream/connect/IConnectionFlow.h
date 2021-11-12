@@ -6,11 +6,11 @@
 #ifndef HUESTREAM_CONNECT_ICONNECTIONFLOW_H_
 #define HUESTREAM_CONNECT_ICONNECTIONFLOW_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/stream/IStream.h>
-#include <huestream/connect/FeedbackMessage.h>
-#include <huestream/connect/IConnectionFlowFactory.h>
-#include <huestream/connect/IBridgeSearcher.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/stream/IStream.h"
+#include "huestream/connect/FeedbackMessage.h"
+#include "huestream/connect/IConnectionFlowFactory.h"
+#include "huestream/connect/IBridgeSearcher.h"
 
 #include <memory>
 #include <string>

@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_MULTICHANNELEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_MULTICHANNELEFFECT_H_
 
-#include <huestream/effect/animation/data/Channel.h>
-#include <huestream/common/data/Group.h>
-#include <huestream/effect/effects/base/AnimationEffect.h>
+#include "huestream/effect/animation/data/Channel.h"
+#include "huestream/common/data/Group.h"
+#include "huestream/effect/effects/base/AnimationEffect.h"
 
 #include <string>
 #include <memory>

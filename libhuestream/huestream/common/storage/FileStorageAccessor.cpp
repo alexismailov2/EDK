@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <codecvt>
 
 namespace huestream {
 
@@ -16,7 +17,12 @@ namespace huestream {
 
     void FileStorageAccessor::Load(LoadCallbackHandler cb) {
         std::fstream file;
+#ifdef WIN32
+        // We need to use the wstring version of this function otherwise if the file name contain non ascii char, it will fail on Windows
+        file.open(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(_fileName), std::fstream::in);
+#else
         file.open(_fileName.c_str(), std::fstream::in);
+#endif
         if (file.is_open()) {
             std::ostringstream contents;
             contents << file.rdbuf();
@@ -34,7 +40,12 @@ namespace huestream {
         JSONNode node;
         serializable->Serialize(&node);
         std::ofstream file;
+#ifdef WIN32
+        // We need to use the wstring version of this function otherwise if the file name contain non ascii char, it will fail on Windows
+        file.open(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(_fileName), std::fstream::out | std::fstream::trunc);
+#else
         file.open(_fileName.c_str(), std::fstream::out | std::fstream::trunc);
+#endif
         if (file.is_open()) {
             std::string jc = node.write_formatted();
             std::ostringstream contents(jc);

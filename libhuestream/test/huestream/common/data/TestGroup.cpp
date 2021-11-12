@@ -40,7 +40,7 @@ TEST_F(TestGroup, Serialize) {
     auto sceneTag = "jfdks";
     auto sceneName = "Savanna Sunset";
     auto sceneAppData = "HECxM_r12_d15";
-    auto scene = std::make_shared<Scene>(sceneTag, sceneName, sceneAppData);
+    auto scene = std::make_shared<Scene>("", sceneTag, sceneName, sceneAppData);
     auto scenes = std::make_shared<SceneList>();
     scenes->push_back(scene);
     pGroup->SetScenes(scenes);
@@ -140,6 +140,8 @@ TEST_F(TestGroup, Clone) {
     auto lightModel7 = "LTW010";
     auto lightName8 = "Another light";
     auto lightModel8 = "LTW011";
+    auto lightArchetype7 = "hue_go";
+    auto lightArchetype8 = "hue_lightstrip";
 
     pGroup->SetId("12");
     pGroup->SetName(groupName);
@@ -150,8 +152,8 @@ TEST_F(TestGroup, Clone) {
     pGroup->AddLight("4", 0.2, -0.3);
     pGroup->AddLight("5", 0.1, -0.2, 1.0);
     pGroup->AddLight("6", 0.0, -0.1, 0.1);
-    pGroup->AddLight("7", -0.1, 0.0, -1.0, lightName7, lightModel7, true);
-    pGroup->AddLight("8", -0.2, 0.1, -0.1, lightName8, lightModel8, false);
+    pGroup->AddLight("7", -0.1, 0.0, -1.0, lightName7, lightModel7, lightArchetype7, true);
+    pGroup->AddLight("8", -0.2, 0.1, -0.1, lightName8, lightModel8, lightArchetype8, false);
 
     auto g = std::shared_ptr<Group>(pGroup->Clone());
     pGroup->SetId("13");

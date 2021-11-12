@@ -17,7 +17,14 @@ ConnectionMonitor::ConnectionMonitor(BridgeStateCheckerPtr bridgeStateChecker) :
 }
 
 void ConnectionMonitor::Start(BridgePtr bridge, int interval_msec) {
-    Stop();
+    if (bridge->IsSupportingClipV2()) {
+        if (_running)   {
+            return;
+        }
+    }
+    else {
+        Stop();
+    }
 
     std::unique_lock<std::mutex> lk(_mutex);
     _running = true;
@@ -28,11 +35,18 @@ void ConnectionMonitor::Start(BridgePtr bridge, int interval_msec) {
 
 void ConnectionMonitor::MonitorThread() {
     while (true) {
+        if (_bridge->IsSupportingClipV2()) {
+            _bridgeStateChecker->Check(_bridge);
+        }
+
         std::unique_lock<std::mutex> lk(_mutex);
         if (_cv.wait_for(lk, std::chrono::milliseconds(_interval_msec), [this]{return !_running;})) {
             break;
         }
-        _bridgeStateChecker->Check(_bridge);
+
+        if (!_bridge->IsSupportingClipV2()) {
+            _bridgeStateChecker->Check(_bridge);
+        }
     }
 }
 

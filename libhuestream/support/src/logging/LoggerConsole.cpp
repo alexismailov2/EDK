@@ -44,27 +44,27 @@ namespace support {
                 case LEVEL_ERROR:
                     android_log(ANDROID_LOG_ERROR, logtag.c_str(), msg.c_str());
                     break;
-                    
+
                 case LEVEL_WARN:
                     android_log(ANDROID_LOG_VERBOSE, logtag.c_str(), msg.c_str());
                     break;
-                    
+
                 case LEVEL_INFO:
                     android_log(ANDROID_LOG_INFO, logtag.c_str(), msg.c_str());
                     break;
-                    
+
                 case LEVEL_DEBUG:
                     android_log(ANDROID_LOG_DEBUG, logtag.c_str(), msg.c_str());
                     break;
-                    
+
                 default:
                     break;
             }
 #else
             // Log the message to the console
-            
+
             stringstream msg_decorated;
-            
+
             // Decorate the message
 #ifndef LOG_WITH_NSLOG
             // timestamp already included in nslog

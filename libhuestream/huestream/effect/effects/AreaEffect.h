@@ -6,10 +6,10 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_AREAEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_AREAEFFECT_H_
 
-#include <huestream/config/Config.h>
-#include <huestream/common/data/IArea.h>
-#include <huestream/common/data/Area.h>
-#include <huestream/effect/effects/base/ColorAnimationEffect.h>
+#include "huestream/config/Config.h"
+#include "huestream/common/data/IArea.h"
+#include "huestream/common/data/Area.h"
+#include "huestream/effect/effects/base/ColorAnimationEffect.h"
 
 #include <string>
 

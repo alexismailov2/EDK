@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_COMMON_STORAGE_ISTORAGEACCESSOR_H_
 #define HUESTREAM_COMMON_STORAGE_ISTORAGEACCESSOR_H_
 
-#include <huestream/connect/OperationResult.h>
-#include <huestream/common/serialize/Serializable.h>
+#include "huestream/connect/OperationResult.h"
+#include "huestream/common/serialize/Serializable.h"
 
 #include <memory>
 #include <functional>

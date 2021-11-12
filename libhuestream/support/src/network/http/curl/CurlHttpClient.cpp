@@ -13,6 +13,7 @@
 #include "support/network/http/curl/CurlRequest.h"
 #include "support/network/http/HttpRequestParams.h"
 #include "support/network/Network.h"
+#include "support/network/NetworkConfiguration.h"
 
 #define SHORT_WAIT_TIMEOUT_MS 100
 #define LONG_WAIT_TIMEOUT_MS 10000
@@ -57,7 +58,7 @@ namespace support {
         }
 
         _curlm = curl_multi_init();
-        curl_multi_setopt(_curlm, CURLMOPT_PIPELINING, CURLPIPE_HTTP1);
+        curl_multi_setopt(_curlm, CURLMOPT_PIPELINING, NetworkConfiguration::use_http2() ? CURLPIPE_MULTIPLEX : CURLPIPE_HTTP1);
 
         _thread = std::thread(&CurlHttpClient::thread_method, this);
 
@@ -145,7 +146,7 @@ namespace support {
         CurlRequest* request = static_cast<CurlRequest*>(handle);
         _queue.push_back(Message(Message::STOP_REQUEST, request));
         wake_up_executor();
-        request->wait_for_completion();
+				request->wait_for_completion();
         delete request;
     }
 

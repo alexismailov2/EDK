@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_STREAM_STREAMFACTORY_H_
 #define HUESTREAM_STREAM_STREAMFACTORY_H_
 
-#include <huestream/stream/IStreamFactory.h>
+#include "huestream/stream/IStreamFactory.h"
 
 namespace huestream {
 

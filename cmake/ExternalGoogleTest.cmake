@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 include(ExternalProjectUtils)
 
-set_external_library(gtest)
+set_external_library(gtest FALSE)
 
 if(NOT EXISTS ${LIBRARY_PATH})
     if(MINGW)
@@ -32,6 +32,6 @@ if(NOT EXISTS ${LIBRARY_PATH})
     )
 endif(NOT EXISTS ${LIBRARY_PATH})
 
-expose_external_library()
+expose_external_library(STATIC)
 expose_additional_external_library(gmock)
 expose_additional_external_library(gtest_main)

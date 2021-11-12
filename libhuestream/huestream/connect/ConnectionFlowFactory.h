@@ -6,11 +6,11 @@
 #ifndef HUESTREAM_CONNECT_CONNECTIONFLOWFACTORY_H_
 #define HUESTREAM_CONNECT_CONNECTIONFLOWFACTORY_H_
 
-#include <huestream/connect/IConnectionFlowFactory.h>
-#include <huestream/common/http/IBridgeHttpClient.h>
-#include <huestream/connect/FullConfigRetriever.h>
-#include <huestream/connect/BridgeSearcher.h>
-#include <huestream/connect/Authenticator.h>
+#include "huestream/connect/IConnectionFlowFactory.h"
+#include "huestream/common/http/IBridgeHttpClient.h"
+#include "huestream/connect/FullConfigRetriever.h"
+#include "huestream/connect/BridgeSearcher.h"
+#include "huestream/connect/Authenticator.h"
 
 namespace huestream {
 
@@ -30,7 +30,7 @@ class ConnectionFlowFactory : public IConnectionFlowFactory {
 
     BridgeStorageAccessorPtr GetStorageAccesser() override;
 
-    ConfigRetrieverPtr CreateConfigRetriever(bool useForcedActivation = true, ConfigType configType = ConfigType::Full) override;
+    ConfigRetrieverPtr CreateConfigRetriever(bool useForcedActivation = true, ConfigType configType = ConfigType::Full, bool useClipV2 = false) override;
 
  private:
     BridgeSettingsPtr _bridgeSettings;

@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_TIME_TIMEMANAGER_H_
 #define HUESTREAM_COMMON_TIME_TIMEMANAGER_H_
 
-#include <huestream/common/time/ITimeManager.h>
+#include "huestream/common/time/ITimeManager.h"
 
 #include <chrono>
 #include <atomic>

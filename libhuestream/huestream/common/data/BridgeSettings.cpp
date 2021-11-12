@@ -12,18 +12,14 @@ namespace huestream {
     PROP_IMPL(BridgeSettings, int, supportedApiVersionBuild, SupportedApiVersionBuild);
     PROP_IMPL(BridgeSettings, int, supportedModel, SupportedModel);
 
-    PROP_IMPL(BridgeSettings, int, supportedHttpsApiVersionMajor, SupportedHttpsApiVersionMajor);
-    PROP_IMPL(BridgeSettings, int, supportedHttpsApiVersionMinor, SupportedHttpsApiVersionMinor);
-    PROP_IMPL(BridgeSettings, int, supportedHttpsApiVersionBuild, SupportedHttpsApiVersionBuild);
+    PROP_IMPL(BridgeSettings, int, supportedClipV2SwVersion, SupportedClipV2SwVersion);
 
     BridgeSettings::BridgeSettings() {
         SetSupportedApiVersionMajor(1);
-        SetSupportedApiVersionMinor(22);
+        SetSupportedApiVersionMinor(24);
         SetSupportedApiVersionBuild(0);
         SetSupportedModel(2);
 
-        SetSupportedHttpsApiVersionMajor(1);
-        SetSupportedHttpsApiVersionMinor(24);
-        SetSupportedHttpsApiVersionBuild(0);
+        SetSupportedClipV2SwVersion(1944193080);
     }
 }  // namespace huestream

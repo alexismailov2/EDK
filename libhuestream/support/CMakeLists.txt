@@ -42,6 +42,7 @@ endif(ENABLE_BREAKPAD)
 # set client-specific sources, definitions, and compiler flags
 #
 list(APPEND SUPPORT_LINK_LIBRARIES_PUBLIC curl)
+list(APPEND SUPPORT_LINK_LIBRARIES_PUBLIC nghttp2_static)
 
 string(TOUPPER ${HTTP_CLIENT} HTTP_CLIENT_ID)
 list(APPEND SUPPORT_DEFINITIONS_PUBLIC "HTTP_CLIENT_${HTTP_CLIENT_ID}")

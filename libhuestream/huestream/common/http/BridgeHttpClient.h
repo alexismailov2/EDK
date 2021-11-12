@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_HTTP_BRIDGEHTTPCLIENT_H_
 #define HUESTREAM_COMMON_HTTP_BRIDGEHTTPCLIENT_H_
 
-#include <huestream/common/http/IBridgeHttpClient.h>
+#include "huestream/common/http/IBridgeHttpClient.h"
 
 #include <memory>
 #include <string>
@@ -17,13 +17,14 @@ namespace huestream {
     public:
         BridgeHttpClient(HttpClientPtr httpClient);
 
-        HttpRequestPtr ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body = {}) override;
-        void ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body, HttpRequestCallback callback) override;
+        HttpRequestPtr ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body = {}, bool supportEvent = false) override;
+        int32_t ExecuteHttpRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body, HttpRequestCallback callback, bool supportEvent = false) override;
+				virtual void CancelHttpRequest(int32_t requestId) override;
 
     private:
-        HttpRequestPtr CreateRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body) const;
+        HttpRequestPtr CreateRequest(BridgePtr bridge, const std::string& method, const std::string& url, const std::string& body, bool supportEvent = false) const;
         HttpRequestCallback LinkHttpClientCallbackWithBridge(BridgePtr bridge, HttpRequestCallback original_callback);
-        void ExecuteRequestInternal(BridgePtr bridge, HttpRequestPtr request, HttpRequestCallback callback);
+        int32_t ExecuteRequestInternal(BridgePtr bridge, HttpRequestPtr request, HttpRequestCallback callback);
 
         HttpClientPtr _httpClient;
     };

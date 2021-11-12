@@ -1,5 +1,6 @@
 #include <huestream/connect/BridgeStreamingChecker.h>
 #include <test/huestream/_mock/MockConfigRetriever.h>
+#include <test/huestream/_mock/MockBridgeHttpClient.h>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -25,8 +26,9 @@ class TestBridgeStreamingChecker : public testing::Test {
   }
 
   void InitBridgeStateChecker() {
+      _httpClient = std::make_shared<MockBridgeHttpClient>();
       _mockFullConfigRetriever = std::shared_ptr<MockConfigRetriever>(new MockConfigRetriever());
-      _bridgeStreamingChecker = std::make_shared<BridgeStreamingChecker>(std::static_pointer_cast<IFullConfigRetriever>(_mockFullConfigRetriever));
+      _bridgeStreamingChecker = std::make_shared<BridgeStreamingChecker>(std::static_pointer_cast<IFullConfigRetriever>(_mockFullConfigRetriever), _httpClient);
       _bridgeStreamingChecker->SetFeedbackMessageCallback([this](const huestream::FeedbackMessage &message){
         _messages.push_back(message);
       });
@@ -44,7 +46,8 @@ class TestBridgeStreamingChecker : public testing::Test {
   static void InitStreamableBridge(BridgePtr bridge) {
       bridge->SetId("00:12:12");
       bridge->SetModelId("BSB002");
-      bridge->SetApiversion("1.22.0");
+      bridge->SetApiversion("1.24.0");
+      bridge->SetSwversion("1940094000");
       bridge->SetIpAddress("123.123.124.125");
       bridge->SetClientKey("12345678901234567890123456789012");
       bridge->SetIsAuthorized(true);
@@ -76,10 +79,11 @@ class TestBridgeStreamingChecker : public testing::Test {
 
   void Expect_FullConfigRetriever_Execute_Once() {
 
-      EXPECT_CALL(*_mockFullConfigRetriever, Execute(_, _)).Times(1)
+      EXPECT_CALL(*_mockFullConfigRetriever, Execute(_, _, _)).Times(1)
           .WillRepeatedly(DoAll(
               SaveArg<0>(&_mockFullConfigRetriever->Bridge),
               SaveArg<1>(&_mockFullConfigRetriever->RetrieveCallback),
+							SaveArg<2>(&_mockFullConfigRetriever->Feedback),
               Return(true)));
   }
 
@@ -129,13 +133,14 @@ class TestBridgeStreamingChecker : public testing::Test {
   }
 
   void Expect_FullConfigRetriever_Execute_Never() {
-      EXPECT_CALL(*_mockFullConfigRetriever, Execute(_, _)).Times(0);
+      EXPECT_CALL(*_mockFullConfigRetriever, Execute(_, _, _)).Times(0);
   }
 
   BridgePtr _currentBridge;
   BridgePtr _actualBridge;
   BridgeSettingsPtr _bridgeSettings;
   std::shared_ptr<MockConfigRetriever> _mockFullConfigRetriever;
+	std::shared_ptr<MockBridgeHttpClient> _httpClient;
   std::shared_ptr<BridgeStreamingChecker> _bridgeStreamingChecker;
   std::vector<FeedbackMessage> _messages;
 
@@ -187,7 +192,7 @@ TEST_F(TestBridgeStreamingChecker, WhenRetrieverFails_STREAMING_DISCONNECTED_BRI
     Expect_FullConfigRetriever_Execute_Once();
     _bridgeStreamingChecker->Check(_currentBridge);
     _mockFullConfigRetriever->ExecuteRetrieveCallback(OPERATION_FAILED, _actualBridge);
-    ExpectTwoMessagesOfType(FeedbackMessage::ID_STREAMING_DISCONNECTED, FeedbackMessage::ID_BRIDGE_DISCONNECTED);
+    ExpectTwoMessagesOfType(FeedbackMessage::ID_BRIDGE_DISCONNECTED, FeedbackMessage::ID_STREAMING_DISCONNECTED);
 }
 
 TEST_F(TestBridgeStreamingChecker, WhenCurrentGroupDeleted_STREAMING_DISCONNECTED) {

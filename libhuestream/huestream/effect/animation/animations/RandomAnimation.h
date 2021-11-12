@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_RANDOMANIMATION_H_
 #define HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_RANDOMANIMATION_H_
 
-#include <huestream/effect/animation/animations/TweenAnimation.h>
+#include "huestream/effect/animation/animations/TweenAnimation.h"
 
 #include <string>
 

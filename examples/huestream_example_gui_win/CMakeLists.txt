@@ -27,6 +27,6 @@ if (WIN32 AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     
     add_custom_command(TARGET ${prjname} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E
-        copy ${PROJECT_SOURCE_DIR}/res/explosion.wav ${BUILD_DIR})
+        copy ${PROJECT_SOURCE_DIR}/res/explosion.wav ${BUILD_DIR})    
 
 endif()

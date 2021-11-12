@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_LIGHTSCRIPT_TIMELINE_H_
 #define HUESTREAM_EFFECT_LIGHTSCRIPT_TIMELINE_H_
 
-#include <huestream/effect/lightscript/ITimeline.h>
+#include "huestream/effect/lightscript/ITimeline.h"
 
 #include <stdint.h>
 

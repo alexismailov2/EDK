@@ -14,7 +14,7 @@
 #define HUESDK_LIB_NETWORK_HTTP_RESPONSE_STATUS_CODE_NO_CONTENT (204)
 
 namespace support {
-    
+
     class IHttpResponse {
     public:
         /**
@@ -51,6 +51,21 @@ namespace support {
          Get the certificate chain for https connections
          */
         virtual std::vector<std::string> get_certificate_chain() const = 0;
+
+        /**
+         Get the md5 digest of the body
+        */
+        virtual std::string get_md5_digest() const = 0;
+
+        /**
+         Get the size of the downloaded file
+        */
+        virtual size_t get_file_size() const = 0;
+
+        /**
+         Get the local port number
+        */
+        virtual long get_local_port() const = 0;
 
         /**
          Clone the http response

@@ -60,6 +60,7 @@ bool HueStreamData::RemoveBridge(BridgePtr bridge) {
 }
 
 bool HueStreamData::RediscoverKnownBridge(BridgeListPtr discoveredBridges) {
+    BridgePtr activeBridge = nullptr;
     for (auto rit = _bridges->rbegin(); rit != _bridges->rend(); ++rit) {
         auto knownBridge = *rit;
         if (knownBridge->IsAuthorizedForStreaming()) {
@@ -68,15 +69,20 @@ bool HueStreamData::RediscoverKnownBridge(BridgeListPtr discoveredBridges) {
                 if (discoveredBridge->GetId() == knownBridge->GetId()) {
                     knownBridge->SetIpAddress(discoveredBridge->GetIpAddress());
                     knownBridge->SetIsValidIp(true);
-                    if (discoveredBridge->GetIsUsingSsl()) {
-                        knownBridge->EnableSsl();
+                    if (activeBridge == nullptr) {
+                      activeBridge = knownBridge;
                     }
-                    SetActiveBridge(knownBridge);
-                    return true;
+                    break;
                 }
             }
         }
     }
+
+    if (activeBridge != nullptr) {
+      SetActiveBridge(activeBridge);
+      return true;
+    }
+
     return false;
 }
 

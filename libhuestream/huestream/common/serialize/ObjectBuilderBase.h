@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_SERIALIZE_OBJECTBUILDERBASE_H_
 #define HUESTREAM_COMMON_SERIALIZE_OBJECTBUILDERBASE_H_
 
-#include <libjson/libjson.h>
+#include "libjson/libjson.h"
 
 #include <memory>
 #include <string>

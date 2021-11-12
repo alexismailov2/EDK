@@ -35,7 +35,7 @@ namespace support {
         HTTP_REQUEST_STATE_EXECUTING,
         HTTP_REQUEST_STATE_CANCELLED
     };
-    
+
     typedef std::function<void (const support::HttpRequestError& error, const IHttpResponse& response)> HttpRequestCallback;
 
     typedef std::function<void (int64_t download_total, int64_t downloaded_upto_now,
@@ -47,76 +47,76 @@ namespace support {
          set the executor of this request
          */
         virtual void set_executor(HttpRequestExecutor* executor);
-        
+
         /**
          Get connect timeout in seconds
          @return The connect timeout in seconds
          */
         virtual int get_connect_timeout();
-        
+
         /**
          Set connection timeout in seconds
          @param connection_timeout The connection timeout in seconds
          */
         virtual void set_connect_timeout(int connect_timeout);
-        
+
         /**
          Get receive timeout in seconds
          @note Timeout when no data received for the given time
          @return The receive timeout in seconds
          */
         virtual int get_receive_timeout();
-        
+
         /**
          Set read timeout in seconds
          @note Timeout when no data received for the given time
          @param request_timeout The receive timeout in seconds
          */
         virtual void set_receive_timeout(int receive_timeout);
-        
+
         /**
          Get request timeout in seconds
          @return The request timeout in seconds
          */
         virtual int get_request_timeout();
-        
+
         /**
          Set request timeout in seconds
          @param request_timeout The request timeout in seconds
          */
         virtual void set_request_timeout(int request_timeout);
-        
+
         /**
          Get proxy address
          @return The proxy address
          */
         virtual const string& get_proxy_address();
-        
+
         /**
          Get proxy port
          @return the proxy port
          */
         virtual int get_proxy_port();
-        
+
         /**
          Set the proxy to use for this request
          @param proxy_address proxy address
          @param proxy_port proxy port
          */
         virtual void set_proxy(const string& proxy_address, int proxy_port);
-        
+
         /**
          Get the content type
          @return The content type
          */
         virtual string get_content_type();
-        
+
         /**
          Set the type of the content (body) that is sent
          @param content_type The content type
          */
         virtual void set_content_type(const string& content_type);
-        
+
         /**
          add a header field
          @param field_name name of the field to set
@@ -133,7 +133,7 @@ namespace support {
          Set bearer authorization header
          */
         virtual void set_bearer_auth_header(const string& token);
-        
+
         /**
          Set digest authentication header
          */
@@ -147,26 +147,26 @@ namespace support {
          @see do_request(...)
          */
         virtual int do_get(HttpRequestCallback callback);
-        
+
         /**
          Do a POST request on the url
          @see do_request(...)
          */
         virtual int do_post(const string& body, File* file, HttpRequestCallback callback);
-        
+
         /**
          Do a PUT request on the url
          @param the
          @see do_request(...)
          */
         virtual int do_put(const string& body, HttpRequestCallback callback);
-        
+
         /**
          Do a POST request on the url
          @see do_request(...)
          */
         virtual int do_delete(HttpRequestCallback callback);
-        
+
         /**
          Execute the request on a url
          @param method   The method to be executed on the url:
@@ -244,6 +244,16 @@ namespace support {
          */
         virtual void set_progress_callback(HttpRequestProgressCallback progress_callback);
 
+        /*
+         Set the file name for which a get request data will be written to.
+        */
+        virtual void set_file_name_to_write(const std::string& file_name);
+
+        /*
+         Set whether to compute the md5 digest of the body.
+        */
+        virtual void set_generate_md5_digest(bool);
+
     protected:
         /**
          Constructor
@@ -299,6 +309,8 @@ namespace support {
         bool                     _verify_ssl;
         bool                     _is_external;
         HttpRequestProgressCallback _progress_callback;
+        std::string              _file_name_to_write;
+        bool                     _generate_md5_digest;
     };
 }  // namespace support
 

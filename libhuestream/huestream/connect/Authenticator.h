@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_CONNECT_AUTHENTICATOR_H_
 #define HUESTREAM_CONNECT_AUTHENTICATOR_H_
 
-#include <huestream/common/http/IBridgeHttpClient.h>
-#include <huestream/connect/ConnectionFlow.h>
+#include "huestream/common/http/IBridgeHttpClient.h"
+#include "huestream/connect/ConnectionFlow.h"
 
 namespace huestream {
 

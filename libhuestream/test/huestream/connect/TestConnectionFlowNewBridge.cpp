@@ -341,7 +341,7 @@ TEST_F(TestConnectionFlow_NewBridge, change_group_while_streaming_no_autostart) 
     select_group_existing(0, "12");
     finish_without_stream_start(true, false, false, false);
     ASSERT_FALSE(_bridges->at(0)->IsStreaming());
-    
+
     start_stream_activation();
     finish_with_stream_start(_bridges->at(0), false, true, true, false);
     ASSERT_TRUE(_bridges->at(0)->IsStreaming());
@@ -355,7 +355,7 @@ INSTANTIATE_TEST_CASE_P(start_successful, TestConnectionFlow_NewBridge, Values(0
 
 TEST_P(TestConnectionFlow_NewBridge, start_successful) {
     _settings->SetUseRenderThread(int2bool(GetParam()));
-    
+
     setup_for_stream_activation();
 
     finish_with_stream_start(_bridges->at(0), false, true, true, false);
@@ -493,8 +493,6 @@ TEST_F(TestConnectionFlow_NewBridge, connect_to_new_bridge_fails_after_several_f
 INSTANTIATE_TEST_CASE_P(new_bridge_https, TestConnectionFlow_NewBridge, Values(true, false));
 
 TEST_P(TestConnectionFlow_NewBridge, new_bridge_https) {
-    EXPECT_FALSE(_bridges->at(4)->GetIsUsingSsl());
-
     connect_with_no_bridge_configured_starts_new_bridge_search(GetParam());
 
     if (GetParam()) {
@@ -503,6 +501,4 @@ TEST_P(TestConnectionFlow_NewBridge, new_bridge_https) {
     else {
         searching_with_one_bridge_found_starts_pushlink(4);
     }
-
-    EXPECT_TRUE(_bridges->at(4)->GetIsUsingSsl());
 }

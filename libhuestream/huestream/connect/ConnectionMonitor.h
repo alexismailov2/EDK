@@ -6,8 +6,8 @@ All Rights Reserved.
 #ifndef HUESTREAM_CONNECT_CONNECTIONMONITOR_H_
 #define HUESTREAM_CONNECT_CONNECTIONMONITOR_H_
 
-#include <huestream/connect/IConnectionMonitor.h>
-#include <huestream/connect/IBridgeStreamingChecker.h>
+#include "huestream/connect/IConnectionMonitor.h"
+#include "huestream/connect/IBridgeStreamingChecker.h"
 
 #include <thread>
 #include <memory>

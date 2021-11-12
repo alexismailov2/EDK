@@ -23,7 +23,9 @@ namespace huestream {
         virtual ~IHttpClient() = default;
 
         virtual void Execute(HttpRequestPtr request) = 0;
-        virtual void ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback = {}) = 0;
+        virtual int32_t ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback = {}) = 0;
+
+        virtual void CancelAsyncRequest(int32_t requestId) = 0;
 
         virtual shared_ptr<HttpRequest> CreateHttpRequest(const std::string& url,
             int connect_timeout = support::HTTP_CONNECT_TIMEOUT,

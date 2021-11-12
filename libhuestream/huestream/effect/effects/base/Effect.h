@@ -7,11 +7,11 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_BASE_EFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_BASE_EFFECT_H_
 
-#include <huestream/common/serialize/Serializable.h>
-#include <huestream/common/data/Color.h>
-#include <huestream/common/data/Light.h>
-#include <huestream/common/data/Group.h>
-#include <huestream/common/time/ITimeProvider.h>
+#include "huestream/common/serialize/Serializable.h"
+#include "huestream/common/data/Color.h"
+#include "huestream/common/data/Light.h"
+#include "huestream/common/data/Group.h"
+#include "huestream/common/time/ITimeProvider.h"
 
 #include <memory>
 #include <string>

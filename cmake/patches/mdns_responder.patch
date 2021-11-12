@@ -941,3 +941,21 @@ index fa07af0..55ad9b9 100755
  UDPSocketNotification( SOCKET sock, LPWSANETWORKEVENTS event, void *context )
  {
  	UDPSocket				*udpSock = ( UDPSocket* ) context;
+	
+diff --git a/mDNSWindows/mDNSWin32.c b/mDNSWindows/mDNSWin32.c
+index 55ad9b9e..26a8de16 100644
+--- a/mDNSWindows/mDNSWin32.c
++++ b/mDNSWindows/mDNSWin32.c
+@@ -3775,6 +3775,11 @@ mDNSlocal int	getifaddrs_ipv6( struct ifaddrs **outAddrs )
+ 						{
+ 							uint8_t maskByte = ( len >= 8 ) ? 0xFF : (uint8_t)( ( 0xFFU << ( 8 - len ) ) & 0xFFU );
+ 							mask.s6_addr[ maskIndex++ ] = maskByte;
++
++							if (len < 8)
++							{
++								break;
++							}
+ 						}
+ 
+ 						// Apply the mask
+						

@@ -7,7 +7,7 @@ All Rights Reserved.
 #ifndef HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_BASE_ANIMATIONHELPER_H_
 #define HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_BASE_ANIMATIONHELPER_H_
 
-#include <huestream/effect/animation/animations/base/Animation.h>
+#include "huestream/effect/animation/animations/base/Animation.h"
 #include <memory>
 
 namespace huestream {

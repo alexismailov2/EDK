@@ -28,6 +28,7 @@ using std::unique_lock;
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
+using std::placeholders::_4;
 
 namespace support {
 
@@ -35,7 +36,7 @@ namespace support {
     public:
         using RetryErrorMap = std::unordered_map<unsigned int, unsigned int>;
 
-        RequestInfo(HttpRequest* request,
+        RequestInfo(std::shared_ptr<HttpRequest> request,
                     RequestType request_type,
                     int retry_countdown,
                     int server_reset_retry_countdown,
@@ -56,8 +57,8 @@ namespace support {
 
         virtual ~RequestInfo() {
         }
-        
-        HttpRequest* get_request() override {
+
+        std::shared_ptr<HttpRequest> get_request() override {
             return _request;
         }
 
@@ -74,7 +75,7 @@ namespace support {
             --_retry_countdown;
         }
 
-        HttpRequest* _request;
+        std::shared_ptr<HttpRequest> _request;
         support::ConditionVariable<int> _idle_state_counter{0};
         RequestType _request_type;
         int _retry_countdown;
@@ -90,16 +91,16 @@ namespace support {
     };
 
     const char* HttpRequestExecutor::REQUEST_METHOD[] = {"GET", "PUT", "POST", "DELETE" };
-    
+
     /** */
     static const int SERVER_RESET_OCCURRENCE_MS = 900;
 
     HttpRequestExecutor::HttpRequestExecutor(int max_retries) :
     _max_retries(max_retries),
     _stopped(false),
-    _http_error_delegate(std::bind(&HttpRequestExecutor::handle_http_error, _1, _2, _3)) {
+    _http_error_delegate(std::bind(&HttpRequestExecutor::handle_http_error, _1, _2, _3, _4)) {
     }
- 
+
     HttpRequestExecutor::~HttpRequestExecutor() {
         stop();
     }
@@ -109,7 +110,7 @@ namespace support {
     }
 
     void HttpRequestExecutor::set_http_error_delegate(HttpErrorDelegate http_error_delegate) {
-        _http_error_delegate = http_error_delegate ? http_error_delegate : std::bind(&HttpRequestExecutor::handle_http_error, _1, _2, _3);
+        _http_error_delegate = http_error_delegate ? http_error_delegate : std::bind(&HttpRequestExecutor::handle_http_error, _1, _2, _3, _4);
     }
 
     void HttpRequestExecutor::stop() {
@@ -123,10 +124,10 @@ namespace support {
         _request_map_cond.wait(lock, [this] { return _request_map.empty(); } );
     }
 
-    void HttpRequestExecutor::add_request(HttpRequest* request, shared_ptr<IRequestInfo> request_info) {
-        auto item = std::pair<HttpRequest*, shared_ptr<IRequestInfo>>(request, request_info);
+    void HttpRequestExecutor::add_request(std::shared_ptr<HttpRequest> request, shared_ptr<IRequestInfo> request_info) {
+        auto item = std::pair<std::shared_ptr<HttpRequest>, shared_ptr<IRequestInfo>>(request, request_info);
         auto result = _request_map.insert(item);
-        
+
         if (result.second == false) {
             HUE_LOG << HUE_NETWORK <<  HUE_DEBUG << "HttpRequestExecutor: add_request called more than once on the same request" << HUE_ENDL;
 
@@ -137,7 +138,7 @@ namespace support {
         }
     }
 
-    void HttpRequestExecutor::remove_request(HttpRequest* request) {
+    void HttpRequestExecutor::remove_request(std::shared_ptr<HttpRequest> request) {
         unique_lock<mutex> lock(_request_map_mutex);
 
         auto request_iterator = _request_map.find(request);
@@ -151,12 +152,15 @@ namespace support {
             } else {
                 request_info_cast->_num_active_instances--;
             }
+
+            // We need that otherwise we might crash if the removal of this request is triggered while we're in the destructor waiting for _request_map to be empty
+            request->set_executor(nullptr);
         } else {
             HUE_LOG << HUE_NETWORK <<  HUE_DEBUG << "HttpRequestExecutor: remove_request called on unknown request" << HUE_ENDL;
         }
     }
-   
-    bool HttpRequestExecutor::add(HttpRequest* request, RequestType request_type, Callback callback, const char* resource_path, const char* body, File* file) {
+
+    bool HttpRequestExecutor::add(std::shared_ptr<HttpRequest> request, RequestType request_type, Callback callback, const char* resource_path, const char* body, File* file) {
         unique_lock<mutex> lock(_request_map_mutex);
         if (_stopped) {
             return false;
@@ -169,7 +173,7 @@ namespace support {
         /**
          Calculate the max number of retries for a server reset based on the request timeout
          and the average times it takes for the server reset to occur.
-         
+
          Example: if you have a request timeout set of 10 seconds and the average reset occurrence of the server
          reset is 1 second, you can do up to 9 retries (you still have 9 seconds left after the first occurrence).
          */
@@ -178,10 +182,11 @@ namespace support {
         auto request_info = std::make_shared<RequestInfo>(request, request_type, _max_retries, server_reset_max_retries, callback, resource_path, body_string, file);
 
         add_request(request, request_info);
-        
+
         request->set_executor(this);
-        _thread_pool_executor.execute([this, request_info] () -> void {
-            execute(request_info);
+        std::weak_ptr<RequestInfo> request_info_ref = request_info;
+        _thread_pool_executor.execute([this, request_info_ref] () -> void {
+            execute(request_info_ref.lock());
         });
 
         return true;
@@ -203,8 +208,8 @@ namespace support {
         return true;
     }
 
-    HttpRequest* HttpRequestExecutor::get_request(shared_ptr<IRequestInfo> request_info) {
-        HttpRequest* request = nullptr;
+        std::shared_ptr<HttpRequest> HttpRequestExecutor::get_request(shared_ptr<IRequestInfo> request_info) {
+        std::shared_ptr<HttpRequest> request = nullptr;
         const RequestInfo* request_info_cast = static_cast<const RequestInfo*>(request_info.get());
 
         unique_lock<mutex> lock(_request_map_mutex);
@@ -222,12 +227,13 @@ namespace support {
 
     void HttpRequestExecutor::execute(shared_ptr<IRequestInfo> request_info) {
         auto request_info_cast = static_cast<RequestInfo*>(request_info.get());
-        HttpRequest* request = get_request(request_info);
+        std::shared_ptr<HttpRequest> request = get_request(request_info);
 
         if (request) {
             request_info_cast->_idle_state_counter.perform(support::operations::increment<int>);
-            request->do_request(REQUEST_METHOD[static_cast<std::uint8_t>(request_info_cast->_request_type)], request_info_cast->_body, request_info_cast->_file, [this, request_info] (const HttpRequestError& error, const IHttpResponse& response) {
-                handle_response(error, response, request_info);
+            std::weak_ptr<IRequestInfo> request_info_ref = request_info;
+            request->do_request(REQUEST_METHOD[static_cast<std::uint8_t>(request_info_cast->_request_type)], request_info_cast->_body, request_info_cast->_file, [this, request_info_ref] (const HttpRequestError& error, const IHttpResponse& response) {
+                handle_response(error, response, request_info_ref.lock());
             });
             request_info_cast->_idle_state_counter.perform(support::operations::decrement<int>);
         }
@@ -236,9 +242,23 @@ namespace support {
     void HttpRequestExecutor::request_canceled(HttpRequest* request) {
         unique_lock<mutex> lock(_request_map_mutex);
         // wait until this request is not in the map anymore
-        _request_map_cond.wait(lock, [this, request] { return _request_map.find(request) == _request_map.end(); } );
+        _request_map_cond.wait(lock, [this, request] {
+            for (auto requestIt = _request_map.begin(); requestIt != _request_map.end(); ++requestIt) {
+                if (requestIt->first.get() == request) {
+                    return false;
+                }
+            }
+
+            return true;
+        } );
     }
-    
+
+    void HttpRequestExecutor::add_error_to_filter_on_retry(HttpRequestError::ErrorCode error) {
+        if (std::find(errors_to_filter.begin(), errors_to_filter.end(), error) == errors_to_filter.end()) {
+            errors_to_filter.push_back(error);
+        }
+    }
+
     void HttpRequestExecutor::handle_response(const HttpRequestError& error, const IHttpResponse& response, shared_ptr<IRequestInfo> request_info) {
         RequestInfo* request_info_cast = static_cast<RequestInfo*>(request_info.get());
 
@@ -251,7 +271,7 @@ namespace support {
         action.type = HttpErrorPostActionType::DISCARD;
 
         if (!_stopped) {
-            action = _http_error_delegate(mutable_error, response, request_info);
+            action = _http_error_delegate(mutable_error, response, request_info, errors_to_filter);
         }
 
         if (request_info_cast->retry_count_for_error(response.get_status_code()) == 0) {
@@ -287,14 +307,15 @@ namespace support {
         }
     }
 
-    HttpRequestExecutor::HttpErrorPostAction HttpRequestExecutor::handle_http_error(support::HttpRequestError& error, const support::IHttpResponse& /*response*/, const std::shared_ptr<support::HttpRequestExecutor::IRequestInfo>& /* request_info */) {
+    HttpRequestExecutor::HttpErrorPostAction HttpRequestExecutor::handle_http_error(support::HttpRequestError& error, const support::IHttpResponse& /*response*/, const std::shared_ptr<support::HttpRequestExecutor::IRequestInfo>& /* request_info */, const std::vector<HttpRequestError::ErrorCode>& errors_to_filter) {
         HttpRequestExecutor::HttpErrorPostAction action;
         action.type = HttpErrorPostActionType::NONE;
 
         const HttpRequestError::ErrorCode error_code = error.get_code();
 
         if (error_code != HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS &&
-            error_code != HttpRequestError::HTTP_REQUEST_ERROR_CODE_CANCELED) {
+            error_code != HttpRequestError::HTTP_REQUEST_ERROR_CODE_CANCELED &&
+            (errors_to_filter.empty() ? true : std::find(errors_to_filter.begin(), errors_to_filter.end(), error_code) != errors_to_filter.end())) {
             action.type = HttpErrorPostActionType::RETRY;
         }
 

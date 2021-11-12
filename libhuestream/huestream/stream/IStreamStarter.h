@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_STREAM_ISTREAMSTARTER_H_
 #define HUESTREAM_STREAM_ISTREAMSTARTER_H_
 
-#include <huestream/config/AppSettings.h>
+#include "huestream/config/AppSettings.h"
 
 #include <memory>
 

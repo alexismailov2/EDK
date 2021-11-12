@@ -28,7 +28,7 @@ void HttpClient::Execute(HttpRequestPtr request) {
 
 HttpClient::~HttpClient() {
     while (true) {
-        std::vector<HttpRequest*> active_requests;
+        std::vector<std::tuple<int32_t, HttpRequest*>> active_requests;
         {
             std::lock_guard<std::mutex> lock{_data->_active_requests_mutex};
             _data->_is_shutdown = true;
@@ -38,26 +38,26 @@ HttpClient::~HttpClient() {
         if (active_requests.empty()) {
             break;
         } else for (auto &&request : active_requests) {
-            request->cancel();
-            delete request;
+						auto req = std::get<1>(request);
+            req->cancel();
+            delete req;
         }
     }
 }
 
-void HttpClient::ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback) {
+int32_t HttpClient::ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback) {
     auto thread_pool = support::GlobalThreadPool::get();
     if (!thread_pool) {
-        return;
+        return -1;
     }
 
-    auto data = _data;
-    std::lock_guard<std::mutex> lock{data->_active_requests_mutex};
-    if (data->_is_shutdown) {
-        return;
+    std::lock_guard<std::mutex> lock{_data->_active_requests_mutex};
+    if (_data->_is_shutdown) {
+        return -1;
     }
 
     if (!request->StartRequest()) {
-        return;
+        return -1;
     }
 
     HttpRequest* req = new HttpRequest(request->GetUrl());
@@ -70,32 +70,102 @@ void HttpClient::ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callba
     req->expect_common_name(request->GetExpectedCommonName());
     req->set_trusted_certs(request->GetTrustedCertificates());
 
-    req->do_request(request->GetMethod(), request->GetBody(), nullptr,
-        [req, request, callback, thread_pool, data](const support::HttpRequestError &error, const support::IHttpResponse &response) mutable {
+		auto headerMap = request->GetHeader();
+		bool isEventingRequest = false;
+		for (auto headerIt = headerMap.begin(); headerIt != headerMap.end(); ++headerIt) {
+			req->add_header_field(headerIt->first, headerIt->second);
 
-            request->SetSuccess(false);
+			if (!isEventingRequest && headerIt->first == "Accept" && headerIt->second == "text/event-stream")
+			{
+				isEventingRequest = true;
+			}
+		}
+
+		req->set_request_timeout(request->GetRequestTimeout());
+
+		static int32_t globalRequestId = 0;
+		int32_t requestId = globalRequestId;
+
+    std::weak_ptr<Data> dataLifetime = _data;
+		std::weak_ptr<HttpRequestInfo> requestLifetime = request;
+    req->do_request(request->GetMethod(), request->GetBody(), nullptr,
+        [request, requestLifetime, req, callback, thread_pool, dataLifetime, requestId, isEventingRequest](const support::HttpRequestError &error, const support::IHttpResponse &response) mutable {
+
+						// Watch out here because request is captured by the lambda and its ref count is incremented by one. However its the only reference to it so
+						// ref count is 1 at this point. So if the HttpClient object is deleted while the lambda is executing then that ref count is gonna reach 0
+						// because the lambda is being destroy too. A lambda can be destroyed but execution of its code will continue and that might cause a crash
+						// because the request is also destroy in the process. That's why we use an additional weak_ptr to make sure request still exist when
+						// we're going to use it.
+            std::shared_ptr<Data> dataRef = dataLifetime.lock();
+            if (dataRef == nullptr)
+            {
+                return;
+            }
+
+						HttpRequestPtr requestRef = requestLifetime.lock();
+						if (requestRef == nullptr)
+						{
+							return;
+						}
+
+						// At this point request should have a ref count of 2, thus making sure it won't be destroy until we're finished.
+						requestRef->SetSuccess(false);
 
             if (error.get_code() == support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS) {
-                request->SetResponse(response.get_body());
-                request->SetStatusCode(response.get_status_code());
-                request->SetSuccess(true);
+								requestRef->SetResponse(response.get_body());
+								requestRef->SetStatusCode(response.get_status_code());
+								requestRef->SetSuccess(true);
+            }
+
+            if (dataRef->_is_shutdown) {
+              return;
             }
 
             if (callback) {
                 callback(error, response);
             }
 
-            request->FinishRequest();
-            {
-                std::lock_guard<std::mutex> lock{data->_active_requests_mutex};
-                auto iter = std::find(data->_active_requests.begin(), data->_active_requests.end(), req);
-                if (iter != data->_active_requests.end()) {
-                    data->_active_requests.erase(iter);
-                    support::delete_later(req);
-                }
-            }
+						if (error.get_code() == support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_CANCELED)
+						{
+							// Don't delete the request here, it's going to be taken care of in CancelAsyncRequest. Otherwise we'll end up in deadlock.
+							requestRef->FinishRequest();
+							return;
+						}
+
+						// Don't end server sent events request unless they failed. They are considered everlasting.
+						if (!isEventingRequest || !requestRef->GetSuccess()) {
+							requestRef->FinishRequest();
+							{
+									std::lock_guard<std::mutex> lock{dataRef->_active_requests_mutex};
+									auto iter = std::find(dataRef->_active_requests.begin(), dataRef->_active_requests.end(), std::tuple<int32_t, HttpRequest*>(requestId, req));
+									if (iter != dataRef->_active_requests.end()) {
+											dataRef->_active_requests.erase(iter);
+											support::delete_later(req);
+									}
+							}
+						}
         });
-    data->_active_requests.emplace_back(std::move(req));
+
+		_data->_active_requests.emplace_back(std::tuple<int32_t, HttpRequest*>(globalRequestId++ , std::move(req)));
+
+		return requestId;
+}
+
+void HttpClient::CancelAsyncRequest(int32_t requestId)
+{
+	std::lock_guard<std::mutex> lock{ _data->_active_requests_mutex };
+
+	for (auto requestIt = _data->_active_requests.begin(); requestIt != _data->_active_requests.end(); ++requestIt)
+	{
+		if (std::get<0>(*requestIt) == requestId)
+		{
+			HttpRequest* req = std::get<1>(*requestIt);
+			req->cancel();
+			_data->_active_requests.erase(requestIt);
+			delete req;
+			break;
+		}
+	}
 }
 
 shared_ptr<IHttpClient::HttpRequest> HttpClient::CreateHttpRequest(const std::string& url,

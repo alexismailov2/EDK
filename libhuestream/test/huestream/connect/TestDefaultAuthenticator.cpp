@@ -70,7 +70,7 @@ class TestDefaultAuthenticator : public testing::Test {
     std::string _appName;
     std::string _deviceName;
     const std::string _id = "001788FFFE200646";
-    const std::string _apiVersion = "1.22.0";
+    const std::string _apiVersion = "1.24.0";
     const std::string _outdatedApiVersion = "1.18.0";
 
     virtual void SetUp() {
@@ -90,6 +90,7 @@ class TestDefaultAuthenticator : public testing::Test {
         _bridge->SetIsValidIp(true);
         _bridge->SetId(_id);
         _bridge->SetApiversion(_apiVersion);
+				_bridge->SetSwversion("1940094000");
 
         _defaultAuthenticator = std::make_shared<Authenticator>(_mockHttpPtr);
     }
@@ -103,7 +104,7 @@ class TestDefaultAuthenticator : public testing::Test {
     }
 
     const std::string getAuthUrl() {
-        const std::string url = "http://" + _ip + "/api/";
+        const std::string url = "https://" + _ip + "/api/";
         return url;
     }
 
@@ -128,7 +129,7 @@ class TestDefaultAuthenticator : public testing::Test {
 
 TEST_F(TestDefaultAuthenticator, AuthenticateSuccessWithClientkey) {
     EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(),
-                                                        getAuthBodyWithClientKey())).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
+                                                        getAuthBodyWithClientKey(), false)).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
 
     _defaultAuthenticator->Authenticate(_bridge, _appSettings, [this](BridgePtr b) {
         checkBasicBridgeAttributes(b);
@@ -139,7 +140,7 @@ TEST_F(TestDefaultAuthenticator, AuthenticateSuccessWithClientkey) {
 
 TEST_F(TestDefaultAuthenticator, ReauthenticateSuccessWithClientkey) {
     EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(),
-        getAuthBodyWithClientKey())).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
+        getAuthBodyWithClientKey(), false)).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
 
     _bridge->SetUser("oldusername");
 
@@ -153,7 +154,7 @@ TEST_F(TestDefaultAuthenticator, ReauthenticateSuccessWithClientkey) {
 TEST_F(TestDefaultAuthenticator, AuthenticateSuccessWithoutClientKey) {
     _bridge->SetApiversion(_outdatedApiVersion);
     EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(),
-                                                        getAuthBodyWithoutClientKey())).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccessButWithoutClientKey()));
+                                                        getAuthBodyWithoutClientKey(), false)).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccessButWithoutClientKey()));
 
     _defaultAuthenticator->Authenticate(_bridge, _appSettings, [this](BridgePtr b) {
         checkBasicBridgeAttributes(b);
@@ -165,7 +166,7 @@ TEST_F(TestDefaultAuthenticator, AuthenticateSuccessWithoutClientKey) {
 TEST_F(TestDefaultAuthenticator, AuthenticateSuccessWithClientkeyEmptyBridgeVersion) {
     _bridge->SetApiversion("");
     EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(),
-                                                        getAuthBodyWithClientKey())).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
+                                                        getAuthBodyWithClientKey(), false)).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
 
     _defaultAuthenticator->Authenticate(_bridge, _appSettings, [this](BridgePtr b) {
         checkBasicBridgeAttributes(b);
@@ -176,7 +177,7 @@ TEST_F(TestDefaultAuthenticator, AuthenticateSuccessWithClientkeyEmptyBridgeVers
 
 TEST_F(TestDefaultAuthenticator, AuthenticateFailButtonNotPressed) {
     EXPECT_CALL(*_mockHttpPtr,
-                ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(), getAuthBodyWithClientKey())).Times(
+                ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(), getAuthBodyWithClientKey(), false)).Times(
         1).WillOnce(Return(
         GetHttpAuthenticateResponseErrorButtonNotPressed()));
 
@@ -191,7 +192,7 @@ TEST_F(TestDefaultAuthenticator, AuthenticateFailButtonNotPressed) {
 
 TEST_F(TestDefaultAuthenticator, AuthenticateFailNoResponse) {
     EXPECT_CALL(*_mockHttpPtr,
-                ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(), getAuthBodyWithClientKey())).Times(
+                ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(), getAuthBodyWithClientKey(), false)).Times(
         1).WillOnce(Return(
         GetHttpAuthenticateResponseTimeout()));
 
@@ -207,7 +208,7 @@ TEST_F(TestDefaultAuthenticator, AuthenticateFailNoResponse) {
 TEST_F(TestDefaultAuthenticator, AuthenticateFailClientkeyNotAvailable) {
     _bridge->SetApiversion("");
     EXPECT_CALL(*_mockHttpPtr,
-                ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(), getAuthBodyWithClientKey())).Times(
+                ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(), getAuthBodyWithClientKey(), false)).Times(
         1).WillOnce(Return(
         GetHttpAuthenticateResponseErrorClientkeyNotAvailable()));
 
@@ -229,7 +230,7 @@ TEST_F(TestDefaultAuthenticator, AuthenticateSuccessCorrectedDeviceType) {
         "{\"devicetype\": \"thisisatoolongapplic#thisdevicenameisals\", \"generateclientkey\": true\n}";
 
     EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_POST, getAuthUrl(),
-        body)).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
+        body, false)).Times(1).WillOnce(Return(GetHttpAuthenticateResponseSuccess()));
 
     _defaultAuthenticator->Authenticate(_bridge, _appSettings, [this](BridgePtr b) {
         checkBasicBridgeAttributes(b);

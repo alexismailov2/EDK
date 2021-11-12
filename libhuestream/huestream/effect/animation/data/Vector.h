@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_DATA_VECTOR_H_
 #define HUESTREAM_EFFECT_ANIMATION_DATA_VECTOR_H_
 
-#include <huestream/effect/animation/data/Point.h>
-#include <huestream/common/data/Location.h>
+#include "huestream/effect/animation/data/Point.h"
+#include "huestream/common/data/Location.h"
 
 namespace huestream {
 

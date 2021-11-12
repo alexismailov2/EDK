@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_LIGHTITERATOREFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_LIGHTITERATOREFFECT_H_
 
-#include <huestream/config/Config.h>
-#include <huestream/effect/effects/base/ColorAnimationEffect.h>
+#include "huestream/config/Config.h"
+#include "huestream/effect/effects/base/ColorAnimationEffect.h"
 
 #include <string>
 #include <map>

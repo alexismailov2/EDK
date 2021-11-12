@@ -4,6 +4,7 @@
  ********************************************************************************/
 
 #include <huestream/connect/ConnectionFlowFactory.h>
+#include <huestream/connect/BridgeConfigRetriever.h>
 
 #include <memory>
 
@@ -35,7 +36,11 @@ BridgeStorageAccessorPtr ConnectionFlowFactory::GetStorageAccesser() {
     return _storageAccessor;
 }
 
-ConfigRetrieverPtr ConnectionFlowFactory::CreateConfigRetriever(bool useForcedActivation, ConfigType configType) {
+ConfigRetrieverPtr ConnectionFlowFactory::CreateConfigRetriever(bool useForcedActivation, ConfigType configType, bool useClipV2) {
+    if (configType == ConfigType::Full && useClipV2) {
+        return std::make_shared<BridgeConfigRetriever>(_http, useForcedActivation);
+    }
+
     return std::make_shared<ConfigRetriever>(_http, useForcedActivation, configType);
 }
 

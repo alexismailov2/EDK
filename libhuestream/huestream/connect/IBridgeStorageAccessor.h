@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_CONNECT_IBRIDGESTORAGEACCESSOR_H_
 #define HUESTREAM_CONNECT_IBRIDGESTORAGEACCESSOR_H_
 
-#include <huestream/connect/OperationResult.h>
-#include <huestream/common/data/HueStreamData.h>
+#include "huestream/connect/OperationResult.h"
+#include "huestream/common/data/HueStreamData.h"
 
 #include <memory>
 #include <functional>

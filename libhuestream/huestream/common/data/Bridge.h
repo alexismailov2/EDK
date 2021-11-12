@@ -7,10 +7,12 @@
 #ifndef HUESTREAM_COMMON_DATA_BRIDGE_H_
 #define HUESTREAM_COMMON_DATA_BRIDGE_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/common/language/IMessageTranslator.h>
-#include <huestream/common/data/BridgeSettings.h>
-#include <huestream/common/data/Group.h>
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/common/language/IMessageTranslator.h"
+#include "huestream/common/data/BridgeSettings.h"
+#include "huestream/common/data/Group.h"
+#include "support/network/http/HttpRequestError.h"
+#include "huestream/common/data/Zone.h"
 
 #include <map>
 #include <vector>
@@ -82,14 +84,19 @@ class Bridge : public Serializable {
     virtual std::string GetUserStatus(MessageTranslatorPtr translator) const;
 
     /**
-     * @return API url of the bridge (examples: "http://127.0.0.1/api/" or "http://127.0.0.1:4200/api/")
+     * @return root API url of the bridge (examples: "https://127.0.0.1/api/" or "https://127.0.0.1:4200/api/")
      */
-    std::string GetApiRootUrl() const;
+    std::string GetApiRootUrl(bool useClipV2 = false, bool eventing = false) const;
 
     /**
-     get bridge uri
+     get bridge api url
      */
-    virtual std::string GetBaseUrl() const;
+    virtual std::string GetBaseUrl(bool useClipV2 = false, bool eventing = false) const;
+
+    /**
+     get bridge url
+    */
+    virtual std::string GetUrl() const;
 
     /**
      get bridge small config uri
@@ -105,6 +112,11 @@ class Bridge : public Serializable {
      get uri for sending action to selected entertainment group
      */
     virtual std::string GetSelectedGroupActionUrl() const;
+
+    /**
+     get the uri for getting the app id
+    */
+    virtual std::string GetAppIdUrl() const;
 
     /**
      check whether this bridge is currently correctly configured to be streamed to
@@ -186,7 +198,7 @@ class Bridge : public Serializable {
     /**
      get group with specific id or nullptr if none exists
      */
-    virtual GroupPtr GetGroupById(std::string id) const;
+    virtual GroupPtr GetGroupById(const std::string& id) const;
 
     /**
      delete a group from list of groups in the bridge
@@ -226,22 +238,22 @@ class Bridge : public Serializable {
     std::shared_ptr<Bridge> Clone() const;
 
     /**
-     enable HTTPS on the bridge
-     */
-    void EnableSsl();
+     check if bridge support clipv2 api
+    */
+    bool IsSupportingClipV2() const;
 
     /**
-     check if bridge version supports HTTPS
-     */
-    bool IsSupportingHttps() const;
+     get zone with specific id or nullptr if none exists
+    */
+    virtual ZonePtr GetZoneById(const std::string& id) const;
 
 PROP_DEFINE(Bridge, BridgeSettingsPtr, bridgeSettings, BridgeSettings);
 PROP_DEFINE(Bridge, std::string, name, Name);
 PROP_DEFINE(Bridge, std::string, modelId, ModelId);
 PROP_DEFINE(Bridge, std::string, apiversion, Apiversion);
+PROP_DEFINE(Bridge, std::string, swversion, Swversion);
 PROP_DEFINE(Bridge, std::string, id, Id);
 PROP_DEFINE(Bridge, std::string, ipAddress, IpAddress);
-PROP_DEFINE(Bridge, std::string, tcpPort, TcpPort);
 PROP_DEFINE(Bridge, std::string, sslPort, SslPort);
 PROP_DEFINE_BOOL(Bridge, bool, isValidIp, IsValidIp);
 PROP_DEFINE_BOOL(Bridge, bool, isAuthorized, IsAuthorized);
@@ -251,8 +263,11 @@ PROP_DEFINE(Bridge, std::string, user, User);
 PROP_DEFINE(Bridge, GroupListPtr, groups, Groups);
 PROP_DEFINE(Bridge, std::string, selectedGroup, SelectedGroup);
 PROP_DEFINE(Bridge, int, maxNoStreamingSessions, MaxNoStreamingSessions);
-PROP_DEFINE_GET(Bridge, bool, isUsingSsl, IsUsingSsl);
 PROP_DEFINE(Bridge, std::string, certificate, Certificate);
+PROP_DEFINE(Bridge, std::string, appId, AppId);
+PROP_DEFINE(Bridge, support::HttpRequestError::ErrorCode, lastHttpErrorCode, LastHttpErrorCode);
+PROP_DEFINE(Bridge, int32_t, lastHttpStatusCode, LastHttpStatusCode);
+PROP_DEFINE(Bridge, ZoneListPtr, zones, Zones);
 
  protected:
     virtual void SerializeBase(JSONNode *node) const;
@@ -260,7 +275,8 @@ PROP_DEFINE(Bridge, std::string, certificate, Certificate);
     void DeserializeBase(JSONNode *node);
 
 private:
-    std::ostringstream GetStreamApiRootUrl() const;
+    void GetStreamApiRootUrl(std::ostringstream& aOSS, bool useClipV2 = false, bool eventing = false) const;
+        void OnUserChange();
 };
 
 /**

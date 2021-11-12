@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_SERIALIZE_SERIALIZERHELPER_H_
 #define HUESTREAM_COMMON_SERIALIZE_SERIALIZERHELPER_H_
 
-#include <libjson/libjson.h>
+#include "libjson/libjson.h"
 
 #include <string>
 #include <vector>

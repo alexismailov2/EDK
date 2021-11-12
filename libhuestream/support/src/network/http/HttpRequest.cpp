@@ -97,6 +97,8 @@ namespace support {
         data.trusted_certs = _trusted_certs;
         data.verify_ssl = _verify_ssl;
         data.progress_callback = _progress_callback;
+        data.file_name = _file_name_to_write;
+        data.generate_md5_digest = _generate_md5_digest;
 
         if (data.trusted_certs.empty()) {
             data.trusted_certs = NetworkConfiguration::get_trusted_certificates(data.url);

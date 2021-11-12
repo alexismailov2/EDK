@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_FRAMESANIMATION_H_
 #define HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_FRAMESANIMATION_H_
 
-#include <huestream/effect/animation/animations/base/RepeatableAnimation.h>
+#include "huestream/effect/animation/animations/base/RepeatableAnimation.h"
 
 #include <string>
 

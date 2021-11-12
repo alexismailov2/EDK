@@ -108,6 +108,7 @@ class HueStream : public IHueStream {
     /**
      connect to a bridge with manually set ip address (blocking execution)
      @param ipAddress Ip address of the bridge to connect to
+     @param useSSL whether or not to use ssl
      */
     void ConnectBridgeManualIp(const std::string &ipAddress) override;
 
@@ -115,6 +116,7 @@ class HueStream : public IHueStream {
      connect to a bridge with manually set ip address (non blocking execution)
      @note this is normally used only as a backup when the normal connect call is unable to discover a bridge
      @param ipAddress Ip address of the bridge to connect to
+		 @param useSSL whether or not to use ssl
      */
     void ConnectBridgeManualIpAsync(const std::string &ipAddress) override;
 

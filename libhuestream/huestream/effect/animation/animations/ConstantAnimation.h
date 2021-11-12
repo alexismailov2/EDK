@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_CONSTANTANIMATION_H_
 #define HUESTREAM_EFFECT_ANIMATION_ANIMATIONS_CONSTANTANIMATION_H_
 
-#include <huestream/effect/animation/animations/base/Animation.h>
-#include <huestream/common/serialize/Serializable.h>
+#include "huestream/effect/animation/animations/base/Animation.h"
+#include "huestream/common/serialize/Serializable.h"
 
 #include <memory>
 #include <string>

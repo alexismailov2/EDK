@@ -3,8 +3,8 @@
  All Rights Reserved.
  ********************************************************************************/
 
-#include <huestream/common/util/HueMath.h>
-#include <huestream/effect/animation/data/CurveData.h>
+#include "huestream/common/util/HueMath.h"
+#include "huestream/effect/animation/data/CurveData.h"
 
 #include <assert.h>
 

@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_STREAM_DTLSTIMERPROVIDER_H_
 #define HUESTREAM_STREAM_DTLSTIMERPROVIDER_H_
 
-#include <edtls/wrapper/mbedtls/TimerProvider.h>
+#include "edtls/wrapper/mbedtls/TimerProvider.h"
 
 #include <chrono>
 

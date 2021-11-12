@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 include(ExternalProjectUtils)
 
-set_external_library(json)
+set_external_library(json FALSE)
 
 if(NOT EXISTS ${LIBRARY_PATH})
     set_library_path(json LIBJSON_PATH "")
@@ -20,4 +20,4 @@ DOWNLOAD_COMMAND ""
             )
 endif(NOT EXISTS ${LIBRARY_PATH})
 
-expose_external_library()
+expose_external_library(STATIC)

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include "boost/uuid/random_generator.hpp"
+#include "boost/uuid/uuid.hpp"
+#include "boost/uuid/uuid_io.hpp"
 
 /* EDK is compiled without exceptions (-fno-exceptions). This defines BOOST_NO_EXCEPTIONS in boost, used by boost::uuid.
  * Hence we explicitly define boost::throw_exception to do nothing */

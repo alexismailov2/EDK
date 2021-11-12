@@ -30,7 +30,8 @@ protected:
 
     void SetValidBaseProperties() {
         SetConnectableProperties();
-        bridge->SetApiversion("1.22.0");
+        bridge->SetApiversion("1.24.0");
+        bridge->SetSwversion("1940094000");
         bridge->SetClientKey("DD129216F1A50E5D1C0CB356325745F2");
         bridge->SetIsValidIp(true);
         bridge->SetMaxNoStreamingSessions(1);
@@ -142,6 +143,7 @@ TEST_F(TestBridge, IsStreamable) {
 
     SetValidProperties();
     bridge->SetApiversion("1.21.0");
+    bridge->SetSwversion("1940094000");
     ASSERT_FALSE(bridge->IsReadyToStream());
     ASSERT_TRUE(bridge->GetStatus() == BRIDGE_INVALID_VERSION);
 
@@ -227,13 +229,13 @@ TEST_F(TestBridge, IsValidApiVersion) {
     ASSERT_TRUE(bridge->GetApiversion().empty());
     ASSERT_FALSE(bridge->IsValidApiVersion());
 
-    bridge->SetApiversion("1.22.0");
+    bridge->SetApiversion("1.24.0");
     ASSERT_TRUE(bridge->IsValidApiVersion());
 
-    bridge->SetApiversion("1.22.1");
+    bridge->SetApiversion("1.24.1");
     ASSERT_TRUE(bridge->IsValidApiVersion());
 
-    bridge->SetApiversion("1.23.0");
+    bridge->SetApiversion("1.25.0");
     ASSERT_TRUE(bridge->IsValidApiVersion());
 
     bridge->SetApiversion("2.0.0");
@@ -375,24 +377,8 @@ TEST_F(TestBridge, GetVariousUrlsNoPortSet) {
     bridge->SetUser("rocky");
     bridge->SelectGroup("0");
 
-    const std::string urlApiRoot = "http://127.0.0.1/api/";
+    const std::string urlApiRoot = "https://127.0.0.1/api/";
     const std::string baseUrl = urlApiRoot + "rocky/";
-    const std::string selectedGroupUrl = baseUrl + "groups/0";
-
-    EXPECT_EQ(urlApiRoot, bridge->GetApiRootUrl());
-    EXPECT_EQ(baseUrl, bridge->GetBaseUrl());
-    EXPECT_EQ(selectedGroupUrl, bridge->GetSelectedGroupUrl());
-}
-
-TEST_F(TestBridge, GetVariousUrlsWithPortSet) {
-    SetValidPropertiesUnselectedGroup("0");
-    bridge->SetIpAddress("127.0.0.1");
-    bridge->SetTcpPort("69");
-    bridge->SetUser("bullwinkle");
-    bridge->SelectGroup("0");
-
-    const std::string urlApiRoot = "http://127.0.0.1:69/api/";
-    const std::string baseUrl = urlApiRoot + "bullwinkle/";
     const std::string selectedGroupUrl = baseUrl + "groups/0";
 
     EXPECT_EQ(urlApiRoot, bridge->GetApiRootUrl());
@@ -414,58 +400,19 @@ TEST_F(TestBridge, ProxyReachability) {
     ASSERT_TRUE(bridge->IsProxyNodeUnreachable());
 }
 
-TEST_F(TestBridge, UseSslHttpAndHttpsPortSet) {
-    bridge->EnableSsl();
+TEST_F(TestBridge, UseSslHttpsPortSet) {
     bridge->SetIpAddress("127.0.0.1");
-    bridge->SetTcpPort("1111");
     bridge->SetSslPort("2222");
 
     const std::string urlApiRoot = "https://127.0.0.1:2222/api/";
     EXPECT_EQ(urlApiRoot, bridge->GetApiRootUrl());
 }
 
-TEST_F(TestBridge, UseSslHttpPortSet) {
-    bridge->EnableSsl();
+TEST_F(TestBridge, UseSslHttpsPortNotSet) {
     bridge->SetIpAddress("127.0.0.1");
-    bridge->SetTcpPort("1111");
 
     const std::string urlApiRoot = "https://127.0.0.1/api/";
     EXPECT_EQ(urlApiRoot, bridge->GetApiRootUrl());
-}
-
-TEST_F(TestBridge, DontUseSslHttpsHttpPortSet) {
-    bridge->SetIpAddress("127.0.0.1");
-    bridge->SetTcpPort("1111");
-    bridge->SetSslPort("2222");
-
-    const std::string urlApiRoot = "http://127.0.0.1:1111/api/";
-    EXPECT_EQ(urlApiRoot, bridge->GetApiRootUrl());
-}
-
-TEST_F(TestBridge, EnableSslProtocolChanges) {
-    bridge->SetIpAddress("127.0.0.1");
-
-    const std::string httpUrlApiRoot = "http://127.0.0.1/api/";
-    const std::string httpsUrlApiRoot = "https://127.0.0.1/api/";
-
-    EXPECT_EQ(httpUrlApiRoot, bridge->GetApiRootUrl());
-
-    bridge->EnableSsl();
-
-    EXPECT_EQ(httpsUrlApiRoot, bridge->GetApiRootUrl());
-}
-
-TEST_F(TestBridge, ChangeApiVersionProtocolDoesntChange) {
-    bridge->SetIpAddress("127.0.0.1");
-
-    const std::string httpUrlApiRoot = "http://127.0.0.1/api/";
-    const std::string httpsUrlApiRoot = "https://127.0.0.1/api/";
-
-    bridge->SetApiversion("1.23.0");
-    EXPECT_EQ(httpUrlApiRoot, bridge->GetApiRootUrl());
-
-    bridge->SetApiversion("1.24.0");
-    EXPECT_NE(httpsUrlApiRoot, bridge->GetApiRootUrl());
 }
 
 /******************************************************************************/

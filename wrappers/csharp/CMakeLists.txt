@@ -7,7 +7,7 @@ set(csharp_dst_project_dir         ${csharp_bin_dir}/wrapper/csharp CACHE INTERN
 
 set(csharp_src_project_integrationtests     ${CMAKE_CURRENT_LIST_DIR}/huestream_csharp_integrationtests)
 set(csharp_src_project_managed     ${CMAKE_CURRENT_LIST_DIR}/huestream_csharp_managed)
-set(csharp_src_project_example_wpf ${CMAKE_CURRENT_LIST_DIR}/huestream_csharp_example_wpf)
+set(csharp_src_project_example_wpf ${CMAKE_CURRENT_LIST_DIR}/../../examples/huestream_csharp_example_wpf)
 
 set(csharp_dst_project_managed     ${csharp_dst_project_dir}/huestream_csharp_managed)
 set(csharp_dst_project_example_wpf ${csharp_dst_project_dir}/huestream_csharp_example_wpf)

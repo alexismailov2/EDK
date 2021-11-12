@@ -230,7 +230,7 @@
 			}
 			inline static json_string to_json_string(const std::wstring & str){
 				#if (!defined(JSON_UNICODE)) || defined(JSON_MEMORY_CALLBACKS) || defined(JSON_MEMORY_POOL)
-					return json_string(str.begin(), str.end());		
+					return json_string(reinterpret_cast<const json_char*>(str.c_str()), str.size() * (sizeof(wchar_t) / sizeof(json_char)));
 				#else
 					return str;
 				#endif

@@ -105,10 +105,10 @@ make
 
 ### Windows Visual Studio
 Make sure to install cmake and be able to execute it from command line. Since cmake needs to access git from the
-commandline as well (to clone external archives mbedtls and curl), make sure that the PATH environment variable is also
+commandline as well (to clone external archives like mbedtls and curl), make sure that the PATH environment variable is also
 pointing to the git install directory.
 
-Tested development environments are VS2015 and VS2017 with both 32 and 64 bit compilers.
+Tested development environments are VS2015/VS2017/VS2019, with both 32 and 64 bit compilers.
 
 Open command prompt and execute the following to generate VS projects.
 
@@ -116,7 +116,7 @@ Open command prompt and execute the following to generate VS projects.
 cd root-of-repo
 mkdir build
 cd build
-cmake -G "Visual Studio 15 2017 Win64" ..
+cmake -G "Visual Studio 16 2019" -A x64 ..
 ```
 
 Open the generated VS solution and build.
@@ -134,6 +134,57 @@ cd build
 cmake  ..
 cmake --build .
 ```
+
+### Android on device
+Install cmake and run the following:
+
+```
+cd root-of-repo
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+### Android cross-compile on Windows (static/dynamic libraries only)
+Install cmake-gui, Visual Studio 2019 and the "Mobile development with C++" feature.
+Start cmake-gui and select the source and output folders, hit "Configure".
+Choose Visual Studio 2019 as the generator, ARM64 as the platform and select "Specify options for cross-compiling". Hit next.
+
+In the target system options, enter "Android" as the Operating System, choose a version ex: 21 and enter "aarch64" as the processor option.
+Browse for the C and C++ compiler ex:
+* `C:/Microsoft/AndroidNDK64/android-ndk-r16b/toolchains/llvm/prebuilt/windows-x86_64/bin/clan.exe`
+* `C:/Microsoft/AndroidNDK64/android-ndk-r16b/toolchains/llvm/prebuilt/windows-x86_64/bin/clan++.exe`
+
+Set the root of the NDK In the "Find Program/Library/Include", it should look like:
+* `C:\Microsoft\AndroidNDK64\android-ndk-r16b`
+Leave the other fields as is and hit "Finish".
+
+Then you need to add an additional cmake variables manually to specify the stl library to link with. Note that it will only work with this one:
+* `CMAKE_ANDROID_STL_TYPE = c++_static`
+
+Press "Configure" again and then you should be good to generate all the necessary projects and solution.
+
+### iOS framework
+Install Cmake-gun and Xcode.
+To generate a framework, set the following CMake variables:
+
+* `LIB_BUILD_MODE = SHARED`
+* `APPLE_PLATFORM = iphoneos or iphonesimulator`
+* `CMAKE_OSX_ARCHITECTURES = arm64 or x86_64`
+* `CMAKE_SYSTEM_NAME = iOS`
+* `XCODE_ATTRIBUTE_INSTALL_PATH = @rpath`
+
+You also need to set these one too. This is an example when building for the simulator with version 14.4
+* `CMAKE_SYSTEM_ROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk`
+* `CFNETWORK = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/System/Library/Frameworks/CFNetwork.framework`
+* `FOUNDATION = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/System/Library/Frameworks/Foundation.framework`
+* `SECURITY = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/System/Library/Frameworks/Security.framework`
+
+Then use the Xcode generator when you hit configure with the `optional toolset to use` option as `buildsystem=1"`
+
+If you get a target dynamic library instead of a package in Xcode, then delete the content of your build folder and reconfigure in CMake. This is due to the fact that if you don't
+override the CMAKE_SYSTEM_NAME to iOS the first time, CMake will default to Darwin and this will be hardcoded in the cache.
 
 ## Getting Started
 Getting started is easy, it just takes 4 steps. In these 4 steps we will create a very basic application which only connects to the Hue bridge and plays an explosion effect.
@@ -217,7 +268,7 @@ __(3) Play effects on lights__
 The HueStream library has several example effects. Conventions are:
 * Colors are in RGB channels between 0 and 1
 * Times are integers in milliseconds
-* Locations / distances are relative to a users entertainment area which approximately spans from -1 to 1 in both x (left to right) and y (back to front)
+* Locations / distances are relative to a users entertainment area which approximately spans from -1 to 1 in both x (left to right), y (back to front), and potentially z (bottom to top)
 * Speed (not used in this example) is a multiplication factor over the speed of animations within the effect (i.e. default 1)
 
 In this tutorial we are using the `ExplosionEffect` to render an explosion in the middle of the room.
@@ -247,7 +298,7 @@ huestream->UnlockMixer();
 
 Next to example effects like an explosion there are more generalized base classes available to build custom effects on top of.
 One example is a lightSourceEffect (where also the explosionEffect is based on) which provides options to specify custom
-curves for the color, position, radius, transparancy and speed of a lightsource over time. Another example is an areaEffect
+curves for the color, position, radius, transparency and speed of a lightsource over time. Another example is an areaEffect
 which plays a certain color/brightness animation on all lights in a certain area. More info on effects: doc/EDK_concepts.pdf
 
 As mentioned before, if a rendering engine is already available then it may be a good option to write a plugin directly
@@ -266,23 +317,14 @@ huestream->ShutDown();
 ## Customization
 
 Many parts of the library can be customized. Some common examples are explained below.
-* The EDK by default uses a separate renderthread to render light frames and send them to the bridge. If you want to control this manually (eg within a game loop), you can set useRenderThread to false in the config before creating HueStream in step 1 of above example, i.e. `config->GetAppSettings()->SetUseRenderThread(false)`. Now the application has to regularily call `huestream->RenderSingleFrame()`. In this case the locking as used in step 3 of above example is not needed. We advise to render at ~60fps.
+* The EDK by default uses a separate renderthread to render light frames and send them to the bridge. If you want to control this manually (eg within a game loop), you can set useRenderThread to false in the config before creating HueStream in step 1 of above example, i.e. `config->GetAppSettings()->SetUseRenderThread(false)`. Now the application has to regularly call `huestream->RenderSingleFrame()`. In this case the locking as used in step 3 of above example is not needed. We advise to render at ~60fps.
 * The EDK by default starts streaming immediately after connecting to a bridge. You can control that separately by setting `config->GetAppSettings()->SetAutoStartAtConnection(false)`. Then the application has to manually call `huestream->Start()` or `huestream->StartAsync()` to start streaming. And there is also the counterpart `huestream->Stop()` or `huestream->StopAsync()`.
 * etc
 
 
 ## Important security notice
 
-During first time connection to the bridge, if the user authorizes the application, the EDK will receive a username and clientkey. When releasing an application to the public, the developer is responsible to store this information safely.
-
-The default implementation will save it to an encrypted file. The developer is responsible for creating and storing the key. Key should be injected in `Config` object before creating the `HueStream` instance, although it is possible to change the key during the runtime. The key is stored in `AppConfig` object.
-
-```c++
-auto config = make_shared<Config>(_appName, _deviceName, PersistenceEncryptionKey("EncryptionKey"), _language, _region);
-auto huestream = make_shared<HueStream>(config);
-```
-
-Default `IBridgeStorageAccessor` implementation, `BridgeFileStorageAccessor`, will use the key to encrypt/decrypt bridge data. Should the empty key be provided, no encryption/decryption will be performed. Data is encrypted using AES256 algorithm.
+During first time connection to the bridge, if the user authorizes the application, the EDK will receive a username and clientkey. When releasing an application to the public, the developer is responsible to store this information safely. The default implementation in the EDK just saves it to a file. This is not acceptable for releasing a production application, unless it is on a platform where files are be stored in a sandbox inaccessible by other applications.
 
 Like most key classes in the EDK, the default implementation `BridgeFileStorageAccessor` can be replaced by a custom implementation without making changes to the library. To do this, inject your own implementation of `IBridgeStorageAccessor` before creating the huestream instance.
 
@@ -296,9 +338,17 @@ support::Factory<std::unique_ptr<huestream::BridgeStorageAccessor>(const std::st
 auto huestream = std::make_shared<HueStream>(config);
 ```
 
+The library supports file encryption. The developer is responsible for creating and storing the key. Key should be injected in `Config` object before creating the `HueStream` instance, although it is possible to change the key during the runtime. The key is stored in `AppConfig` object.
+
+```c++
+auto config = make_shared<Config>(_appName, _deviceName, PersistenceEncryptionKey("EncryptionKey"), _language, _region);
+auto huestream = make_shared<HueStream>(config);
+```
+
+Default `IBridgeStorageAccessor` implementation, `BridgeFileStorageAccessor`, will use the key to encrypt/decrypt bridge data. Should the empty key be provided, no encryption/decryption will be performed. Data is encrypted using AES256 algorithm.
+
 ## `tools`
 The EDK has a small simulator for the HUE streaming interface. It is based on nodejs.
-Note: this tool is temporarily removed and is expected to be added back later.
 
 ### on windows
 Make sure to install nodejs: `https://nodejs.org/en/download/`
@@ -334,7 +384,7 @@ Navigate to
 
 http://localhost
 
-The simulator allows you visualize incomming streaming messages on the location grid. In the client app specify ip address of the
+The simulator allows you visualize incoming streaming messages on the location grid. In the client app specify ip address of the
 machine running the simulator (or localhost if this is the same machine). Any username is accepted. To work with the simulator, the transport layer security (DTLS) should be disabled: in your app simply make sure you set StreamingMode to `STREAMING_MODE_UDP` in the Config instance:
 
 ```c++
@@ -342,6 +392,12 @@ auto config = make_shared<huestream::Config>("my-app", "pc");
 config->SetStreamingMode(STREAMING_MODE_UDP);
 auto huestream = make_shared<huestream::HueStream>(config);
 ```
+
+If you want to connect to an instance of the simulator running the clip api v2, you'll need to connect with https. In the client app you can for instance call ConnectBridgeManualIp with true for the useSSL parameter.
+support::NetworkConfiguration::set_use_http2 should also probably be called. The simulator doesn't support http2 with clip api v1 but it does with clip api v2.
+
+### configure the clip api version
+By default the server will run with the clip api v1. To switch to clip api v2, change the swversion in server/config/config.json to be at least 1941088000.
 
 ### configure the entertainment area used by the simulator
 By default there are 4 different areas available in the simulator defined in `tools/simulator/server/config/default_groups.json`
@@ -352,7 +408,7 @@ Simply removing this file will reset to the default groups.
 For C# and Java support SWIG is used to generate the bindings. This is experimental still. A Python example is also available but not actively supported. Other languages can be added by following the Java/C#/Python examples.
 By setting cmake option BUILD_WRAPPERS=ON and running the huestream_csharp or huestream_java target, the wrappers will be generated together with an example project.
 
-On **Android** we need to pass the application context to the EDK on intialisation:
+On **Android** we need to pass the application context to the EDK on initialization:
 ```
 InitSdk.setApplicationContext(getApplicationContext());
 ```
@@ -373,6 +429,10 @@ The following external libraries are used in certain build variants:
   * Version: 7.57.0
   * Package is automatically downloaded during compilation
 
+* HTTP2: nghttp2 - MIT style license
+  * Version: 1.43.0
+  * Package is automatically downloaded during compilation
+
 * DTLS: mbedTLS - Apache 2.0 license
   * Version: 2.4.0
   * Package is automatically downloaded during compilation
@@ -390,13 +450,18 @@ The following external libraries are used in certain build variants:
   * Package is part of this repository and can be found in `tools/cpplint`
 
 * Boost
-  * Version: 1.65.1
+  * Version: 1.75.0
   * Package is automatically downloaded during compilation
 
 * Mdns: mDNSResponder
   * Package is automatically downloaded during compilation
 
 ### Changelog
+2.0.0
+- Support for Hue API version 2 including gradient lights and event stream
+- Added basic Android and iOS example
+- Various fixes and improvements
+
 1.32.0
 - Support for vertical light location
 - Support for mdns bridge discovery
@@ -404,7 +469,7 @@ The following external libraries are used in certain build variants:
 
 1.29.0
 - Performance optimization for supporting large scripts
-- Ability to provide EventNotifier object to subscribe to bridge discovery event notifications 
+- Ability to provide EventNotifier object to subscribe to bridge discovery event notifications
 - Various fixes and improvements
 
 1.27.0

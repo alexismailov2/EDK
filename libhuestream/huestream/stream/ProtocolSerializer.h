@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_STREAM_PROTOCOLSERIALIZER_H_
 #define HUESTREAM_STREAM_PROTOCOLSERIALIZER_H_
 
-#include <huestream/common/data/Group.h>
+#include "huestream/common/data/Group.h"
 
 #include <memory>
 #include <vector>
@@ -21,6 +21,7 @@ namespace huestream {
     typedef struct {
         ColorSpace colorSpace;
         std::shared_ptr<Group> group;
+				bool useClipV2;
     } StreamOptions;
 
     class ProtocolSerializer {

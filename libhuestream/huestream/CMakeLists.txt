@@ -13,6 +13,7 @@ list(APPEND huestream_files
     common/data/Color.cpp
     common/data/CuboidArea.cpp
     common/data/Group.cpp
+    common/data/Zone.cpp
     common/data/HueStreamData.cpp
     common/data/Light.cpp
     common/data/Location.cpp
@@ -43,6 +44,7 @@ list(APPEND huestream_files
     connect/FeedbackMessage.cpp
     connect/FullConfigRetriever.cpp
     connect/MessageDispatcher.cpp
+    connect/BridgeConfigRetriever.cpp
     effect/Mixer.cpp
     effect/animation/ActionPlayer.cpp
     effect/animation/Player.cpp
@@ -105,6 +107,7 @@ list(APPEND huestream_files
     common/data/Light.h
     common/data/Location.h
     common/data/Scene.h
+    common/data/Zone.h
     common/http/BridgeHttpClient.h
     common/http/HttpClient.h
     common/http/HttpClientProvider.h
@@ -151,6 +154,7 @@ list(APPEND huestream_files
     connect/IMessageDispatcher.h
     connect/MessageDispatcher.h
     connect/OperationResult.h
+    connect/BridgeConfigRetriever.h
     effect/IMixer.h
     effect/Mixer.h
     effect/animation/ActionPlayer.h
@@ -209,7 +213,7 @@ list(APPEND huestream_files
 add_library(huestream ${LIB_BUILD_MODE} ${huestream_files})
 target_include_directories(huestream INTERFACE "..")
 
-set(LIBS bridge_discovery support support_mock json edtls_client mbedcl_wrapper mbedtls mbedcrypto mbedx509)
+set(LIBS bridge_discovery support support_mock json edtls_client mbedcl_wrapper mbedtls mbedcrypto mbedx509 nghttp2_static)
 
 if (WIN32)
     set(LIBS ${LIBS} Iphlpapi ws2_32)
@@ -219,12 +223,40 @@ if (ANDROID)
     set(LIBS ${LIBS} atomic)
 endif()
 
+#---------------------------------------------
+# Let's build a framework on iOS
+#---------------------------------------------
+if (IOS)
+    set_target_properties(huestream PROPERTIES
+        FRAMEWORK TRUE
+        #PUBLIC_HEADER "${huestream_public_headers}"
+        MACOSX_FRAMEWORK_IDENTIFIER com.lighting.huestream
+        MACOSX_PACKAGE_LOCATION Headers
+    )
+
+    foreach(elem IN ZIP_LISTS huestream_files)
+        string(REGEX MATCH "(.*\/)?(.*\\.h)" output "${elem_0}")
+        string(LENGTH "${CMAKE_MATCH_1}" var_len)
+        math(EXPR last_char_index "${var_len} - 1")
+        string(SUBSTRING "${CMAKE_MATCH_1}" 0 ${last_char_index} dir_path)
+        if(${elem_0} STREQUAL "${output}")
+           SET_PROPERTY(SOURCE ${elem_0} PROPERTY MACOSX_PACKAGE_LOCATION Headers/huestream/${dir_path})
+        endif()
+    endforeach()
+
+    add_custom_command(TARGET huestream POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_BINARY_DIR}/external_install/include ${PROJECT_BINARY_DIR}/bin/huestream.framework/Headers)
+    add_custom_command(TARGET huestream POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../support/include ${PROJECT_BINARY_DIR}/bin/huestream.framework/Headers)
+    add_custom_command(TARGET huestream POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../bridgediscovery/include ${PROJECT_BINARY_DIR}/bin/huestream.framework/Headers)
+
+endif()
+
 add_library_dependencies(huestream ${LIBS})
 
 install(TARGETS huestream
         RUNTIME DESTINATION ${INSTALL_DIR}
         LIBRARY DESTINATION ${INSTALL_DIR}
-        ARCHIVE DESTINATION ${INSTALL_DIR})
+        ARCHIVE DESTINATION ${INSTALL_DIR}
+        FRAMEWORK DESTINATION ${INSTALL_DIR})
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/libhuestream/huestream DESTINATION ${INSTALL_DIR}/include
         FILES_MATCHING PATTERN "*.h")

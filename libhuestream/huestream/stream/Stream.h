@@ -6,18 +6,19 @@
 #ifndef HUESTREAM_STREAM_STREAM_H_
 #define HUESTREAM_STREAM_STREAM_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/common/time/ITimeManager.h>
-#include <huestream/config/AppSettings.h>
-#include <huestream/stream/ProtocolSerializer.h>
-#include <huestream/stream/IStream.h>
-#include <huestream/stream/IStreamStarter.h>
-#include <huestream/stream/IStreamFactory.h>
-#include <huestream/stream/StreamSettings.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/common/time/ITimeManager.h"
+#include "huestream/config/AppSettings.h"
+#include "huestream/stream/ProtocolSerializer.h"
+#include "huestream/stream/IStream.h"
+#include "huestream/stream/IStreamStarter.h"
+#include "huestream/stream/IStreamFactory.h"
+#include "huestream/stream/StreamSettings.h"
 
 #include <thread>
 #include <memory>
 #include <atomic>
+#include <mutex>
 
 namespace huestream {
 
@@ -64,6 +65,7 @@ namespace huestream {
         std::shared_ptr<ITimeManager> _timeManager;
         std::shared_ptr<StreamOptions> _options;
         ConnectorPtr _connector;
+        std::mutex _lock;
 
         std::atomic<int32_t> _streamCounter;
         bool IsSameBridgeAndGroup(BridgePtr bridge) const;

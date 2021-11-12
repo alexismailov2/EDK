@@ -136,20 +136,22 @@ public:
     void expect_on_storage_accessor_save(int numberOfBridges, std::string activeBridgeId);
 
     void expect_on_small_config_retriever_execute() const {
-        EXPECT_CALL(*_smallConfigRetriever, Execute(_, _))
+        EXPECT_CALL(*_smallConfigRetriever, Execute(_, _, _))
                 .Times(1)
                 .WillOnce(DoAll(
                         SaveArg<0>(&_smallConfigRetriever->Bridge),
                         SaveArg<1>(&_smallConfigRetriever->RetrieveCallback),
+												SaveArg<2>(&_smallConfigRetriever->Feedback),
                         Return(true)));
     }
 
     void expect_on_full_config_retriever_execute() const {
-        EXPECT_CALL(*_fullConfigRetriever, Execute(_, _))
+        EXPECT_CALL(*_fullConfigRetriever, Execute(_, _, _))
                 .Times(1)
                 .WillOnce(DoAll(
                         SaveArg<0>(&_fullConfigRetriever->Bridge),
                         SaveArg<1>(&_fullConfigRetriever->RetrieveCallback),
+												SaveArg<2>(&_smallConfigRetriever->Feedback),
                         Return(true)));
     }
 
@@ -161,7 +163,8 @@ public:
 
         _fullConfigRetriever->Bridge->SetIsValidIp(true);
         _fullConfigRetriever->Bridge->SetModelId("BSB002");
-        _fullConfigRetriever->Bridge->SetApiversion("1.22.0");
+        _fullConfigRetriever->Bridge->SetApiversion("1.24.0");
+        _fullConfigRetriever->Bridge->SetSwversion("1940094000");
         auto groups = std::make_shared<GroupList>();
 
         if (numGroups >= 1) {

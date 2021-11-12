@@ -46,6 +46,7 @@ public:
         bridge->SetUser("HJD77jsjs-7883kkKS@");
         bridge->SetModelId("BSB002");
         bridge->SetApiversion("1.17.0");
+				bridge->SetSwversion("1940094000");
         bridge->SetClientKey("DD129216F1A50E5D1C0CB356325745F2");
         {
             auto group1 = std::make_shared<Group>();

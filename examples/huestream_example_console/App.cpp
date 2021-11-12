@@ -5,6 +5,7 @@
 
 #include <huestream_example_console/Terminal.h>
 #include <huestream_example_console/App.h>
+#include <support/network/NetworkConfiguration.h>
 
 #include <string>
 #include <memory>
@@ -198,6 +199,7 @@ void App::InitializeHueStream() {
     auto config = make_shared<huestream::Config>(_appName, _deviceName, huestream::PersistenceEncryptionKey(PERSISTENCE_ENCRYPTION_KEY));
     cout << "Initializing with streaming mode ";
     config->SetStreamingMode(_command.streamingMode);
+	support::NetworkConfiguration::set_use_http2(_command.streamingMode != huestream::STREAMING_MODE_UDP);
     switch (_command.streamingMode) {
         case huestream::STREAMING_MODE_DTLS:
             cout << STREAMING_MODE_DTLS_STRING << endl;

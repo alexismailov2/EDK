@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_COMMON_HTTP_HTTPCLIENT_H_
 #define HUESTREAM_COMMON_HTTP_HTTPCLIENT_H_
 
-#include <huestream/common/http/IHttpClient.h>
+#include "huestream/common/http/IHttpClient.h"
 
 #include <memory>
 #include <string>
@@ -17,7 +17,8 @@ namespace huestream {
     public:
         ~HttpClient() override;
         void Execute(HttpRequestPtr request) override;
-        void ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback = {}) override;
+        int32_t ExecuteAsync(HttpRequestPtr request, HttpRequestCallback callback = {}) override;
+				void CancelAsyncRequest(int32_t requestId) override;
         shared_ptr<HttpRequest> CreateHttpRequest(const std::string& url,
             int connect_timeout = support::HTTP_CONNECT_TIMEOUT,
             int receive_timeout = support::HTTP_RECEIVE_TIMEOUT,
@@ -29,7 +30,7 @@ namespace huestream {
         struct Data {
             std::mutex _active_requests_mutex;
             bool _is_shutdown = false;
-            std::vector<HttpRequest*> _active_requests;
+            std::vector<std::tuple<int32_t, HttpRequest*>> _active_requests;
         };
         std::shared_ptr<Data> _data = std::make_shared<Data>();
     };

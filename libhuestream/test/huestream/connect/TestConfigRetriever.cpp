@@ -173,7 +173,7 @@ namespace huestream {
     class TestFullConfigRetriever : public TestConfigRetriever {
     public:
         TestFullConfigRetriever() {
-            _configUrl = "http://192.168.1.15/api/8932746jhb23476/";
+            _configUrl = "https://192.168.1.15/api/8932746jhb23476/";
             _configRetriever = std::make_shared<ConfigRetriever>(_mockHttpClientPtr);
         }
     };
@@ -228,10 +228,10 @@ namespace huestream {
 
         std::string fullConfigResponse;
         if (groups == 0) {
-            fullConfigResponse = "{\"capabilities\":" + capabilitiesNotActiveStreaming + ",\"config\":" + config + 
+            fullConfigResponse = "{\"capabilities\":" + capabilitiesNotActiveStreaming + ",\"config\":" + config +
                 ",\"groups\":{},\"lights\":{},\"scenes\":{}}";
         } else if (groups == 1) {
-            fullConfigResponse = "{\"capabilities\":" + capabilitiesNotActiveStreaming + ",\"config\":" + config + 
+            fullConfigResponse = "{\"capabilities\":" + capabilitiesNotActiveStreaming + ",\"config\":" + config +
                 ",\"groups\":{" + eGroupTV + "," + lightGroup + "},\"lights\":" + lights + ",\"scenes\":" + scenes + "}";
         } else if (groups == 2) {
             fullConfigResponse = "{\"capabilities\":" + capabilitiesActiveStreaming + ",\"config\":" + config +
@@ -258,7 +258,7 @@ namespace huestream {
             "\"whitelist\":{}}";
 
         auto fullConfigResponse = "{\"config\":" + config + ",\"groups\":{},\"lights\":{},\"scenes\":{}}";
-        
+
         support::HttpResponse response;
         support::HttpRequestError error;
         error.set_code(support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS);
@@ -360,22 +360,22 @@ namespace huestream {
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessNoGroups) {
         groups = 0;
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_succesful(result, bridge);
 
             EXPECT_THAT(bridge->GetGroups()->size(), Eq(0));
             EXPECT_EQ(bridge->IsBusy(), false);
-        });
+				}, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessOneGroup) {
         groups = 1;
         _bridge->SetIsValidIp(false);
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_succesful(result, bridge);
@@ -385,13 +385,13 @@ namespace huestream {
             auto group = bridge->GetGroups()->at(0);
             expect_group1_parsed_correctly(group);
             EXPECT_EQ(bridge->IsBusy(), false);
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessTwoGroups) {
         groups = 2;
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseSuccess)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_succesful(result, bridge);
@@ -404,24 +404,24 @@ namespace huestream {
             auto group4 = bridge->GetGroups()->at(1);
             expect_group4_parsed_correctly(group4);
             EXPECT_EQ(bridge->IsBusy(), true);
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveSuccessOldBridge) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseSuccessOldBridge)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseSuccessOldBridge)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             expect_retrieve_oldversion_succesful(result, bridge);
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveFailButtonNotPressed) {
         _bridge->GetGroup()->SetActive(true);
         _bridge->GetGroup()->SetOwner(_bridge->GetUser());
 
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseNotAuthorized)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseNotAuthorized)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
@@ -431,27 +431,27 @@ namespace huestream {
             EXPECT_THAT(bridge->IsAuthorized(), Eq(false));
             EXPECT_THAT(bridge->GetGroup()->Active(), Eq(false));
             EXPECT_THAT(bridge->GetGroup()->GetOwner(), StrNe(bridge->GetUser()));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveFailUnknownError) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseUnknownError)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseUnknownError)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
 
             EXPECT_THAT(bridge->IsValidIp(), Eq(false));
             EXPECT_THAT(bridge->IsAuthorized(), Eq(true));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveFailNoResponse) {
         _bridge->GetGroup()->SetActive(true);
         _bridge->GetGroup()->SetOwner(_bridge->GetUser());
 
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseTimeout)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseTimeout)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
@@ -460,7 +460,7 @@ namespace huestream {
             EXPECT_THAT(bridge->IsAuthorized(), Eq(true));
             EXPECT_THAT(bridge->GetGroup()->Active(), Eq(false));
             EXPECT_THAT(bridge->GetGroup()->GetOwner(), StrNe(bridge->GetUser()));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     INSTANTIATE_TEST_CASE_P(RetrieveFailMissingResource,
@@ -468,36 +468,36 @@ namespace huestream {
         ::testing::Values(SetHttpFullConfigResponseNoConfigResource, SetHttpFullConfigResponseNoGroupsResource, SetHttpFullConfigResponseNoLightsResource));
 
     TEST_P(TestFullConfigRetriever, RetrieveFailMissingResource) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(GetParam())));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(GetParam())), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
 
             EXPECT_THAT(bridge->IsValidIp(), Eq(false));
             EXPECT_THAT(bridge->IsAuthorized(), Eq(true));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestFullConfigRetriever, RetrieveCorruptedGroupHandledGracefully) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseGroupCorrupted)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseGroupCorrupted)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
 
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_P(TestFullConfigRetriever, RetrieveSuccessMissingCapabilitiesResource) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpFullConfigResponseNoCapabilitiesResource)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpFullConfigResponseNoCapabilitiesResource)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_SUCCESS));
 
             EXPECT_THAT(bridge->IsValidIp(), Eq(true));
             EXPECT_THAT(bridge->IsAuthorized(), Eq(true));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     static void SetHttpSmallConfigResponseSuccess(support::HttpRequestCallback callback) {
@@ -525,27 +525,27 @@ namespace huestream {
     class TestSmallConfigRetriever : public TestConfigRetriever {
     public:
         TestSmallConfigRetriever() {
-            _configUrl = "http://192.168.1.15/api/config/";
+            _configUrl = "https://192.168.1.15/api/config/";
             _configRetriever = std::make_shared<ConfigRetriever>(_mockHttpClientPtr, true, ConfigType::Small);
         }
     };
 
     TEST_F(TestSmallConfigRetriever, RetrieveSmallConfigSuccess) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpSmallConfigResponseSuccess)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpSmallConfigResponseSuccess)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_SUCCESS));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 
     TEST_F(TestSmallConfigRetriever, RetrieveSmallConfigFailure) {
-        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _)).WillOnce(
-                WithArg<4>(Invoke(SetHttpSmallConfigResponseFailure)));
+        EXPECT_CALL(*_mockHttpClientPtr, ExecuteHttpRequest(_, HTTP_REQUEST_GET, _configUrl, _, _, false)).WillOnce(
+                DoAll(WithArg<4>(Invoke(SetHttpSmallConfigResponseFailure)), Return(0)));
 
         _configRetriever->Execute(_bridge, [this](OperationResult result, BridgePtr bridge) {
             ASSERT_THAT(result, Eq(OPERATION_FAILED));
-        });
+        }, [this](const huestream::FeedbackMessage& msg) {});
     }
 }
 

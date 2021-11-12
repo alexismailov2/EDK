@@ -15,10 +15,21 @@
 #include <string>
 #include <memory>
 
+#ifdef _WINDOWS
+#include <windows.h>
+#include <codecvt>
+#endif
+
 namespace huestream {
 
 static void DefaultPrintfLogger(const char *s) {
     printf("%s", s);
+
+#ifdef _WINDOWS
+		if (IsDebuggerPresent()) {
+			OutputDebugStringW(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(s).c_str());
+		}
+#endif
 }
 
 void DtlsConnector::handshakeFailed() {
@@ -42,7 +53,7 @@ std::vector<unsigned char> HexToBytes(const std::string &hex) {
 
 bool DtlsConnector::Connect(BridgePtr bridge, unsigned short port) {
     auto strPort = std::to_string(port);
-    auto pskInfo = PSKInfo(bridge->GetUser().c_str(), HexToBytes(bridge->GetClientKey()));
+    auto pskInfo = PSKInfo(bridge->IsSupportingClipV2() ? bridge->GetAppId().c_str() : bridge->GetUser().c_str(), HexToBytes(bridge->GetClientKey()));
     return client_->connect(bridge->GetIpAddress().c_str(), strPort.c_str(), pskInfo);
 }
 

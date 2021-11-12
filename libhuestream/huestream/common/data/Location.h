@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_COMMON_DATA_LOCATION_H_
 #define HUESTREAM_COMMON_DATA_LOCATION_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/common/serialize/Serializable.h>
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/common/serialize/Serializable.h"
 
 #include <string>
 

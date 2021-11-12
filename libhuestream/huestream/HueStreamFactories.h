@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_HUESTREAMFACTORIES_H_
 #define HUESTREAM_HUESTREAMFACTORIES_H_
 
-#include <edtls/wrapper/mbedtls/EntropyProviderBase.h>
+#include "edtls/wrapper/mbedtls/EntropyProviderBase.h"
 
 #include <memory>
 #include <string>

@@ -52,9 +52,6 @@ namespace huestream {
             bridge->SetIsAuthorized(true);
             bridge->SetId("SOMEID");
             bridge->SetModelId("BSB002");
-            if (GetParam()) {
-                bridge->EnableSsl();
-            }
 
             bridge->SetClientKey("DD129216F1A50E5D1C0CB356325745F2");
             bridge->SetIsBusy(false);
@@ -62,7 +59,7 @@ namespace huestream {
         }
 
         std::string GetProtocol() {
-            return GetParam() ? "https" : "http";
+            return "https";
         }
     };
 
@@ -137,7 +134,7 @@ namespace huestream {
     TEST_P(TestStreamStarter, StartSuccess) {
         std::string body = "{\"stream\":{\"active\":true}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/2";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
                 Return(GetStreamActiveResponseSuccess()));
         auto success = _streamStarter->Start(false);
         ASSERT_TRUE(success);
@@ -149,7 +146,7 @@ namespace huestream {
     TEST_P(TestStreamStarter, StartUnforcedFail) {
         std::string body = "{\"stream\":{\"active\":true}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/2";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
                 Return(GetStreamActiveResponseErrorCantActivate()));
         auto success = _streamStarter->Start(false);
         ASSERT_FALSE(success);
@@ -163,11 +160,11 @@ namespace huestream {
 
         {
             InSequence dummy;
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart)).Times(1).WillOnce(
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart, false)).Times(1).WillOnce(
                     Return(GetStreamActiveResponseErrorCantActivate()));
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStop)).Times(1).WillOnce(Return(
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStop, false)).Times(1).WillOnce(Return(
                     std::make_shared<HttpRequestInfo>()));
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart)).Times(1).WillOnce(
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart, false)).Times(1).WillOnce(
                     Return(GetStreamActiveResponseSuccess()));
         }
 
@@ -180,7 +177,7 @@ namespace huestream {
     TEST_P(TestStreamStarter, StartFailNoResponse) {
         std::string body = "{\"stream\":{\"active\":true}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/2";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
             Return(GetStreamActiveResponseErrorNoResponse()));
         auto success = _streamStarter->Start(true);
         ASSERT_FALSE(success);
@@ -190,7 +187,7 @@ namespace huestream {
     TEST_P(TestStreamStarter, StartFailNotAuthorized) {
         std::string body = "{\"stream\":{\"active\":true}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/2";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
             Return(GetStreamActiveResponseErrorNotAuthorized()));
         auto success = _streamStarter->Start(false);
         ASSERT_FALSE(success);
@@ -200,7 +197,7 @@ namespace huestream {
     TEST_P(TestStreamStarter, StartFailInvalidGroup) {
         std::string body = "{\"stream\":{\"active\":true}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/2";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
             Return(GetStreamActiveResponseErrorInvalidGroup()));
         auto success = _streamStarter->Start(true);
         ASSERT_FALSE(success);
@@ -212,7 +209,7 @@ namespace huestream {
         _bridge->GetGroup()->SetOwner(_bridge->GetUser());
         std::string body = "{\"stream\":{\"active\":false}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/2";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
             Return(GetStreamDeactivateResponseSuccess()));
         _streamStarter->Stop();
         ASSERT_FALSE(_bridge->GetGroup()->Active());
@@ -224,7 +221,7 @@ namespace huestream {
         _bridge->GetGroupById("1")->SetOwner("someone");
         std::string body = "{\"stream\":{\"active\":false}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/1";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
             Return(GetStreamDeactivateResponseSuccess()));
         ASSERT_TRUE(_streamStarter->DeactivateGroup("1"));
         ASSERT_FALSE(_bridge->GetGroupById("1")->Active());
@@ -234,7 +231,7 @@ namespace huestream {
     TEST_P(TestStreamStarter, DeactivateWrongGroup) {
         std::string body = "{\"stream\":{\"active\":false}}";
         std::string url = GetProtocol() + "://192.168.1.15/api/8932746jhb23476/groups/3";
-        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body)).Times(1).WillOnce(
+        EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, body, false)).Times(1).WillOnce(
             Return(GetStreamDeactivateResponseErrorInvalidGroup()));
         ASSERT_FALSE(_streamStarter->DeactivateGroup("3"));
     }
@@ -250,12 +247,12 @@ namespace huestream {
 
         {
             InSequence dummy;
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart)).Times(1).WillOnce(
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart, false)).Times(1).WillOnce(
                 Return(GetStreamActiveResponseErrorCantActivate()));
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, urlOther, bodyStop)).Times(1).WillOnce(
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, urlOther, bodyStop, false)).Times(1).WillOnce(
                 Return(GetStreamDeactivateGroupOneResponseSuccess()));
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStop)).Times(1).WillOnce(Return(std::make_shared<HttpRequestInfo>()));
-            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart)).Times(1).WillOnce(
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStop, false)).Times(1).WillOnce(Return(std::make_shared<HttpRequestInfo>()));
+            EXPECT_CALL(*_mockHttpPtr, ExecuteHttpRequest(_, HTTP_REQUEST_PUT, url, bodyStart, false)).Times(1).WillOnce(
                 Return(GetStreamActiveResponseSuccess()));
         }
 

@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_STREAM_ISTREAM_H_
 #define HUESTREAM_STREAM_ISTREAM_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/stream/IConnector.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/stream/IConnector.h"
 
 #include <functional>
 #include <memory>

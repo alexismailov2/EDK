@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_BASE_COLORANIMATIONEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_BASE_COLORANIMATIONEFFECT_H_
 
-#include <huestream/effect/effects/base/AnimationEffect.h>
+#include "huestream/effect/effects/base/AnimationEffect.h"
 
 #include <string>
 

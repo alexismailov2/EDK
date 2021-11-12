@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_PLAYER_H_
 #define HUESTREAM_EFFECT_ANIMATION_PLAYER_H_
 
-#include <huestream/effect/animation/animations/base/Animation.h>
-#include <huestream/common/time/ITimeProvider.h>
-#include <huestream/effect/animation/IPlayer.h>
+#include "huestream/effect/animation/animations/base/Animation.h"
+#include "huestream/common/time/ITimeProvider.h"
+#include "huestream/effect/animation/IPlayer.h"
 
 #include <stdint.h>
 

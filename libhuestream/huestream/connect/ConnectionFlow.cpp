@@ -260,16 +260,35 @@ void ConnectionFlow::OnBridgeMonitorEvent(const FeedbackMessage & message) {
 }
 
 void ConnectionFlow::DoOnBridgeMonitorEvent(const FeedbackMessage & message) {
-    if (!Start(FeedbackMessage::REQUEST_TYPE_INTERNAL))
+    if (!Start(FeedbackMessage::REQUEST_TYPE_INTERNAL)) {
+        if (message.GetId() == FeedbackMessage::ID_BRIDGE_CONNECTED && message.GetBridge()->IsSupportingClipV2()) {
+            NewMessage(message);
+        }
         return;
+    }
 
     _persistentData->SetActiveBridge(message.GetBridge());
 
     if (message.GetId() == FeedbackMessage::ID_STREAMING_DISCONNECTED) {
         _stream->Stop(_persistentData->GetActiveBridge());
     }
-    
-    NewMessage(message);
+
+    if (message.GetId() == FeedbackMessage::ID_BRIDGE_CONNECTED && message.GetBridge()->IsSupportingClipV2()) {
+        // With clipv2 being reconnected means that we need to fully fetch everything again. The config retriever is going to take care of sending the BRIDGE_CONNECTED event.
+        StartRetrieveFullConfig();
+        return;
+    }
+    if (message.GetId() == FeedbackMessage::ID_INVALID_EVENTING_CONNECTION) {
+        if (_fullConfigRetriever != nullptr) {
+            _fullConfigRetriever->RefreshBridgeConnection();
+        }
+    }
+    if (message.GetId() == FeedbackMessage::ID_BRIDGE_REFRESHED) {
+        StartSaving();
+    }
+    else {
+        NewMessage(message);
+    }
 
     Finish();
 }
@@ -290,6 +309,9 @@ bool ConnectionFlow::Start(FeedbackMessage::RequestType request) {
 
 void ConnectionFlow::NewMessage(const FeedbackMessage& message) {
     _feedbackMessageCallback(message);
+        if (_fullConfigRetriever != nullptr) {
+        _fullConfigRetriever->OnBridgeMonitorEvent(message);
+    }
 }
 
 void ConnectionFlow::StartLoading(std::function<void()> callback) {
@@ -361,10 +383,8 @@ void ConnectionFlow::BridgeSearchCompleted(BridgeListPtr bridges) {
     if (ContainsValidBridge(bridges)) {
         NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_SEARCH_BRIDGES_FOUND, _persistentData->GetActiveBridge(), bridges));
 
-        EvaluateBridgesSecurity(*bridges);
-
         if (_request != FeedbackMessage::REQUEST_TYPE_CONNECT_NEW && _persistentData->RediscoverKnownBridge(bridges)) {
-            StartRetrieveFullConfig();
+            StartRetrieveSmallConfig(_persistentData->GetActiveBridge());
             return;
         }
         if (_request == FeedbackMessage::REQUEST_TYPE_CONNECT_BACKGROUND) {
@@ -461,7 +481,8 @@ void ConnectionFlow::AuthenticationCompleted(BridgePtr bridge) {
         NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, _persistentData->GetActiveBridge(), _persistentData->GetAllKnownBridges()));
         _scheduler->remove_all_tasks();
         _scheduler->stop();
-        StartRetrieveFullConfig();
+        // We still need to retrieve the small config at this point because we still don't know about clipv2 support and we need to know before retrieving the full config.
+        StartRetrieveSmallConfig(_persistentData->GetActiveBridge());
     } else {
         support::SchedulerTask scheduler_task;
         scheduler_task.set_id(authenticationProcessInfo.bridgeNumber);
@@ -490,13 +511,23 @@ void ConnectionFlow::StartRetrieveSmallConfig(BridgePtr bridge) {
 
     NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_START_RETRIEVING_SMALL, _persistentData->GetActiveBridge()));
 
+        std::weak_ptr<ConnectionFlow> lifetime = shared_from_this();
+
     _smallConfigRetriever = _factory->CreateConfigRetriever(_appSettings->UseForcedActivation(), ConfigType::Small);
-    _smallConfigRetriever->Execute(bridge, [this, bridge](OperationResult result, BridgePtr configured_bridge) {
+    _smallConfigRetriever->Execute(bridge, [lifetime, this, bridge](OperationResult result, BridgePtr configured_bridge) {
+        std::shared_ptr<ConnectionFlow> ref = lifetime.lock();
+        if (ref == nullptr) {
+            return;
+        }
+
         bridge->SetId(configured_bridge->GetId());
         bridge->SetModelId(configured_bridge->GetModelId());
         bridge->SetApiversion(configured_bridge->GetApiversion());
+        bridge->SetSwversion(configured_bridge->GetSwversion());
         DISPATCH_P2(RetrieveSmallConfigCompleted, result, bridge);
-    });
+        }, [](const huestream::FeedbackMessage& msg)
+        {
+        });
 }
 
 void ConnectionFlow::RetrieveSmallConfigCompleted(OperationResult result, BridgePtr bridge) {
@@ -508,7 +539,6 @@ void ConnectionFlow::RetrieveSmallConfigCompleted(OperationResult result, Bridge
     } else {
         NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_RETRIEVING_SMALL, bridge));
 
-        EvaluateBridgesSecurity({bridge});
         _persistentData->SetActiveBridge(bridge);
 
         if (!bridge->IsValidModelId()) {
@@ -527,12 +557,38 @@ void ConnectionFlow::RetrieveSmallConfigCompleted(OperationResult result, Bridge
 void ConnectionFlow::StartRetrieveFullConfig() {
     _state = Retrieving;
 
-    NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_START_RETRIEVING, _persistentData->GetActiveBridge()));
+        BridgePtr bridge = _persistentData->GetActiveBridge();
 
-    _fullConfigRetriever = _factory->CreateConfigRetriever(_appSettings->UseForcedActivation(), ConfigType::Full);
-    _fullConfigRetriever->Execute(_persistentData->GetActiveBridge(), [this](OperationResult result, BridgePtr bridge) {
-        DISPATCH_P2(RetrieveFullConfigCompleted, result, bridge);
-    });
+        std::weak_ptr<ConnectionFlow> lifetime = shared_from_this();
+
+        if (_fullConfigRetriever == nullptr || (bridge->IsSupportingClipV2() && !_fullConfigRetriever->IsSupportingClipV2()) || (!bridge->IsSupportingClipV2() && _fullConfigRetriever->IsSupportingClipV2()))
+        {
+            // Only recreate a full config retriever if necessary
+            _fullConfigRetriever = _factory->CreateConfigRetriever(_appSettings->UseForcedActivation(), ConfigType::Full, bridge->IsSupportingClipV2());
+        }
+
+        if (_fullConfigRetriever->Execute(_persistentData->GetActiveBridge(), [lifetime, this](OperationResult result, BridgePtr bridge)
+        {
+            std::shared_ptr<ConnectionFlow> ref = lifetime.lock();
+            if (ref == nullptr)
+            {
+                return;
+            }
+
+            DISPATCH_P2(RetrieveFullConfigCompleted, result, bridge);
+        }, [this, lifetime](const huestream::FeedbackMessage& msg)
+        {
+            std::shared_ptr<ConnectionFlow> ref = lifetime.lock();
+            if (ref == nullptr)
+            {
+                return;
+            }
+
+            OnBridgeMonitorEvent(msg);
+        }))
+        {
+            NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_START_RETRIEVING, bridge));
+        }
 }
 
 void ConnectionFlow::RetrieveFullConfigCompleted(OperationResult result, BridgePtr bridge) {
@@ -666,33 +722,6 @@ void ConnectionFlow::SavingCompleted(OperationResult r) {
         Finish();
         return;
     }
-}
-
-bool ConnectionFlow::EvaluateBridgesSecurity(BridgeList bridges) {
-    bool changed = false;
-    for (auto&& bridge : bridges) {
-        if (bridge->GetIsUsingSsl()) {
-            // if ssl is already enabled, there's nothing to do
-            continue;
-        }
-
-        bool bridge_used_ssl = false;
-        for (auto&& existing_bridge : *_persistentData->GetBridges()) {
-            if (existing_bridge->GetId() == bridge->GetId() && existing_bridge->GetIsUsingSsl()) {
-                bridge_used_ssl = true;
-                break;
-            }
-        }
-
-        if (bridge_used_ssl || bridge->IsSupportingHttps()) {
-            bridge->EnableSsl();
-            if (!bridge_used_ssl) {
-                changed = true;
-            }
-        }
-    }
-
-    return changed;
 }
 
 void ConnectionFlow::ActivateStreaming() {

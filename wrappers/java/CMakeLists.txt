@@ -82,7 +82,13 @@ string(REPLACE "/" "\\" DOS_STYLE_SOURCE_DIR "${java_src_dir}/${java_pkg_dir}")
 # Build java lib
 #------------------------------------------
 if(ANDROID)
-    set(extra_javac_options "-target" "1.7" "-source" "1.7")	
+    set(extra_javac_options "-target" "1.7" "-source" "1.7")
+endif()
+
+if (ANDROID)
+ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/src ${java_src_dir}/
+    )
 endif()
 
 ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD
@@ -90,15 +96,43 @@ ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD
     COMMAND "${Java_JAR_EXECUTABLE}" -cfM ${java_bin_dir}/${swig_jar_name}.jar -C ${java_cls_dir} .
     )
 
+#--------------------------------------------------------------------------#
+# Copy artifacts to aar directory on Android and generate the aar archive. #
+#--------------------------------------------------------------------------#
+if (ANDROID)
+ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/android-edk-aar ${CMAKE_BINARY_DIR}/android-edk-aar/
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/android-edk-aar/hue-edk/src/main/jniLibs/${CMAKE_ANDROID_ARCH_ABI}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${java_src_dir}/ ${CMAKE_BINARY_DIR}/android-edk-aar/hue-edk/src/main/java/src/
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${swig_target_real_name}> ${CMAKE_BINARY_DIR}/android-edk-aar/hue-edk/src/main/jniLibs/${CMAKE_ANDROID_ARCH_ABI}/    
+    )
+    if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
+        if (NOT ${CMAKE_C_FLAGS_DEBUG} EQUAL "")
+            set(arr_configuration "Debug")
+            set(arr_output_file_name "hue-edk-debug.aar")
+        else()
+            set(arr_configuration "Release")
+            set(arr_output_file_name "hue-edk-release.aar")
+        endif()
+        ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD
+        COMMAND "cd" ${CMAKE_BINARY_DIR}/android-edk-aar
+        COMMAND "gradlew.bat" assemble${arr_configuration}
+        )
+        ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/android-edk-aar/hue-edk/build/outputs/aar/${arr_output_file_name} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/
+        )
+    endif()
+endif()
+
 #---------------------------------------------------#
 # Copy artifacts to IntegrationTests project setup--#
 #---------------------------------------------------#
 if(NOT ANDROID)
-	set(integrationtests_needed_artifacts_dir ${CMAKE_CURRENT_LIST_DIR}/integration_tests/lib)
-	set(native_lib_name "native")
+    set(integrationtests_needed_artifacts_dir ${CMAKE_CURRENT_LIST_DIR}/integration_tests/lib)
+    set(native_lib_name "native")
 else()
-	set(integrationtests_needed_artifacts_dir ${CMAKE_CURRENT_LIST_DIR}/android_integration_tests/app/lib)
-	set(native_lib_name "x86")
+    set(integrationtests_needed_artifacts_dir ${CMAKE_CURRENT_LIST_DIR}/android_integration_tests/app/lib)
+    set(native_lib_name "x86")
 endif()
 
 ADD_CUSTOM_COMMAND(TARGET ${swig_target} POST_BUILD

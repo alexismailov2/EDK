@@ -19,6 +19,7 @@ namespace huestream {
     PROP_IMPL(AppSettings, std::string, bridgeFileName, BridgeFileName);
     PROP_IMPL(AppSettings, int, monitorIntervalStreamingMs, MonitorIntervalStreamingMs);
     PROP_IMPL(AppSettings, int, monitorIntervalNotStreamingMs, MonitorIntervalNotStreamingMs);
+		PROP_IMPL(AppSettings, int, monitorIntervalConnectionMs, MonitorIntervalConnectionMs);
     PROP_IMPL(AppSettings, std::string, storageEncryptionKey, StorageEncryptionKey);
     PROP_IMPL_BOOL(AppSettings, bool, lightsRetainColor, LightsRetainColor);
 
@@ -33,6 +34,7 @@ namespace huestream {
         SetBridgeFileName(BRIDGE_STORAGE_FILENAME);
         SetMonitorIntervalStreamingMs(5000);
         SetMonitorIntervalNotStreamingMs(15000);
+				SetMonitorIntervalConnectionMs(15000);
         SetLightsRetainColor(false);
     }
 

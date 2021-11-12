@@ -107,7 +107,6 @@ HueStream::HueStream(ConfigPtr config,
                      StreamPtr stream,
                      ConnectPtr connect):
     _config(std::move(config)),
-    _connectionMonitor(std::move(connectionMonitor)),
     _knownBridges(std::make_shared<BridgeList>()),
     _groupController(std::move(groupController)),
     _activeBridge(std::make_shared<Bridge>(_config->GetBridgeSettings())),
@@ -119,6 +118,7 @@ HueStream::HueStream(ConfigPtr config,
     _connector(std::move(connector)),
     _stream(std::move(stream)),
     _connect(std::move(connect)),
+        _connectionMonitor(std::move(connectionMonitor)),
     _mixer(std::move(mixer)),
     _timeProvider(std::move(timeManager)) {
     FeedbackMessage::SetTranslator(_translator);
@@ -126,7 +126,9 @@ HueStream::HueStream(ConfigPtr config,
     Serializable::SetObjectBuilder(std::make_shared<ObjectBuilder>(_config->GetBridgeSettings()));
 
     _connectionMonitor->SetFeedbackMessageCallback([this](const FeedbackMessage &message) {
-        _connect->OnBridgeMonitorEvent(message);
+              if (_connect != nullptr) {
+            _connect->OnBridgeMonitorEvent(message);
+                }
     });
 
     _connect->SetFeedbackMessageCallback([this](const FeedbackMessage &message) {
@@ -138,7 +140,9 @@ HueStream::HueStream(ConfigPtr config,
     _stream->SetRenderCallback(_streamRenderCallback);
 }
 
-HueStream::~HueStream() {}
+HueStream::~HueStream() {
+      _connect = nullptr;
+}
 
 ConfigPtr HueStream::GetConfig() {
     return _config;
@@ -302,10 +306,10 @@ void HueStream::NewFeedbackMessage(const FeedbackMessage &message) {
             _connectionMonitor->Stop();
         // Poll regularly while streaming
         } else if (_activeBridge->IsStreaming()) {
-            _connectionMonitor->Start(_activeBridge, _config->GetAppSettings()->GetMonitorIntervalStreamingMs());
+            _connectionMonitor->Start(_activeBridge, _activeBridge->IsSupportingClipV2() ? _config->GetAppSettings()->GetMonitorIntervalConnectionMs() : _config->GetAppSettings()->GetMonitorIntervalStreamingMs());
         // Poll slowly when not streaming
         } else {
-            _connectionMonitor->Start(_activeBridge, _config->GetAppSettings()->GetMonitorIntervalNotStreamingMs());
+            _connectionMonitor->Start(_activeBridge, _activeBridge->IsSupportingClipV2() ? _config->GetAppSettings()->GetMonitorIntervalConnectionMs() : _config->GetAppSettings()->GetMonitorIntervalNotStreamingMs());
         }
     // Dont monitor when connection procedure is ongoing
     } else if (message.GetId() == FeedbackMessage::ID_USERPROCEDURE_STARTED) {
@@ -370,8 +374,10 @@ void HueStream::StopAsync() {
 void HueStream::ShutDown() {
     AbortConnecting();
     Stop();
-    _connectionMonitor->Stop();
+    // Stop dispatcher before connection monitor, otherwise it might be restarted by the
+    // dispatcher and then we're going to crash at destruction.
     _dispatcher->Stop();
+    _connectionMonitor->Stop();
 }
 
 void HueStream::LockMixer() {
@@ -386,6 +392,7 @@ void HueStream::Render() {
     _mixer->Lock();
     _mixer->Render();
 
+    // TODO Update physical light too, so the color matches the one from the channel.
     if (_lightStateChangedHandler != nullptr && _activeBridge->IsValidGroupSelected()) {
         _lightStateChangedHandler->OnLightStateUpdated(clone_list(_activeBridge->GetGroup()->GetLights()));
     }

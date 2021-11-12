@@ -6,8 +6,8 @@ All Rights Reserved.
 #ifndef HUESTREAM_CONNECT_IBRIDGESTREAMINGCHECKER_H_
 #define HUESTREAM_CONNECT_IBRIDGESTREAMINGCHECKER_H_
 
-#include <huestream/common/data/Bridge.h>
-#include <huestream/connect/FeedbackMessage.h>
+#include "huestream/common/data/Bridge.h"
+#include "huestream/connect/FeedbackMessage.h"
 #include <memory>
 
 namespace huestream {

@@ -102,7 +102,7 @@ std::unique_ptr<huestream::IConnectionMonitor> huesdk_lib_default_factory<huestr
     huestream::BridgeHttpClientPtr httpClient, huestream::AppSettingsPtr appSettings) {
     return support::make_unique<huestream::ConnectionMonitor>(
         support::make_unique<huestream::BridgeStreamingChecker>(
-            support::make_unique<huestream::FullConfigRetriever>(httpClient, appSettings->UseForcedActivation())));
+            support::make_unique<huestream::FullConfigRetriever>(httpClient, appSettings->UseForcedActivation()), httpClient));
 }
 
 template<>

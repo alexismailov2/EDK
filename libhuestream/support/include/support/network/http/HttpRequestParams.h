@@ -36,6 +36,8 @@ namespace support {
         bool                     verify_ssl;
         std::string              interface_name;
         HttpRequestProgressCallback progress_callback;
+        std::string              file_name;
+        bool                     generate_md5_digest;
     };
 
 }  // namespace support

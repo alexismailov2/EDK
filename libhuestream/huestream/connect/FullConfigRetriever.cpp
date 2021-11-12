@@ -23,23 +23,35 @@ namespace huestream {
     _configType(configType), _http(http), _useForcedActivation(useForcedActivation), _busy(false) {
     }
 
-    bool ConfigRetriever::Execute(BridgePtr bridge, RetrieveCallbackHandler cb) {
-        std::unique_lock<std::mutex> lk(_mutex);
-        if (_busy) {
-            return false;
-        }
-        _busy = true;
+        bool ConfigRetriever::Execute(BridgePtr bridge, RetrieveCallbackHandler cb, FeedbackHandler fh) {
+            std::unique_lock<std::mutex> lk(_mutex);
+            if (_busy)
+            {
+                return false;
+            }
+            _busy = true;
 
-        _bridge = bridge;
-        _cb = cb;
-        RetrieveConfig();
-        return true;
-    }
+            _bridge = bridge;
+            // With ClipV2 this config retriever only retrieve small config, see BridgeConfigRetriever for the full config
+            _configType = _bridge->IsSupportingClipV2() ? ConfigType::Small : _configType;
+            _cb = cb;
+            RetrieveConfig();
+            return true;
+        }
 
     void ConfigRetriever::RetrieveConfig() {
         const auto configUrl = _configType == ConfigType::Small ? _bridge->GetSmallConfigUrl() : _bridge->GetBaseUrl();
 
-        _http->ExecuteHttpRequest(_bridge, HTTP_REQUEST_GET, configUrl, "", [&](const support::HttpRequestError& error, const support::IHttpResponse& response) {
+        std::weak_ptr<ConfigRetriever> lifetime = shared_from_this();
+
+        _http->ExecuteHttpRequest(_bridge, HTTP_REQUEST_GET, configUrl, "", [lifetime, this](const support::HttpRequestError& error, const support::IHttpResponse& response) {
+            std::shared_ptr<ConfigRetriever> ref = lifetime.lock();
+            if (ref == nullptr) {
+                return;
+            }
+
+                        _bridge->SetLastHttpErrorCode(error.get_code());
+
             if (error.get_code() == support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS) {
                 _response = response.get_body();
                 ParseResponseAndExecuteCallback();
@@ -113,6 +125,15 @@ namespace huestream {
             }
             return false;
         }
+
+        // At this point we should be authorized and have a valid ip, so just make sure those flags are right.
+        if (_configType == ConfigType::Full)
+        {
+          _bridge->SetIsAuthorized(true);
+        }
+
+        _bridge->SetIsValidIp(true);
+
         return true;
     }
 
@@ -134,6 +155,10 @@ namespace huestream {
         std::string apiversion = "";
         Serializable::DeserializeValue(&config, "apiversion", &apiversion, "");
         _bridge->SetApiversion(apiversion);
+
+                std::string swversion = "";
+                Serializable::DeserializeValue(&config, "swversion", &swversion, "");
+                _bridge->SetSwversion(swversion);
 
         // ModelId is only introduced in api version 1.8.0, but older versions are always BSB001
         ApiVersion thisVersion(apiversion);
@@ -201,10 +226,11 @@ namespace huestream {
 
     void ConfigRetriever::ParseClass(const JSONNode &node, GroupPtr group) {
         if (SerializerHelper::IsAttributeSet(&node, "class")) {
-            if (node["class"].as_string() == "TV") {
-                group->SetClassType(GROUPCLASS_TV);
-            } else if (node["class"].as_string() == "Free") {
-                group->SetClassType(GROUPCLASS_FREE);
+                        if (node["class"].as_string() == "TV") {
+                                group->SetClassType(GROUPCLASS_TV);
+                        }
+                        else if (node["class"].as_string() == "Free") {
+                                group->SetClassType(GROUPCLASS_FREE);
             } else {
                 group->SetClassType(GROUPCLASS_OTHER);
             }
@@ -214,14 +240,50 @@ namespace huestream {
     void ConfigRetriever::ParseLightsAndLocations(const JSONNode &node, GroupPtr group) const {
         auto avgBri = 0.0;
         auto numReachableLights = 0;
+        LightListPtr physicalLightList = std::make_shared<LightList>();
+
         if (SerializerHelper::IsAttributeSet(&node, "locations")) {
             auto locations = node["locations"];
             for (auto i = locations.begin(); i != locations.end(); ++i) {
                 auto lightId = i->name();
                 auto coordinates = *i;
                 auto light = GetLightInfo(i->name());
-                group->AddLight(lightId, coordinates[0].as_float(), coordinates[1].as_float(),
-                    coordinates[2].as_float(), light.GetName(), light.GetModel(), light.Reachable());
+
+                if (light.GetModel() == "LCX001" || light.GetModel() == "LCX002" || light.GetModel() == "LCX003") {
+                    physicalLightList->push_back(std::shared_ptr<Light>(light.Clone()));
+                    //Add fixed lights for PXLS
+                    light.SetId("100");
+                    light.SetPosition({ -0.4, 0.8, -0.4 });
+                    group->AddLight(light);
+                    light.SetId("101");
+                    light.SetPosition({ -0.4, 0.8, 0.0 });
+                    group->AddLight(light);
+                    light.SetId("102");
+                    light.SetPosition({ -0.4, 0.8, 0.4 });
+                    group->AddLight(light);
+                    light.SetId("103");
+                    light.SetPosition({ 0.0, 0.8, 0.4 });
+                    group->AddLight(light);
+                    light.SetId("104");
+                    light.SetPosition({ 0.4, 0.8, 0.4 });
+                    group->AddLight(light);
+                    light.SetId("105");
+                    light.SetPosition({ 0.4, 0.8, 0.0 });
+                    group->AddLight(light);
+                    light.SetId("106");
+                    light.SetPosition({ 0.4, 0.8, -0.4 });
+                    group->AddLight(light);
+                }
+                else {
+                    auto location = Location(Clip(coordinates[0].as_float(), -1, 1),
+                    Clip(coordinates[1].as_float(), -1, 1),
+                    Clip(coordinates[2].as_float(), -1, 1));
+                    light.SetPosition(location);
+                    group->AddLight(light);
+
+                    physicalLightList->push_back(std::shared_ptr<Light>(light.Clone()));
+                }
+
                 if (light.Reachable()) {
                     avgBri += light.GetBrightness();
                     numReachableLights++;
@@ -232,6 +294,7 @@ namespace huestream {
             avgBri /= numReachableLights;
         }
         group->SetBrightnessState(avgBri / 254);
+        group->SetPhysicalLights(physicalLightList);
     }
 
     void ConfigRetriever::ParseStream(const JSONNode &node, GroupPtr group) {
@@ -308,6 +371,7 @@ namespace huestream {
         auto reachable = true;
         auto on = true;
         auto bri = 0.0;
+        double xy[2] = { 0.0, 0.0 };
 
         JSONNode lights = (_root)["lights"];
         if (SerializerHelper::IsAttributeSet(&lights, id)) {
@@ -320,14 +384,22 @@ namespace huestream {
                 Serializable::DeserializeValue(&state, "on", &on, true);
                 if (on) {
                     Serializable::DeserializeValue(&state, "bri", &bri, 1.0);
+
+                    if (SerializerHelper::IsAttributeSet(&state, "xy")) {
+                      JSONNode xyJSON = state["xy"];
+                      xy[0] = xyJSON[0].as_float();
+                      xy[1] = xyJSON[1].as_float();
+                    }
                 }
             }
         }
         LightInfo lightInfo;
+        lightInfo.SetId(id);
         lightInfo.SetName(name);
         lightInfo.SetModel(model);
         lightInfo.SetReachable(reachable);
         lightInfo.SetBrightness(bri);
+        lightInfo.SetColor({ xy, bri });
         return lightInfo;
     }
 
@@ -360,7 +432,8 @@ namespace huestream {
             JSONNode appDataNode = (node)["appdata"];
             Serializable::DeserializeValue(&appDataNode, "data", &appData, "");
         }
-        return std::make_shared<Scene>(node.name(), name, appData);
+
+        return std::make_shared<Scene>("", node.name(), name, appData);
     }
 
     void ConfigRetriever::ParseCapabilities() const {
@@ -395,6 +468,20 @@ namespace huestream {
 
         _cb(result, _bridge);
         _busy = false;
+    }
+
+    double ConfigRetriever::Clip(double value, double min, double max) const {
+        if (value < min)
+        {
+          return min;
+        }
+
+        if (value > max)
+        {
+          return max;
+        }
+
+        return value;
     }
 
 }  // namespace huestream

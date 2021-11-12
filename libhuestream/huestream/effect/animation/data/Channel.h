@@ -7,9 +7,9 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_DATA_CHANNEL_H_
 #define HUESTREAM_EFFECT_ANIMATION_DATA_CHANNEL_H_
 
-#include <huestream/common/serialize/Serializable.h>
-#include <huestream/common/data/Location.h>
-#include <huestream/effect/animation/animations/base/Animation.h>
+#include "huestream/common/serialize/Serializable.h"
+#include "huestream/common/data/Location.h"
+#include "huestream/effect/animation/animations/base/Animation.h"
 
 #include <stdarg.h>
 

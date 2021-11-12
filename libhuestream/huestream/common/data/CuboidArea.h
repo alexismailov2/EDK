@@ -7,9 +7,9 @@
 #ifndef HUESTREAM_COMMON_DATA_CUBOIDAREA_H_
 #define HUESTREAM_COMMON_DATA_CUBOIDAREA_H_
 
-#include <huestream/common/data/IArea.h>
-#include <huestream/common/data/Location.h>
-#include <huestream/common/serialize/SerializerHelper.h>
+#include "huestream/common/data/IArea.h"
+#include "huestream/common/data/Location.h"
+#include "huestream/common/serialize/SerializerHelper.h"
 
 #include <vector>
 #include <string>

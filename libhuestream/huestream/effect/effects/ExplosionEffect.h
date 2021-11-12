@@ -6,9 +6,9 @@
 #ifndef HUESTREAM_EFFECT_EFFECTS_EXPLOSIONEFFECT_H_
 #define HUESTREAM_EFFECT_EFFECTS_EXPLOSIONEFFECT_H_
 
-#include <huestream/effect/animation/animations/ConstantAnimation.h>
-#include <huestream/effect/effects/LightSourceEffect.h>
-#include <huestream/effect/effects/AreaEffect.h>
+#include "huestream/effect/animation/animations/ConstantAnimation.h"
+#include "huestream/effect/effects/LightSourceEffect.h"
+#include "huestream/effect/effects/AreaEffect.h"
 
 #include <string>
 

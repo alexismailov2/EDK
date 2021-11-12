@@ -7,8 +7,8 @@
 #ifndef HUESTREAM_COMMON_DATA_HUESTREAMDATA_H_
 #define HUESTREAM_COMMON_DATA_HUESTREAMDATA_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/common/data/Bridge.h>
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/common/data/Bridge.h"
 
 #include <map>
 #include <string>

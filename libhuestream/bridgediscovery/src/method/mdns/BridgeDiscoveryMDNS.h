@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include <boost/uuid/uuid.hpp>
+#include "boost/uuid/uuid.hpp"
 
 #include "bridgediscovery/BridgeDiscoveryClassType.h"
 #include "events/IBridgeDiscoveryEventNotifier.h"

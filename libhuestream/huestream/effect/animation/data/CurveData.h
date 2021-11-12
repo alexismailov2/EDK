@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_EFFECT_ANIMATION_DATA_CURVEDATA_H_
 #define HUESTREAM_EFFECT_ANIMATION_DATA_CURVEDATA_H_
 
-#include <huestream/effect/animation/data/Point.h>
-#include <huestream/effect/animation/data/CurveOptions.h>
+#include "huestream/effect/animation/data/Point.h"
+#include "huestream/effect/animation/data/CurveOptions.h"
 
 #include <vector>
 #include <memory>

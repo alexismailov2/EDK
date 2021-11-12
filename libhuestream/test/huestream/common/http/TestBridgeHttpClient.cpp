@@ -34,8 +34,8 @@ using testing::InvokeArgument;
 using testing::DoAll;
 using testing::AtLeast;
 
-static constexpr auto BRIDGE_NON_HTTPS_VERSION = "1.23.0";
 static constexpr auto BRIDGE_HTTPS_VERSION = "1.24.0";
+static constexpr auto BRIDGE_SW_VERSION = "1940094000";
 
 class TestBridgeHttpClient : public testing::Test {
 public:
@@ -52,12 +52,7 @@ public:
     BridgePtr create_empty_https_bridge() {
         auto bridge =  std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
         bridge->SetApiversion(BRIDGE_HTTPS_VERSION);
-        return bridge;
-    }
-
-    BridgePtr create_empty_non_https_bridge() {
-        auto bridge =  std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
-        bridge->SetApiversion(BRIDGE_NON_HTTPS_VERSION);
+				bridge->SetSwversion(BRIDGE_SW_VERSION);
         return bridge;
     }
 
@@ -91,13 +86,6 @@ TEST_F(TestBridgeHttpClient, ExecuteBridgeRequestWithNullBridge_ReturnsNull) {
 TEST_F(TestBridgeHttpClient, CreateEmptyHttpsBridge) {
     auto bridge = create_empty_https_bridge();
     EXPECT_TRUE(bridge->IsValidApiVersion());
-    EXPECT_TRUE(bridge->IsSupportingHttps());
-}
-
-TEST_F(TestBridgeHttpClient, CreateEmptyNonHttpsBridge) {
-    auto bridge = create_empty_non_https_bridge();
-    EXPECT_TRUE(bridge->IsValidApiVersion());
-    EXPECT_FALSE(bridge->IsSupportingHttps());
 }
 
 TEST_F(TestBridgeHttpClient, ExecuteBridgeRequestWithEmptyBridge) {
@@ -128,7 +116,6 @@ TEST_F(TestBridgeHttpClient, CreateBridgeRequestWithHttpsBridgeAndPinnedCertific
     const auto body = "dummy_body";
     const auto certificate = "dummy_certificate";
 
-    bridge->EnableSsl();
     bridge->SetCertificate(certificate);
 
     auto http_request = create_mock_request(url);
@@ -159,8 +146,6 @@ TEST_F(TestBridgeHttpClient, ExecuteBridgeRequestWithHttpsBridge_ResponseHasCert
 
     EXPECT_TRUE(bridge->GetCertificate().empty());
 
-    bridge->EnableSsl();
-
     {
         auto http_request = create_mock_request(url);
 
@@ -185,27 +170,4 @@ TEST_F(TestBridgeHttpClient, ExecuteBridgeRequestWithHttpsBridge_ResponseHasCert
 
         _httpClient->ExecuteHttpRequest(bridge, method, url, body);
     }
-}
-
-TEST_F(TestBridgeHttpClient, ExecuteBridgeRequestWithNonHttpsBridge_ResponseHasCertificateChain_BridgeStillHasNoCertificate) {
-    auto bridge = create_empty_non_https_bridge();
-    const auto method = HTTP_REQUEST_POST;
-    const auto url = "dummy_url";
-    const auto body = "dummy_body";
-    const auto bridge_certificate = "bridge_cert";
-    HttpResponse response(0, body);
-    response.set_certificate_chain({"root",
-                                    "intermediate",
-                                    bridge_certificate
-                                   });
-
-    EXPECT_TRUE(bridge->GetCertificate().empty());
-
-    auto http_request = create_mock_request(url);
-    EXPECT_CALL(*http_request, fake_response()).WillOnce(Return(response));
-
-    auto responseInfo = _httpClient->ExecuteHttpRequest(bridge, method, url, body);
-
-    EXPECT_TRUE(responseInfo->GetSuccess());
-    EXPECT_TRUE(bridge->GetCertificate().empty());
 }

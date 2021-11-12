@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <cassert>
+#include <codecvt>
 
 #include "support/crypto/Hash.h"
 #include "support/crypto/AES256.h"
@@ -28,7 +29,12 @@ namespace huestream {
         auto result = OPERATION_FAILED;
 
         std::fstream file;
+#ifdef WIN32
+        // We need to use the wstring version of this function otherwise if the file name contain non ascii char, it will fail on Windows
+        file.open(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(_fileName), std::fstream::in | std::fstream::binary);
+#else
         file.open(_fileName.c_str(), std::fstream::in | std::fstream::binary);
+#endif
         if (file.is_open()) {
             std::ostringstream contents;
             contents << file.rdbuf();
@@ -48,7 +54,12 @@ namespace huestream {
 
     void BridgeFileStorageAccessor::Save(HueStreamDataPtr bridges, BridgesSaveCallbackHandler cb) {
         std::ofstream file;
+#ifdef WIN32
+        // We need to use the wstring version of this function otherwise if the file name contain non ascii char, it will fail on Windows
+        file.open(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(_fileName), std::fstream::out | std::fstream::trunc | std::fstream::binary);
+#else
         file.open(_fileName.c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary);
+#endif
         if (file.is_open()) {
             auto data = bridges->SerializeText();
             auto encrypted_data = encrypt_data(data);

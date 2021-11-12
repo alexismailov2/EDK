@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 include(ExternalProjectUtils)
 
-set_external_library(mbedcrypto)
+set_external_library(mbedcrypto FALSE)
 
 if(NOT EXISTS ${LIBRARY_PATH})
     set_library_path(mbedcrypto MBEDCRYPTO_PATH "")
@@ -31,7 +31,7 @@ if(NOT EXISTS ${LIBRARY_PATH})
     )
 endif(NOT EXISTS ${LIBRARY_PATH})
 
-expose_external_library()
+expose_external_library(STATIC)
 expose_additional_external_library(mbedx509 mbedcrypto)
 expose_additional_external_library(mbedtls mbedx509)
 

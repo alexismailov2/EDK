@@ -6,10 +6,10 @@
 #ifndef HUESTREAM_COMMON_SERIALIZE_SERIALIZABLE_H_
 #define HUESTREAM_COMMON_SERIALIZE_SERIALIZABLE_H_
 
-#include <libjson/libjson.h>
-#include <huestream/common/serialize/ObjectBuilderBase.h>
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/effect/animation/data/TweenType.h>
+#include "libjson/libjson.h"
+#include "huestream/common/serialize/ObjectBuilderBase.h"
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/effect/animation/data/TweenType.h"
 
 #include <string>
 #include <vector>

@@ -10,9 +10,9 @@ All Rights Reserved.
 #include <utility>
 #include <vector>
 
-#include <boost/fusion/adapted/struct.hpp>
-#include <boost/fusion/include/algorithm.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
+#include "boost/fusion/adapted/struct.hpp"
+#include "boost/fusion/include/algorithm.hpp"
+#include "boost/fusion/include/adapt_struct.hpp"
 
 #include "support/threading/ThreadPoolExecutor.h"
 #include "support/threading/FutureExceptions.h"

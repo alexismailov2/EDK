@@ -8,9 +8,9 @@
 #include <tuple>
 #include <utility>
 
-#include <boost/fusion/container/vector.hpp>
-#include <boost/fusion/sequence.hpp>
-#include <boost/mpl/int.hpp>
+#include "boost/fusion/container/vector.hpp"
+#include "boost/fusion/sequence.hpp"
+#include "boost/mpl/int.hpp"
 
 #include "support/util/IndexSequence.h"
 

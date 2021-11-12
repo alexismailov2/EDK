@@ -7,9 +7,9 @@
 #ifndef HUESTREAM_CONFIG_CONFIG_H_
 #define HUESTREAM_CONFIG_CONFIG_H_
 
-#include <huestream/common/data/BridgeSettings.h>
-#include <huestream/stream/StreamSettings.h>
-#include <huestream/config/AppSettings.h>
+#include "huestream/common/data/BridgeSettings.h"
+#include "huestream/stream/StreamSettings.h"
+#include "huestream/config/AppSettings.h"
 
 #include <string>
 #include <memory>

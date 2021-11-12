@@ -8,7 +8,7 @@
 
 #include "support/util/Provider.h"
 #include "huestream/common/time/ITimeProvider.h"
-#include <huestream/common/time/TimeManager.h>
+#include "huestream/common/time/TimeManager.h"
 
 template <>
 struct default_object<huestream::TimeProviderPtr>

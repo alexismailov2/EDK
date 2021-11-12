@@ -10,7 +10,7 @@
 namespace support {
 
     /** default http connection timeout in seconds */
-    const unsigned int HTTP_CONNECT_TIMEOUT                                = 15;
+    const unsigned int HTTP_CONNECT_TIMEOUT                                = 10;
     /** default http request receive timeout in seconds */
     const unsigned int HTTP_RECEIVE_TIMEOUT                                = 30;
     /** default http request timeout in seconds (0 means indefinite) */

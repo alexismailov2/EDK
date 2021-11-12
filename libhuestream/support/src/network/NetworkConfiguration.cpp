@@ -63,6 +63,8 @@ namespace support {
 
     bool NetworkConfiguration::_reuse_connections = true;
 
+    bool NetworkConfiguration::_use_http2 = true;
+
     bool NetworkConfiguration::is_ssl_check_disabled() {
         return _disable_ssl_check;
     }
@@ -79,9 +81,17 @@ namespace support {
         _reuse_connections = reuse;
     }
 
+    bool NetworkConfiguration::use_http2() {
+        return _use_http2;
+    }
+
+    void NetworkConfiguration::set_use_http2(bool use) {
+        _use_http2 = use;
+    }
+
     std::vector<std::string> NetworkConfiguration::get_trusted_certificates(const std::string& url) {
         static std::regex url_regex("^https://([^/:]+)");
-        
+
         std::smatch m;
         if (std::regex_search(url, m, url_regex)) {
             std::string domain_name = m[1].str();

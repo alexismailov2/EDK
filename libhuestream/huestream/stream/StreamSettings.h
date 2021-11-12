@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_STREAM_STREAMSETTINGS_H_
 #define HUESTREAM_STREAM_STREAMSETTINGS_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
-#include <huestream/stream/ProtocolSerializer.h>
+#include "huestream/common/serialize/SerializerHelper.h"
+#include "huestream/stream/ProtocolSerializer.h"
 
 #include <memory>
 

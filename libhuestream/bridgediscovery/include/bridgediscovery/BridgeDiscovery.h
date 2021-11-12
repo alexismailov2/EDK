@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include <boost/optional.hpp>
+#include "boost/optional.hpp"
 
 #include "bridgediscovery/IBridgeDiscovery.h"
 #include "bridgediscovery/IBridgeDiscoveryCallback.h"

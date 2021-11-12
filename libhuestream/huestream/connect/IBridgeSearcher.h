@@ -6,7 +6,7 @@
 #ifndef HUESTREAM_CONNECT_IBRIDGESEARCHER_H_
 #define HUESTREAM_CONNECT_IBRIDGESEARCHER_H_
 
-#include <huestream/common/data/Bridge.h>
+#include "huestream/common/data/Bridge.h"
 
 #include <memory>
 

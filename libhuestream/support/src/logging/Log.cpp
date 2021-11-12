@@ -24,7 +24,7 @@ using std::unique_lock;
 
 namespace support {
     namespace log {
-        
+
         const std::string LOG_NULLPTR = "(nullptr)";
 
         Log::Log() : _name("HueSDK") {
@@ -55,20 +55,24 @@ namespace support {
             _loggers[LOGGER_TYPE_FILE] = unique_ptr<Logger>(new LOGGER_FILE(level, enabled_components, storage_location));
         }
 
+        void Log::set_log_callback(LogCallback callback) {
+            _log_callback = callback;
+        }
+
         Log& operator << (Log& log_instance, LogType type) {
             shared_ptr<LogEntry> entry = log_instance.get_thread_entry();
             entry->type = type;
-            
+
             return log;
         }
-        
+
         Log& operator << (Log& log_instance, LogComponentType component) {
             shared_ptr<LogEntry> entry = log_instance.get_thread_entry();
             entry->component = component;
-            
+
             return log;
         }
-        
+
         Log& operator << (Log &log_instance, const char* msg) {
             shared_ptr<LogEntry> entry = log_instance.get_thread_entry();
             if (msg != nullptr) {
@@ -76,40 +80,40 @@ namespace support {
             } else {
                 entry->msg += LOG_NULLPTR;
             }
-            
+
             return log;
         }
-        
+
         Log& operator << (Log &log_instance, const string& msg) {
             shared_ptr<LogEntry> entry = log_instance.get_thread_entry();
             entry->msg += msg;
-            
+
             return log;
         }
 
         Log& operator << (Log& log_instance, int64_t val) {
             shared_ptr<LogEntry> entry = log_instance.get_thread_entry();
             entry->msg += to_string(val);
-            
+
             return log;
         }
 
         Log& operator << (Log& log_instance, void* val) {
             shared_ptr<LogEntry> entry = log_instance.get_thread_entry();
-            
+
             if (val != nullptr) {
                 entry->msg += to_string(val);
             } else {
                 entry->msg += LOG_NULLPTR;
             }
-            
+
             return log;
         }
-        
+
         Log& operator << (Log& /*log*/, Log& (*fp)()) {
             return fp();
         }
-        
+
         Log& Log::endl() {
             shared_ptr<LogEntry> entry = get_thread_entry();
 
@@ -120,6 +124,10 @@ namespace support {
 
                 {
                     unique_lock<mutex> lock(_loggers_mutex);
+
+                    if (_log_callback) {
+                        _log_callback(entry->msg, level);
+                    }
 
                     for (auto &iter : _loggers) {
                         if (iter->is_enabled_for(level, component)) {
@@ -132,15 +140,15 @@ namespace support {
 
             return *this;
         }
-        
+
         /* private */
-        
+
         shared_ptr<LogEntry> Log::get_thread_entry() {
             unique_lock<mutex> lock(_thread_entries_mutex);
-            
+
             // Get current thread id
             thread::id id = std::this_thread::get_id();
-            
+
             map<thread::id, shared_ptr<LogEntry>>::iterator it = _thread_entries.find(id);
             // Check if an entry already exists for the thread id
             if (it == _thread_entries.end()) {
@@ -150,20 +158,20 @@ namespace support {
                 entry->type = info;
                 entry->msg  = "";
                 entry->component = unknown;
-                
+
                 // Set the entry in the map
                 _thread_entries[id] = entry;
             }
-        
+
             return _thread_entries[id];
         }
-        
+
         void Log::remove_thread_entry() {
             unique_lock<mutex> lock(_thread_entries_mutex);
-            
+
             // Get current thread id
             thread::id id = std::this_thread::get_id();
-            
+
             map<thread::id, shared_ptr<LogEntry>>::iterator it = _thread_entries.find(id);
             // Check if an entry exists for the thread id
             if (it != _thread_entries.end()) {
@@ -174,28 +182,28 @@ namespace support {
 
         LogLevel Log::get_level(LogType type) {
             LogLevel level = LEVEL_OFF;
-        
+
             switch (type) {
                 case error:
                     level = LEVEL_ERROR;
                     break;
-                    
+
                 case warn:
                     level = LEVEL_WARN;
                     break;
-                    
+
                 case info:
                     level = LEVEL_INFO;
                     break;
-                    
+
                 case debug:
                     level = LEVEL_DEBUG;
                     break;
             }
-            
+
             return level;
         }
-        
+
         LogComponent Log::get_component_from_type(LogComponentType type) {
             switch (type) {
                 case core:

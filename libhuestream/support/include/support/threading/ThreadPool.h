@@ -17,7 +17,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "support/util/VectorOperations.h"
 #include "support/util/Provider.h"
 #include "support/signals/SynchronousSignal.h"
 

@@ -53,13 +53,13 @@ void SequenceMenu::Run() {
                 _effect->SetMode(huestream::SequenceModeLeftRight);
                 break;
             case 'r':
-                _effect->AddColor(Color(1, 0, 0));
+                _effect->AddColor(Color(1.0, 0.0, 0.0));
                 break;
             case 'g':
-                _effect->AddColor(Color(0, 1, 0));
+                _effect->AddColor(Color(0.0, 1.0, 0.0));
                 break;
             case 'b':
-                _effect->AddColor(Color(0, 0, 1));
+                _effect->AddColor(Color(0.0, 0.0, 1.0));
                 break;
             case ' ':
                 _effect->Step();

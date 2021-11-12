@@ -28,8 +28,4 @@ include_directories(
 )
 target_link_libraries(huestream_example_console huestream)
 
-if (WIN32)
-	copy_libs_to_output(huestream_example_console huestream)
-endif()
-
 

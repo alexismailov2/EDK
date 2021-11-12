@@ -6,13 +6,14 @@
 #ifndef HUESTREAM_COMMON_HTTP_HTTPREQUESTINFO_H_
 #define HUESTREAM_COMMON_HTTP_HTTPREQUESTINFO_H_
 
-#include <huestream/common/serialize/SerializerHelper.h>
+#include "huestream/common/serialize/SerializerHelper.h"
 
 #include <string>
 #include <memory>
 #include <functional>
 #include <mutex>
 #include <condition_variable>
+#include <unordered_map>
 
 #include "support/network/http/HttpRequestBase.h"
 #include "huestream/common/data/Bridge.h"
@@ -22,6 +23,8 @@ namespace huestream {
 #define HTTP_REQUEST_PUT "PUT"
 #define HTTP_REQUEST_POST "POST"
 #define HTTP_REQUEST_GET "GET"
+#define HTTP_REQUEST_DELETE "DELETE"
+#define COMMA ,
 
 class HttpRequestInfo;
 typedef std::shared_ptr<HttpRequestInfo> HttpRequestPtr;
@@ -34,7 +37,7 @@ class HttpRequestInfo {
 
     HttpRequestInfo(std::string method, std::string url, std::string body = "");
 
-    virtual ~HttpRequestInfo() = default;
+    virtual ~HttpRequestInfo(){}// = default;
 
     virtual void FinishRequest();
 
@@ -61,6 +64,9 @@ class HttpRequestInfo {
  PROP_DEFINE_BOOL(HttpRequestInfo, bool, enableSslVerification, SslVerificationEnabled);
  PROP_DEFINE(HttpRequestInfo, std::string, expectedCommonName, ExpectedCommonName);
  PROP_DEFINE(HttpRequestInfo, std::vector<std::string>, trustedCertificates, TrustedCertificates);
+ PROP_DEFINE(HttpRequestInfo, std::unordered_map<std::string COMMA std::string>, header, Header);
+ PROP_DEFINE(HttpRequestInfo, std::string, fileName, FileName);
+ PROP_DEFINE_BOOL(HttpRequestInfo, bool, enableMd5DigestGeneration, Md5DigestGenerationEnabled);
 
  protected:
     std::mutex _mutex;

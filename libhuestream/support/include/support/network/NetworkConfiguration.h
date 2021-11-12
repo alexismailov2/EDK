@@ -28,6 +28,10 @@ namespace support {
 
         static void set_reuse_connections(bool reuse);
 
+        static bool use_http2();
+
+        static void set_use_http2(bool use);
+
         // returns a default list if the domain specified in the url is not "pinned"
         static std::vector<std::string> get_trusted_certificates(const std::string& url);
 
@@ -37,6 +41,7 @@ namespace support {
         static std::mutex _mutex;
         static bool _disable_ssl_check;
         static bool _reuse_connections;
+        static bool _use_http2;
     };
 
 }  // namespace support

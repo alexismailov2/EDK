@@ -13,7 +13,6 @@
 
 #include "support/chrono/Timer.h"
 #include "support/scheduler/SchedulerTask.h"
-#include "support/util/VectorOperations.h"
 
 using std::atomic;
 using std::condition_variable;

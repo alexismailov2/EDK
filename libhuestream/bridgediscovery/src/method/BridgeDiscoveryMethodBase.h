@@ -9,7 +9,7 @@
 #include <mutex>
 #include <vector>
 
-#include <boost/optional.hpp>
+#include "boost/optional.hpp"
 
 #include "bridgediscovery/BridgeDiscoveryResult.h"
 #include "events/BridgeDiscoveryEventNotifier.h"

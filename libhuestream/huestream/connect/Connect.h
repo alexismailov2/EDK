@@ -7,13 +7,13 @@
 #ifndef HUESTREAM_CONNECT_CONNECT_H_
 #define HUESTREAM_CONNECT_CONNECT_H_
 
-#include <huestream/connect/ConnectionFlow.h>
-#include <huestream/config/Config.h>
-#include <huestream/connect/IMessageDispatcher.h>
-#include <huestream/connect/IConnectionFlowFactory.h>
-#include <huestream/connect/ConnectionFlowFactory.h>
-#include <huestream/common/storage/IStorageAccessor.h>
-#include <huestream/connect/IFeedbackMessageHandler.h>
+#include "huestream/connect/ConnectionFlow.h"
+#include "huestream/config/Config.h"
+#include "huestream/connect/IMessageDispatcher.h"
+#include "huestream/connect/IConnectionFlowFactory.h"
+#include "huestream/connect/ConnectionFlowFactory.h"
+#include "huestream/common/storage/IStorageAccessor.h"
+#include "huestream/connect/IFeedbackMessageHandler.h"
 
 #include <memory>
 #include <string>

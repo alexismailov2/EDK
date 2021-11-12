@@ -6,8 +6,8 @@
 #ifndef HUESTREAM_EFFECT_IMIXER_H_
 #define HUESTREAM_EFFECT_IMIXER_H_
 
-#include <huestream/common/data/Group.h>
-#include <huestream/effect/effects/base/Effect.h>
+#include "huestream/common/data/Group.h"
+#include "huestream/effect/effects/base/Effect.h"
 
 #include <memory>
 #include <string>

@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 
 #include "BridgeDiscoveryEventNames.h"
 #include "BridgeDiscoveryEvents.h"

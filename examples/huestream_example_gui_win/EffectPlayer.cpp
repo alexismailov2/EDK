@@ -204,11 +204,11 @@ UINT EffectPlayer::SequenceRound(LPVOID pParam) {
 
     auto effect = std::make_shared<SequenceEffect>(name, 1);
     effect->SetMode(huestream::SequenceModeRound);
-    effect->AddColor(Color(1, 1, 0));
-    effect->AddColor(Color(0, 1, 1));
-    effect->AddColor(Color(1, 0, 1));
-    effect->AddColor(Color(1, 0, 0));
-    effect->AddColor(Color(0, 1, 0));
+    effect->AddColor(Color(1.0, 1.0, 0.0));
+    effect->AddColor(Color(0.0, 1.0, 1.0));
+    effect->AddColor(Color(1.0, 0.0, 1.0));
+    effect->AddColor(Color(1.0, 0.0, 0.0));
+    effect->AddColor(Color(0.0, 1.0, 0.0));
     effect->SetBri(10.0);
 
     hueStream->AddEffect(effect);
@@ -247,11 +247,11 @@ UINT EffectPlayer::SequenceLtoR(LPVOID pParam) {
 
     auto effect = std::make_shared<SequenceEffect>(name, 1);
     effect->SetMode(huestream::SequenceModeLeftRight);
-    effect->AddColor(Color(1, 1, 0));
-    effect->AddColor(Color(0, 1, 1));
-    effect->AddColor(Color(1, 0, 1));
-    effect->AddColor(Color(1, 0, 0));
-    effect->AddColor(Color(0, 1, 0));
+    effect->AddColor(Color(1.0, 1.0, 0.0));
+    effect->AddColor(Color(0.0, 1.0, 1.0));
+    effect->AddColor(Color(1.0, 0.0, 1.0));
+    effect->AddColor(Color(1.0, 0.0, 0.0));
+    effect->AddColor(Color(0.0, 1.0, 0.0));
     hueStream->AddEffect(effect);
     effect->Enable();
 
@@ -288,9 +288,9 @@ UINT EffectPlayer::SequenceFtoB(LPVOID pParam) {
 
     auto effect = std::make_shared<SequenceEffect>(name, 1);
     effect->SetMode(huestream::SequenceModeFrontBack);
-    effect->AddColor(Color(1, 0, 0));
-    effect->AddColor(Color(0, 1, 0));
-    effect->AddColor(Color(0, 0, 1));
+    effect->AddColor(Color(1.0, 0.0, 0.0));
+    effect->AddColor(Color(0.0, 1.0, 0.0));
+    effect->AddColor(Color(0.0, 0.0, 1.0));
     hueStream->AddEffect(effect);
     effect->Enable();
 
