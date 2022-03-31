@@ -1,12 +1,16 @@
 package com.philips.lighting.hue.sdk.wrapper.utilities;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.LinkProperties;
+import android.net.Network;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.io.FileDescriptor;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -15,9 +19,11 @@ import java.nio.ByteOrder;
 public class WifiUtil {
 
     WifiManager wifiManager;
+	ConnectivityManager connectivityManager;
 
     public WifiUtil(final Context context) {
         wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+		connectivityManager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
     @SuppressWarnings("unused")
@@ -94,6 +100,24 @@ public class WifiUtil {
             return ipAddressString;
         } else {
             return null;
+        }
+    }
+	
+	private void networkBindSocket(FileDescriptor fileDescriptor, String adapterName) {
+        Network[] networks = connectivityManager.getAllNetworks();
+        for (Network n : networks) {
+            try {
+                LinkProperties prop = connectivityManager.getLinkProperties(n);
+                if (prop.getInterfaceName().equals(adapterName)) {
+                    n.bindSocket(fileDescriptor);
+                }
+            } catch (java.io.IOException e) {
+                Log.e("WIFIIP", "networkBindSocket: error binding socket to network ", e);
+            } catch (java.lang.NullPointerException e) {
+                Log.e("WIFIIP", "networkBindSocket: error getting network properties ", e);
+            } catch (java.lang.NoSuchMethodError e) {
+                Log.e("WIFIIP", "networkBindSocket: Android API >=23 should be used ", e);
+            }
         }
     }
 }

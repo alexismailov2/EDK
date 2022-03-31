@@ -14,6 +14,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <map>
 
 namespace huestream {
 
@@ -39,6 +40,9 @@ namespace huestream {
         std::string model;
         bool isReachable;
     } GroupProxyNode;
+
+    typedef std::map<std::string, std::vector<std::string>> GroupChannelToPhysicalLightMap;
+    typedef std::shared_ptr<std::map<std::string, std::vector<std::string>>> GroupChannelToPhysicalLightMapPtr;
 
     /**
      defintion of a group of lights used as an entertainment setup to play light effects on
@@ -124,6 +128,11 @@ namespace huestream {
      */
     PROP_DEFINE(Group, double, brightnessState, BrightnessState);
 
+    /**
+     Get channels - physical lights association map for this group
+     */
+    PROP_DEFINE(Group, GroupChannelToPhysicalLightMapPtr, channelToPhysicalLightsMap, ChannelToPhysicalLightsMap);
+
     public:
         /**
          constructor
@@ -161,6 +170,8 @@ namespace huestream {
          get owner device name (if available, else empty string)
          */
         std::string GetOwnerDeviceName() const;
+
+        LightList GetChannelPhysicalLights(LightPtr channel);
 
         virtual void Serialize(JSONNode *node) const override;
 

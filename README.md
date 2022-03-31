@@ -313,6 +313,8 @@ PressAnyKeyToQuit();
 huestream->ShutDown();
 ```
 
+## Sleep/Resume handling
+The EDK does not handle operating system events such as sleep/hibernate/resume, it is up to the EDK user to do that. Therefore it is recommanded to explicitly stop streaming before any sleep/hibernate event. Note that in the case where the network connection is lost during such an event, the EDK should be able to automatically reconnect to the bridge when it recovers.
 
 ## Customization
 
@@ -457,6 +459,10 @@ The following external libraries are used in certain build variants:
   * Package is automatically downloaded during compilation
 
 ### Changelog
+2.0.1
+- Expose array of physical lights which are part of a channel
+- Minor fixes and improvements
+
 2.0.0
 - Support for Hue API version 2 including gradient lights and event stream
 - Added basic Android and iOS example

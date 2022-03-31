@@ -835,6 +835,7 @@ GroupPtr BridgeConfigRetriever::ParseEntertainmentConfig(const JSONNode &node)
     auto group = std::make_shared<Group>();
     LightListPtr physicalLightList = std::make_shared<LightList>();
     LightListPtr channelLightList = std::make_shared<LightList>();
+    GroupChannelToPhysicalLightMapPtr channelToPhysicalLightsMap = std::make_shared<GroupChannelToPhysicalLightMap>();
 
     // TODO Look for the zone associated with this entertainment config, then look for the corresponding grouped_light and use its on and brightness state.
     //group->SetOnState
@@ -849,10 +850,11 @@ GroupPtr BridgeConfigRetriever::ParseEntertainmentConfig(const JSONNode &node)
     ParseStreamActive(node, group);
     ParseStreamProxy(node, group);
     ParseLights(node, group, physicalLightList);
-    ParseChannels(node, channelLightList);
+    ParseChannels(node, channelLightList, channelToPhysicalLightsMap);
 
     group->SetPhysicalLights(physicalLightList);
     group->SetLights(channelLightList);
+    group->SetChannelToPhysicalLightsMap(channelToPhysicalLightsMap);
 
     return group;
 }
@@ -1061,16 +1063,16 @@ bool BridgeConfigRetriever::ParseLights(const JSONNode &node, GroupPtr group, Li
 
         LightPtr light = ParseLightInfo(lightNode);
 
-        // Also set the light position, note that this is not necessarily the same as the channel position.
+        // Also set the light position, note that this is not necessarily the same than the channel position.
         JSONNode position(JSON_NULL);
-    if (SerializerHelper::IsAttributeSet(&location, "positions"))
-    {
-            position = location["positions"].as_array()[0];
-    }
-    else if (SerializerHelper::IsAttributeSet(&location, "position"))
-    {
-            position = location["position"].as_node();
-    }
+        if (SerializerHelper::IsAttributeSet(&location, "positions"))
+        {
+                position = location["positions"].as_array()[0];
+        }
+        else if (SerializerHelper::IsAttributeSet(&location, "position"))
+        {
+                position = location["position"].as_node();
+        }
 
         if (position.type() != JSON_NULL)
         {
@@ -1206,7 +1208,7 @@ LightPtr BridgeConfigRetriever::ParseLightInfo(const JSONNode& node)
     return lightInfo;
 }
 
-bool BridgeConfigRetriever::ParseChannels(const JSONNode &node, LightListPtr lightList)
+bool BridgeConfigRetriever::ParseChannels(const JSONNode &node, LightListPtr lightList, GroupChannelToPhysicalLightMapPtr channelToPhysicalLightsMap)
 {
     if (!SerializerHelper::IsAttributeSet(&node, "channels"))
     {
@@ -1237,6 +1239,30 @@ bool BridgeConfigRetriever::ParseChannels(const JSONNode &node, LightListPtr lig
         lightChannel->SetPosition(Location(position["x"].as_float(), position["y"].as_float(), position["z"].as_float()));
 
         lightList->push_back(lightChannel);
+
+        // Generate channel - physical lights map
+        auto membersArr = channel["members"].as_array();
+
+        std::vector<std::string> physicalLightIdList;
+
+        for (json_index_t j = 0; j < membersArr.size(); ++j)
+        {
+            auto member = membersArr[j].as_node();
+            auto service = SerializerHelper::GetAttributeValue(&member, "service");
+            auto rid = SerializerHelper::GetAttributeValue(&service, "rid");
+
+            if (rid.type() == JSON_STRING)
+            {
+                std::string lightId = GetLightIdFromEntertainmentId(rid.as_string());
+
+                if (!lightId.empty())
+                {
+                    physicalLightIdList.push_back(lightId);
+                }
+            }
+        }
+
+        channelToPhysicalLightsMap->insert({ std::to_string(channelId), physicalLightIdList });
     }
 
     return true;
@@ -2111,11 +2137,13 @@ void BridgeConfigRetriever::UpdateEntertainmentConfiguration(JSONNode& ec)
     }
 
     LightListPtr newLightChannelList = std::make_shared<LightList>();
-    bool groupLightsChannelChanged = ParseChannels(ec, newLightChannelList);
+    GroupChannelToPhysicalLightMapPtr newChannelToPhysicalLightsMap = std::make_shared<GroupChannelToPhysicalLightMap>();
+    bool groupLightsChannelChanged = ParseChannels(ec, newLightChannelList, newChannelToPhysicalLightsMap);
 
     if (groupLightsChannelChanged)
     {
         group->SetLights(newLightChannelList);
+        group->SetChannelToPhysicalLightsMap(newChannelToPhysicalLightsMap);
     }
 
     LightListPtr newPhysicalLightList = std::make_shared<LightList>();
@@ -2124,6 +2152,7 @@ void BridgeConfigRetriever::UpdateEntertainmentConfiguration(JSONNode& ec)
     if (physicalLightsChanged)
     {
         group->SetPhysicalLights(newPhysicalLightList);
+        group->SetChannelToPhysicalLightsMap(newChannelToPhysicalLightsMap);
     }
 
     if (_sendFeedback && (groupLightsChannelChanged || physicalLightsChanged))

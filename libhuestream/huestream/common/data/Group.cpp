@@ -14,11 +14,11 @@
 namespace huestream {
 
     const std::map<GroupClass, std::string> Group::_classSerializeMap = {
-                { GROUPCLASS_TV,      "tv" },
-                { GROUPCLASS_FREE,    "free" },
+        { GROUPCLASS_TV,      "tv" },
+        { GROUPCLASS_FREE,    "free" },
         { GROUPCLASS_SCREEN,  "screen" },
         { GROUPCLASS_MUSIC,   "music" },
-                { GROUPCLASS_3DSPACE, "3dspace" },
+        { GROUPCLASS_3DSPACE, "3dspace" },
         { GROUPCLASS_OTHER,   "other" }
     };
 
@@ -35,9 +35,10 @@ namespace huestream {
     PROP_IMPL(Group, SceneListPtr, scenes, Scenes);
     PROP_IMPL_BOOL(Group, bool, onState, OnState);
     PROP_IMPL(Group, double, brightnessState, BrightnessState);
+    PROP_IMPL(Group, GroupChannelToPhysicalLightMapPtr, channelToPhysicalLightsMap, ChannelToPhysicalLightsMap);
 
     Group::Group() : _id(""), _groupedLightId(""), _name(""), _classType(GROUPCLASS_OTHER), _lights(std::make_shared<LightList>()), _physicalLights(std::make_shared<LightList>()), _active(false), _owner(""),
-        _ownerName(""), _proxyNode({"","","","",true}), _scenes(std::make_shared<SceneList>()), _onState(true), _brightnessState(1.0) {
+        _ownerName(""), _proxyNode({"","","","",true}), _scenes(std::make_shared<SceneList>()), _onState(true), _brightnessState(1.0), _channelToPhysicalLightsMap(std::make_shared<GroupChannelToPhysicalLightMap>()) {
     }
 
     Group::~Group() {
@@ -101,6 +102,31 @@ namespace huestream {
             return splitOwner.at(1);
         }
         return std::string("");
+    }
+
+    LightList Group::GetChannelPhysicalLights(LightPtr channel)
+    {
+      LightList physicalLightList;
+
+      auto physicalLightIdList = _channelToPhysicalLightsMap->find(channel->GetId());
+      if (physicalLightIdList == _channelToPhysicalLightsMap->end())
+      {
+        return physicalLightList;
+      }
+
+      for (const auto& physicalLightId : physicalLightIdList->second)
+      {
+        for (auto physicalLight : *_physicalLights)
+        {
+          if (physicalLight->GetId() == physicalLightId)
+          {
+            physicalLightList.push_back(physicalLight);
+            break;
+          }
+        }
+      }
+
+      return physicalLightList;
     }
 
     double Group::Clip(double value, double min, double max) const {

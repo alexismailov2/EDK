@@ -46,7 +46,7 @@ namespace huestream
 		bool ParseJsonEvent(JSONNode& root);
 		GroupPtr ParseEntertainmentConfig(const JSONNode &node);
 		bool ParseLights(const JSONNode &node, GroupPtr group, LightListPtr lightList);
-		bool ParseChannels(const JSONNode &node, LightListPtr lightList);
+		bool ParseChannels(const JSONNode &node, LightListPtr lightList, GroupChannelToPhysicalLightMapPtr channelToPhysicalLightsMap);
 		bool ParseClass(const JSONNode& node, GroupPtr group);
 		bool ParseName(const JSONNode& node, GroupPtr group);
 		bool ParseStreamActive(const JSONNode& node, GroupPtr group);
