@@ -70,7 +70,7 @@ namespace support {
     private:
         std::weak_ptr<OperationalQueue> _queue;
         std::weak_ptr<OperationalQueue::_TicketHandle> _ticket_handle;
-        QueueExecutor::OperationType _operation_type;
+        QueueExecutor::OperationType _operation_type{ QueueExecutor::OperationType::CANCELABLE };
     };
 
     QueueExecutor::QueueExecutor()

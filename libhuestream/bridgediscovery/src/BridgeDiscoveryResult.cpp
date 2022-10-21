@@ -11,11 +11,13 @@ using std::string;
 
 namespace huesdk {
 
-    BridgeDiscoveryResult::BridgeDiscoveryResult(const string &unique_id, const string &ip, const string &api_version, const string &model_id)
+    BridgeDiscoveryResult::BridgeDiscoveryResult(const string &unique_id, const string &ip, const string &api_version, const string &model_id, const std::string& name, const std::string& swversion)
             : _unique_id(unique_id),
               _ip(ip),
               _api_version(api_version),
-              _model_id(model_id) {
+              _model_id(model_id),
+              _name(name),
+              _swversion(swversion) {
     }
 
     BridgeDiscoveryResult::BridgeDiscoveryResult(const string &ip)
@@ -36,6 +38,14 @@ namespace huesdk {
 
     const char *BridgeDiscoveryResult::get_model_id() const {
         return _model_id.c_str();
+    }
+
+    const char* BridgeDiscoveryResult::get_name() const {
+      return _name.c_str();
+    }
+
+    const char* BridgeDiscoveryResult::get_swversion() const {
+      return _swversion.c_str();
     }
 
     void BridgeDiscoveryResult::set_unique_id(std::string s) {

@@ -57,6 +57,93 @@ public:
         _persistentData->SetActiveBridge(_bridges->at(index));
     }
 
+    static void SetIsNotValidIp(BridgePtr bridge) {
+      bridge->SetIsValidIp(false);
+    }        
+
+    BridgePtr create_bridge(int cloneIdx) {
+      auto bridge = _bridges->at(cloneIdx)->Clone();
+      bridge->SetUser("HSJKHSDKJHKJDHIUHHFYU&e213");
+      bridge->SetClientKey("00000000000000000000000000000000");
+      bridge->SetIpAddress("127.0.0.1"); // Can be anything as long as it is a valid address.
+      bridge->SetModelId("BSB002"); // We need that otherwise validation will fail.
+      bridge->SetIsValidIp(true);
+      bridge->SetIsAuthorized(true);
+
+      auto groups = std::make_shared<GroupList>();
+
+      auto group1 = std::make_shared<Group>();
+      group1->SetId("12");
+      group1->SetName("My Entertainment Group1");
+      group1->AddLight("1", 0.5, 0.4);
+      group1->AddLight("2", 0.4, 0.2);
+      groups->push_back(group1);
+
+      bridge->SetGroups(groups);
+
+      return bridge;
+    }
+
+    void connect_manual_id_and_key(int index) {
+        auto bridge = create_bridge(index);
+
+        expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_storage_accessor_load_return_data();
+        expect_message(FeedbackMessage::ID_START_RETRIEVING_SMALL, FeedbackMessage::FEEDBACK_TYPE_INFO);        
+
+        BridgeListPtr list = std::make_shared<BridgeList>();
+        list->push_back(_bridges->at(index));
+        auto x = std::make_shared<MockBridgeSearcher>();
+        _searchers->push_back(x);        
+
+        EXPECT_CALL(*_factory, CreateSearcher()).Times(1).WillOnce(Return(x));
+        EXPECT_CALL(*x, SearchNew(_, _)).Times(1).WillOnce(DoAll(SaveArg<1>(&x->SearchNewCallback),
+          InvokeArgument<1>(list)));
+                        
+        EXPECT_CALL(*_smallConfigRetriever, Execute(_, _, _)).Times(1).WillOnce(DoAll(
+          SaveArg<0>(&_smallConfigRetriever->Bridge),
+          SaveArg<1>(&_smallConfigRetriever->RetrieveCallback),
+          SaveArg<2>(&_smallConfigRetriever->Feedback),
+          WithArg<0>(Invoke(SetIsNotValidIp)),          
+          Return(true)));
+
+        std::string id = _bridges->at(index)->GetId();
+        _connectionFlow->ConnectoToBridgeWithIdKey(id, "HSJKHSDKJHKJDHIUHHFYU&e213", "00000000000000000000000000000000");
+        _messageDispatcher->ExecutePendingActions();
+
+        // Since there will be 2 small config retrieved in a row, the first one failed and the second one succeed. We need to pause
+        // the flow of events after the first retrieved otherwise we can't call EXPECT_CALL twice with different InvokeArgument<1>.
+
+        expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_FAILED, FeedbackMessage::FEEDBACK_TYPE_INFO);
+
+        EXPECT_CALL(*_smallConfigRetriever, Execute(_, _, _)).Times(1).WillOnce(DoAll(
+          SaveArg<0>(&_smallConfigRetriever->Bridge),
+          SaveArg<1>(&_smallConfigRetriever->RetrieveCallback),
+          SaveArg<2>(&_smallConfigRetriever->Feedback),
+          InvokeArgument<1>(OPERATION_SUCCESS, _bridges->at(index)),
+          Return(true)));
+        EXPECT_CALL(*_fullConfigRetriever, Execute(_, _, _)).Times(1).WillOnce(DoAll(
+            SaveArg<0>(&_fullConfigRetriever->Bridge),
+            SaveArg<1>(&_fullConfigRetriever->RetrieveCallback),
+            SaveArg<2>(&_fullConfigRetriever->Feedback),
+            InvokeArgument<1>(OPERATION_SUCCESS, bridge),
+            Return(true)));
+
+        EXPECT_CALL(*_storageAccessor, Save(_, _)).Times(1).WillOnce(SaveArg<1>(&_storageAccessor->save_callback));
+      
+        expect_message(FeedbackMessage::ID_START_SEARCHING, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_message(FeedbackMessage::ID_FINISH_SEARCH_BRIDGES_FOUND, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_message(FeedbackMessage::ID_START_RETRIEVING_SMALL, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_SMALL, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_message(FeedbackMessage::ID_START_RETRIEVING, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_message(FeedbackMessage::ID_FINISH_RETRIEVING_READY_TO_START, FeedbackMessage::FEEDBACK_TYPE_INFO);
+        expect_message(FeedbackMessage::ID_START_SAVING, FeedbackMessage::FEEDBACK_TYPE_INFO);
+
+        // Manually call the callback since it wasn't by the first EXPECT_CALL.
+        _smallConfigRetriever->ExecuteRetrieveCallback(OPERATION_FAILED, _bridges->at(index));        
+        _messageDispatcher->ExecutePendingActions();       
+    }
+
     void reset_bridge_returns_empty_bridge(bool resetAllBridges = false, int numberOfBridges = 1) {
         expect_message(FeedbackMessage::ID_USERPROCEDURE_STARTED, FeedbackMessage::FEEDBACK_TYPE_INFO);
         expect_message(FeedbackMessage::ID_DONE_RESET, FeedbackMessage::FEEDBACK_TYPE_INFO, std::make_shared<Bridge>(std::make_shared<BridgeSettings>()), BRIDGE_EMPTY);
@@ -88,6 +175,15 @@ TEST_P(TestConnectionFlow_Manual, connect_with_manual_ip_and_credentials) {
     _settings->SetAutoStartAtConnection(int2bool(GetParam()));
     set_manual_load_retrieve_config(1, 1);
     finish(_bridges->at(1));
+}
+
+INSTANTIATE_TEST_CASE_P(connect_with_manual_id_and_key,
+  TestConnectionFlow_Manual, Values(0, 1));
+
+TEST_P(TestConnectionFlow_Manual, connect_with_manual_id_and_key) {
+  _settings->SetAutoStartAtConnection(false);// int2bool(GetParam()));
+  connect_manual_id_and_key(1);
+  finish(_bridges->at(1));
 }
 
 INSTANTIATE_TEST_CASE_P(reset_bridge_which_was_connected_vs_not_connected,
@@ -283,7 +379,7 @@ TEST_P(TestConnectionFlow_Manual, ManualBridgeHttps__ExistingBridge__SmallConfig
     auto bridge_with_old_api = std::make_shared<Bridge>(std::make_shared<BridgeSettings>());
     bridge_with_old_api->SetModelId("BSB002");
     bridge_with_old_api->SetApiversion("1.24.0");
-		bridge_with_old_api->SetSwversion("1940094000");
+    bridge_with_old_api->SetSwversion("1940094000");
     bridge_with_old_api->SetId(_bridges->at(4)->GetId());
 
     _persistentData->SetActiveBridge(_bridges->at(4)->Clone());

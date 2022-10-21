@@ -428,15 +428,15 @@ In principle porting EDK to other platforms should only require adding and or ch
 The following external libraries are used in certain build variants:
 
 * HTTP: libcurl - MIT style license [https://curl.haxx.se/docs/copyright.html](https://curl.haxx.se/docs/copyright.html)
-  * Version: 7.57.0
+  * Version: 7.85.0
   * Package is automatically downloaded during compilation
 
 * HTTP2: nghttp2 - MIT style license
-  * Version: 1.43.0
+  * Version: 1.50.0
   * Package is automatically downloaded during compilation
 
 * DTLS: mbedTLS - Apache 2.0 license
-  * Version: 2.4.0
+  * Version: 3.2.1
   * Package is automatically downloaded during compilation
 
 * JSON: libjson - Simplified (2-clause) BSD license
@@ -452,13 +452,19 @@ The following external libraries are used in certain build variants:
   * Package is part of this repository and can be found in `tools/cpplint`
 
 * Boost
-  * Version: 1.75.0
+  * Version: 1.80.0
   * Package is automatically downloaded during compilation
 
 * Mdns: mDNSResponder
   * Package is automatically downloaded during compilation
 
 ### Changelog
+2.1.0
+- Update external libraries
+- Add bridge name to discovery result
+- Fix a crash that can happen with latest bridge version
+- Minor fixes and improvements
+
 2.0.1
 - Expose array of physical lights which are part of a channel
 - Minor fixes and improvements

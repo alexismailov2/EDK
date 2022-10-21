@@ -108,7 +108,7 @@ namespace {
                 unique_bridge_id = huesdk::BridgeDiscoveryMethodUtil::get_unique_bridge_id_from_mac(mac);
             }
 
-            results.emplace_back(std::make_shared<huesdk::BridgeDiscoveryResult>(unique_bridge_id, ip, api_version, ""));
+            results.emplace_back(std::make_shared<huesdk::BridgeDiscoveryResult>(unique_bridge_id, ip, api_version, "", "", ""));
 
             // Gets sequence after last submatch.
             response = result.suffix().str();
@@ -120,7 +120,7 @@ namespace {
             string api_version = string(result[API_VERSION_POS].first, result[API_VERSION_POS].second);
             string unique_bridge_id = string(result[MAC_POS].first, result[MAC_POS].second);
 
-            results.emplace_back(std::make_shared<huesdk::BridgeDiscoveryResult>(unique_bridge_id, ip, api_version, ""));
+            results.emplace_back(std::make_shared<huesdk::BridgeDiscoveryResult>(unique_bridge_id, ip, api_version, "", "", ""));
 
             // Gets sequence after last submatch.
             response = result.suffix().str();
@@ -222,7 +222,8 @@ namespace huesdk {
                         _filtered_results.emplace_back(
                                 std::make_shared<BridgeDiscoveryResult>(
                                         result_entry.unique_id, result_entry.ip,
-                                        result_entry.api_version, result_entry.model_id));
+                                        result_entry.api_version, result_entry.model_id,
+                                        result_entry.name, result_entry.swversion));
                     }
 
                     if (_task_events_data.notifier != nullptr) {

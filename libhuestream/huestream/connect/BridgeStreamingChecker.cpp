@@ -62,11 +62,9 @@ void BridgeStreamingChecker::Check(BridgePtr bridge) {
 
                 // The local port is an ephemeral port and those are temporary ports assigned by a machine's IP stack, and are assigned from a designated range of ports for this purpose.
                 // When the connection terminates, the ephemeral port is available for reuse, although most IP stacks won't reuse that port number until the entire pool of ephemeral ports have been used.
-                // So, if the client program reconnects, it will be assigned a different ephemeral port number for its side of the new connection.
-
-                // Sometime curl return -1 as the local port. In that case just declare the eventing connection invalid and force a refresh. It might not be invalid but there's no way to be sure.
-                long localPort = response.get_local_port();
-                if (lastBridgeId == bridge->GetId() && lastLocalPort != 0 && lastLocalPort != localPort)
+                // So, if the client program reconnects, it will be assigned a different ephemeral port number for its side of the new connection.                
+								long localPort = response.get_local_port();
+                if (errorCode == support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_SUCCESS && lastBridgeId == bridge->GetId() && lastLocalPort != 0 && lastLocalPort != localPort)
                 {
                     errorCode = support::HttpRequestError::HTTP_REQUEST_ERROR_CODE_INVALID_EVENTING_CONNECTION;
                 }
@@ -82,12 +80,12 @@ void BridgeStreamingChecker::Check(BridgePtr bridge) {
                         _messageCallback(FeedbackMessage(FeedbackMessage::REQUEST_TYPE_INTERNAL, FeedbackMessage::ID_BRIDGE_CONNECTED, bridge));
                     }
 
-                    // Don't assign an invalid port #, it seems to happen sometimes with curl. That doesn't mean the connection is invalid though.
-                    if (localPort > 0)
-                    {
-                        lastLocalPort = localPort;
-                        lastBridgeId = bridge->GetId();
-                    }
+										// Don't assign an invalid port #, it seems to happen sometimes with curl. That doesn't mean the connection is invalid though.
+										if (localPort > 0)
+										{
+											lastLocalPort = localPort;
+                      lastBridgeId = bridge->GetId();
+										}
                 }
                 else
                 {

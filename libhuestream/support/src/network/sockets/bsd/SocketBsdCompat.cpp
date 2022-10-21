@@ -4,11 +4,15 @@
  ********************************************************************************/
 
 #include "support/network/sockets/bsd/SocketBsdCompat.h"
+#include <support/include/support/logging/Log.h>
 
 SocketInitializer::SocketInitializer() {
 #ifdef _WIN32
     WSADATA WinsockData;
-    WSAStartup(MAKEWORD(2, 2), &WinsockData);
+    int ret = WSAStartup(MAKEWORD(2, 2), &WinsockData);
+    if (ret != 0) {
+        HUE_LOG << HUE_NETWORK << HUE_ERROR << "SocketInitializer: WSAStartup error is " << ret << HUE_ENDL;
+    }
 #endif
 }
 

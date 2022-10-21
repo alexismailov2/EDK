@@ -11,21 +11,32 @@ if(DEFINED Swig_DIR AND NOT EXISTS ${Swig_DIR})
     message(FATAL_ERROR "Swig_DIR variable is defined but corresponds to non-existing directory")
 endif()
 
-if(WIN32 OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-    set(SWIGWIN_URL "https://downloads.sourceforge.net/project/swig/swigwin/swigwin-${SWIG_VERSION}/swigwin-${SWIG_VERSION}.zip?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fswig%2Ffiles%2Fswigwin%2Fswigwin-${SWIG_VERSION}%2Fswigwin-${SWIG_VERSION}.zip%2Fdownload%3Fuse_mirror%3Dnetix&ts=1538981168")
+if(WIN32 OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")	
+	set(SWIGWIN_URL "https://downloads.sourceforge.net/project/swig/swigwin/swigwin-${SWIG_VERSION}/swigwin-${SWIG_VERSION}.zip?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fswig%2Ffiles%2Fswigwin%2Fswigwin-${SWIG_VERSION}%2Fswigwin-${SWIG_VERSION}.zip%2Fdownload%3Fuse_mirror%3Dnetix&ts=1538981168")
     # binary SWIG for windows
     #------------------------------------------------------------------------------
     set(swig_source_dir ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION})
 
     # swig.exe available as pre-built binary on Windows:
-    ExternalProject_Add(swig_build
-            URL "${SWIGWIN_URL}"
-            URL_MD5 ${SWIG_DOWNLOAD_WIN_HASH}
-            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND ""
-            INSTALL_COMMAND ""
-            )
+	if(DEFINED ENV{CI})
+		ExternalProject_Add(swig_build				
+				DOWNLOAD_COMMAND curl -L ${SWIGWIN_URL} --output ${CMAKE_CURRENT_BINARY_DIR}/swig_build-prefix/src/swigwin-${SWIG_VERSION}.zip
+				COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR} tar xzf ${CMAKE_CURRENT_BINARY_DIR}/swig_build-prefix/src/swigwin-${SWIG_VERSION}.zip
+				SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}
+				CONFIGURE_COMMAND ""
+				BUILD_COMMAND ""
+				INSTALL_COMMAND ""
+				)
+	else()
+		ExternalProject_Add(swig_build
+				URL "${SWIGWIN_URL}"
+				URL_MD5 ${SWIG_DOWNLOAD_WIN_HASH}				
+				SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}
+				CONFIGURE_COMMAND ""
+				BUILD_COMMAND ""
+				INSTALL_COMMAND ""
+				)
+	endif()
 
     set(SWIG_DIR   ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}/Lib CACHE INTERNAL "SWIG_DIR")
     set(SWIG_EXECUTABLE   ${CMAKE_CURRENT_BINARY_DIR}/swigwin-${SWIG_VERSION}/swig.exe CACHE INTERNAL "SWIG_EXECUTABLE")

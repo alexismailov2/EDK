@@ -27,13 +27,15 @@ namespace support {
     HttpResponse::HttpResponse(unsigned int status_code, const char* body) :
     _status_code(status_code),
     _body(string(body)),
-    _file_size(0) {
+    _file_size(0),
+    _local_port(0) {
     }
 
     HttpResponse::HttpResponse(unsigned int status_code, const char* body, size_t body_size) :
     _status_code(status_code),
     _body(string(body, body_size)),
-    _file_size(0) {
+    _file_size(0),
+    _local_port(0) {
     }
 
     unsigned int HttpResponse::get_status_code() const {

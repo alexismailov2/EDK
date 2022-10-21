@@ -24,6 +24,7 @@ namespace huestream {
         MOCK_METHOD1(ConnectToBridgeWithIp, void(const std::string &ipAddress));
         MOCK_METHOD0(ConnectToNewBridge, void());
         MOCK_METHOD1(SetManual, void(BridgePtr bridge));
+        MOCK_METHOD3(ConnectoToBridgeWithIdKey, void(const std::string& id, const std::string& user, const std::string& clientKey));
         MOCK_METHOD0(ResetBridge, void());
         MOCK_METHOD0(ResetAllData, void());
         MOCK_METHOD1(SelectGroup, void(std::string id));
@@ -66,6 +67,10 @@ namespace huestream {
 
         void SetManual(BridgePtr bridge) {
             _mock->SetManual(bridge);
+        }
+
+        void ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) {
+          _mock->ConnectoToBridgeWithIdKey(id, user, clientKey);
         }
 
         void ResetBridge() {

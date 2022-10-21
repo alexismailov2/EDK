@@ -6,14 +6,7 @@ All Rights Reserved.
 #ifndef EDTLS_WRAPPER_MBEDTLS_MBEDTLSCLIENTWRAPPER_H_
 #define EDTLS_WRAPPER_MBEDTLS_MBEDTLSCLIENTWRAPPER_H_
 
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include <mbedtls/config.h>
-
-#include <string>
-
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
+#include <mbedtls/build_info.h>
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include <mbedtls/platform.h>

@@ -87,6 +87,12 @@ void Connect::SetManual(BridgePtr bridge) {
     _connectionFlow->SetManual(bridge);
 }
 
+void Connect::ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) {
+  unique_lock<mutex> lock(_mutex);
+  _isIdle = false;
+  _connectionFlow->ConnectoToBridgeWithIdKey(id, user, clientKey);
+}
+
 void Connect::Abort() {
     unique_lock<mutex> lock(_mutex);
     _connectionFlow->Abort();

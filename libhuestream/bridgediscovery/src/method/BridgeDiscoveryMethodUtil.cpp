@@ -145,11 +145,21 @@ using IpCheckFutureVector = std::vector<std::future<BridgeDiscoveryIpCheckResult
                 auto mac_node_it = nodes.find("mac");
                 auto api_version_node_it = nodes.find("apiversion");
                 auto model_id_node_it = nodes.find("modelid");
+                auto name_node_it = nodes.find("name");
+                auto swversion_node_it = nodes.find("swversion");
 
                 if (bridge_id_node_it != nodes.end()) {
                     ip_check_result.unique_id = support::to_upper_case(bridge_id_node_it->as_string());
                 } else if (mac_node_it != nodes.end()) {
                     ip_check_result.unique_id = BridgeDiscoveryMethodUtil::get_unique_bridge_id_from_mac(mac_node_it->as_string());
+                }
+
+                if (name_node_it != nodes.end()) {
+                  ip_check_result.name = name_node_it->as_string();
+                }
+
+                if (swversion_node_it != nodes.end()) {
+                  ip_check_result.swversion = swversion_node_it->as_string();
                 }
 
                 if (!ip_check_result.unique_id.empty()) {

@@ -7,16 +7,7 @@ set_external_library(mbedcrypto FALSE)
 if(NOT EXISTS ${LIBRARY_PATH})
     set_library_path(mbedcrypto MBEDCRYPTO_PATH "")
     set_library_path(mbedx509   MBEDX509_PATH "")
-    set_library_path(mbedtls    MBEDTLS_PATH "")
-
-    # The patch for mbedTLS defines the mbedtls configuration header file. I
-    # tried including mbedtls-config.h through CMAKE_ARGS but that did not
-    # work because CMake tried to use it during the identification of the
-    # cross-compilers.
-
-    if (${CMAKE_PROJECT_NAME} MATCHES "libhuestream")
-        set(CUSTOM_CONFIG_C_FLAGS "-DMBEDTLS_CONFIG_FILE=\\\"${CMAKE_CURRENT_LIST_DIR}/patches/mbedtls-config.h\\\"")
-    endif()
+    set_library_path(mbedtls    MBEDTLS_PATH "")    
 
     set(EXTERNAL_DEPENDENCY external_mbedtls)
 
@@ -25,7 +16,7 @@ if(NOT EXISTS ${LIBRARY_PATH})
         DOWNLOAD_COMMAND ${CMAKE_COMMAND} -DREFERENCE=${GIT_REFERENCE} -DREPO=${mbedtls_URL} -DBRANCH=${mbedtls_VERSION} -DSOURCE_DIR=${EXTERNAL_LIBRARIES_SOURCE_PATH}/mbedtls -DPATCH=mbedtls.patch -P ${CMAKE_CURRENT_LIST_DIR}/CloneRepository.cmake
         UPDATE_COMMAND ""
         SOURCE_DIR "${EXTERNAL_LIBRARIES_SOURCE_PATH}/mbedtls"
-        CMAKE_ARGS ${COMMON_ARGS} -DUSE_STATIC_MBEDTLS_LIBRARY=ON -DUSE_SHARED_MBEDTLS_LIBRARY=OFF -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF
+        CMAKE_ARGS ${COMMON_ARGS} -DUSE_STATIC_MBEDTLS_LIBRARY=ON -DUSE_SHARED_MBEDTLS_LIBRARY=OFF -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF -DMBEDTLS_FATAL_WARNINGS=OFF
         BUILD_BYPRODUCTS ${MBEDCRYPTO_PATH} ${MBEDX509_PATH} ${MBEDTLS_PATH}
         LIST_SEPARATOR ^^
     )

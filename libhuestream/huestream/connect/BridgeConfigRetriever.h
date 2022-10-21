@@ -103,6 +103,8 @@ namespace huestream
 		bool UpdateGroupOn(GroupPtr group);
 		bool UpdateGroupBrightness(GroupPtr group);
 
+		bool GetLightNodeById(const string& id, JSONNode& lightNode);
+
 		BridgeHttpClientPtr _http;
 		bool _useForcedActivation;
 		RetrieveCallbackHandler _cb;

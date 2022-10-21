@@ -28,7 +28,9 @@ namespace huestream {
                     bridge->SetIsValidIp(true);
                     bridge->SetApiversion(result->get_api_version());
                     bridge->SetModelId(result->get_model_id());
-                    bridges->push_back(bridge);
+                    bridge->SetName(result->get_name());
+                    bridge->SetSwversion(result->get_swversion());
+                    bridges->push_back(bridge);                    
                 }
             }
             _cb(bridges);

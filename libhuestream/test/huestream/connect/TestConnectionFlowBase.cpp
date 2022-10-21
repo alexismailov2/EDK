@@ -300,8 +300,7 @@ TestConnectionFlowBase::finish_authorization_successfully_and_retrieve_full_conf
 void TestConnectionFlowBase::finish_authorization_successfully(int index) {
     authorize_bridge(index);
 
-    expect_message(FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, FeedbackMessage::FEEDBACK_TYPE_INFO);
-		expect_small_config_retrieval_return_data(index);
+    expect_message(FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, FeedbackMessage::FEEDBACK_TYPE_INFO);		
     expect_initiate_full_config_retrieval();
 
     _authenticators->at(index)->authenticate_callback(_bridges->at(index));

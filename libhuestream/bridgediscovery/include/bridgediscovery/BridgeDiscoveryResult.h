@@ -23,7 +23,7 @@ namespace huesdk {
          @param api_version  The api version of the bridge (e.g. 1.15.0)
          @param model_id The model ID of the bridge (BSB001 or BSB002)
          */
-        BridgeDiscoveryResult(const std::string &unique_id, const std::string &ip, const std::string &api_version, const std::string &model_id);
+        BridgeDiscoveryResult(const std::string &unique_id, const std::string &ip, const std::string &api_version, const std::string &model_id, const std::string& name, const std::string& swversion);
 
         explicit BridgeDiscoveryResult(const std::string &ip);
 
@@ -51,6 +51,18 @@ namespace huesdk {
          */
         const char *get_model_id() const;
 
+        /**
+         Get the name of the bridge
+         @return the name
+         */
+        const char* get_name() const;
+
+        /**
+         Get the software version of the bridge
+         @return the software version
+         */
+        const char* get_swversion() const;
+
         void set_unique_id(std::string);
 
         void set_ip(std::string);
@@ -68,6 +80,10 @@ namespace huesdk {
         std::string _api_version;
         /** model ID of the bridge;  format: BSB002 */
         std::string _model_id;
+        /** name of the bridge */
+        std::string _name;
+        /** software version of the bridge; format: 1949107040 */
+        std::string _swversion;
     };
 
 }  // namespace huesdk

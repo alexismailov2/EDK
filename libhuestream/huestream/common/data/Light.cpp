@@ -14,7 +14,7 @@ Light::Light() : Light("", Location(0, 0)) {
 }
 
 Light::Light(std::string id, Location pos, std::string name, std::string model, std::string archetype, bool reachable, bool on)
-    : _id(id), _idV1(id), _name(name), _model(model), _archetype(archetype), _color(), _position(pos), _reachable(reachable), _on(on), _dynamic(false), _dynamicEnabled(false) {
+    : _id(id), _idV1(id), _name(name), _model(model), _archetype(archetype), _color(), _position(pos), _reachable(reachable), _on(on), _dynamic(false), _dynamicEnabled(false), _brightness(0.0) {
 }
 
 Light::~Light() {

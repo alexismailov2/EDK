@@ -95,6 +95,9 @@ target_link_libraries(huestream_tests
         gmock
         )
 
+if (APPLE)
+    target_link_libraries(huestream_tests "-framework SystemConfiguration")
+endif()
 
 if (BUILD_TEST_COV)
     set(coverage_project_name huestream_tests_coverage)

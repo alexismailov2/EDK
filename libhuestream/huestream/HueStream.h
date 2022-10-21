@@ -116,7 +116,7 @@ class HueStream : public IHueStream {
      connect to a bridge with manually set ip address (non blocking execution)
      @note this is normally used only as a backup when the normal connect call is unable to discover a bridge
      @param ipAddress Ip address of the bridge to connect to
-		 @param useSSL whether or not to use ssl
+     @param useSSL whether or not to use ssl
      */
     void ConnectBridgeManualIpAsync(const std::string &ipAddress) override;
 
@@ -132,6 +132,24 @@ class HueStream : public IHueStream {
      @param bridge Bridge object with a valid ip address, username and clientkey set
      */
     void ConnectManualBridgeInfoAsync(BridgePtr bridge) override;
+
+    /**
+     connect to a bridge with manually set id, username and clientkey (blocking execution)
+     @note this can be used to manually switch to another bridge with known credentials but unknown ip.
+     @param id Id of the bridge to connect to
+     @param user Bridge user to use
+     @param clientKey Client key associated with this user
+     */
+    void ConnectBridgeManualIdKey(const std::string& id, const std::string& user, const std::string& clientKey) override;
+
+    /**
+     connect to a bridge with manually set id, username and clientkey (non blocking execution)
+     @note this can be used to manually switch to another bridge with known credentials but unknown ip.
+     @param id Id of the bridge to connect to
+     @param user Bridge user to use
+     @param clientKey Client key associated with this user
+     */
+    void ConnectBridgeManualIdKeyAsync(const std::string& id, const std::string& user, const std::string& clientKey) override;
 
     /**
      connect to a new bridge, even if a valid bridge is already active (blocking execution)

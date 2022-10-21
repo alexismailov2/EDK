@@ -211,6 +211,15 @@ void HueStream::ConnectBridgeManualIpAsync(const std::string &ipAddress) {
     _connect->ConnectToBridgeWithIp(ipAddress);
 }
 
+void HueStream::ConnectBridgeManualIdKey(const std::string& id, const std::string& user, const std::string& clientKey) {
+  _connect->ConnectoToBridgeWithIdKey(id, user, clientKey);
+  _connect->WaitUntilReady();
+}
+
+void HueStream::ConnectBridgeManualIdKeyAsync(const std::string& id, const std::string& user, const std::string& clientKey) {
+  _connect->ConnectoToBridgeWithIdKey(id, user, clientKey);
+}
+
 void HueStream::ConnectNewBridge() {
     _connect->ConnectToNewBridge();
     _connect->WaitUntilReady();

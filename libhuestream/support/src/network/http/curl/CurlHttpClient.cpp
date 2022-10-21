@@ -153,7 +153,10 @@ namespace support {
     void CurlHttpClient::wake_up_executor() {
         if (_signal_fds[0] != INVALID_SOCKET) {
             char tmp_buf[1] = {};
-            send(_signal_fds[0], tmp_buf, 1, 0);
+            int err = send(_signal_fds[0], tmp_buf, 1, 0);
+            if (err == -1) {
+              HUE_LOG << HUE_NETWORK << HUE_ERROR << "CurlHttpClient: send returned -1 errno is " << errno << HUE_ENDL;
+            }
         }
     }
 
@@ -205,7 +208,10 @@ namespace support {
                 if (extra_fds[0].revents) {
                     // receive any data sent to the signaling socket
                     char tmp_buf[8] = {};
-                    recv(_signal_fds[1], tmp_buf, 8, 0);
+                    int err = recv(_signal_fds[1], tmp_buf, 8, 0);
+                    if (err == -1) {
+                      HUE_LOG << HUE_NETWORK << HUE_ERROR << "CurlHttpClient: recv returned -1 errno is " << errno << HUE_ENDL;
+                    }
                 }
             }
 

@@ -15,20 +15,20 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 5b92c2b61..b07591a58 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -327,7 +327,7 @@ if(WIN32)
+@@ -364,7 +364,7 @@ if(WIN32)
    cmake_dependent_option(CURL_WINDOWS_SSPI "Use windows libraries to allow NTLM authentication without openssl" ON
-     CMAKE_USE_SCHANNEL OFF)
+     CURL_USE_SCHANNEL OFF)
  endif()
--option(CMAKE_USE_MBEDTLS "Enable mbedTLS for SSL/TLS" OFF)
-+option(CMAKE_USE_MBEDTLS "Enable mbedTLS for SSL/TLS" ON)
- option(CMAKE_USE_BEARSSL "Enable BearSSL for SSL/TLS" OFF)
- option(CMAKE_USE_NSS "Enable NSS for SSL/TLS" OFF)
- option(CMAKE_USE_WOLFSSL "enable wolfSSL for SSL/TLS" OFF)
+-cmake_dependent_option(CURL_USE_MBEDTLS "Enable mbedTLS for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
++cmake_dependent_option(CURL_USE_MBEDTLS "Enable mbedTLS for SSL/TLS" ON CURL_ENABLE_SSL ON)
+ cmake_dependent_option(CURL_USE_BEARSSL "Enable BearSSL for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
+ cmake_dependent_option(CURL_USE_NSS "Enable NSS for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
+ cmake_dependent_option(CURL_USE_WOLFSSL "enable wolfSSL for SSL/TLS" OFF CURL_ENABLE_SSL OFF)
 @@ -411,13 +411,13 @@ if(CMAKE_USE_OPENSSL)
-   check_symbol_exists(RAND_egd    "${CURL_INCLUDES}" HAVE_RAND_EGD)
+   add_definitions(-DOPENSSL_SUPPRESS_DEPRECATED)
  endif()
- 
--if(CMAKE_USE_MBEDTLS)
+
+-if(CURL_USE_MBEDTLS)
 -  find_package(MbedTLS REQUIRED)
 -  set(SSL_ENABLED ON)
 -  set(USE_MBEDTLS ON)
@@ -43,7 +43,7 @@ index 5b92c2b61..b07591a58 100644
 +  endif(CURL_WITH_MBEDTLS)
 +endif(USE_MBEDTLS)
  
- if(CMAKE_USE_BEARSSL)
+ if(CURL_USE_BEARSSL)
    find_package(BearSSL REQUIRED)
 @@ -453,6 +453,9 @@ if(USE_NGHTTP2)
    find_package(NGHTTP2 REQUIRED)
@@ -74,4 +74,5 @@ index 5b92c2b61..b07591a58 100644
 +
  # Check for reentrant
  foreach(CURL_TEST
-     HAVE_GETHOSTBYADDR_R_5
+     HAVE_GETHOSTBYNAME_R_3
+

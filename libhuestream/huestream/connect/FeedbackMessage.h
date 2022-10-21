@@ -91,6 +91,7 @@ namespace huestream {
                 REQUEST_TYPE_CONNECT_IP,          ///< connect to a bridge with manually set ip address
                 REQUEST_TYPE_SET_MANUAL_BRIDGE,   ///< connect to a known bridge, with at least set ip address, username and clientkey
                 REQUEST_TYPE_CONNECT_NEW,         ///< connect to a new bridge, even if a valid bridge is stored already
+                REQUEST_TYPE_CONNECT_ID_KEY,      ///< connect to bridge with manually set bridge id, username and clientkey
                 REQUEST_TYPE_RESET_BRIDGE,        ///< delete stored information of current bridge
                 REQUEST_TYPE_RESET_ALL,           ///< delete all stored bridge information
                 REQUEST_TYPE_SELECT,              ///< select entertainment group to use

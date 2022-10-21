@@ -4,7 +4,7 @@ All Rights Reserved.
 ********************************************************************************/
 
 #define mbedtls_time_t     time_t
-#include <mbedtls/net.h>
+#include <mbedtls/net_sockets.h>
 #include <edtls/wrapper/mbedtls/DefaultUDPClient.h>
 
 void DefaultUDPClient::Init() {

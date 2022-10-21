@@ -39,6 +39,8 @@ class ConnectionFlow: public IConnectionFlow, public std::enable_shared_from_thi
 
     void SetManual(BridgePtr bridge) override;
 
+    void ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) override;
+
     void ResetBridge() override;
 
     void ResetAll() override;
@@ -77,6 +79,8 @@ class ConnectionFlow: public IConnectionFlow, public std::enable_shared_from_thi
     void DoConnectToNewBridge();
 
     void DoSetManual(BridgePtr bridge);
+
+    void DoConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey);
 
     void DoReset(bool onlyActiveBridge);
 

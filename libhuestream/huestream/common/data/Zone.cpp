@@ -15,7 +15,7 @@ namespace huestream
 	PROP_IMPL(Zone, ZoneArchetype, archetype, Archetype);
 	PROP_IMPL(Zone, std::string, idV1, IdV1);
 
-	Zone::Zone() : Group(), _idV1("") {
+	Zone::Zone() : Group(), _idV1(""), _archetype(ZONEARCHETYPE_OTHER) {
 	}
 
 	Zone::~Zone()	{

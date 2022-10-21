@@ -22,6 +22,10 @@ namespace huesdk {
         bool reachable = false;
         /** whether the ip is a bridge */
         bool is_bridge = false;
+        /** the name of the bridge */
+        std::string name;
+        /** the software version of the bridge */
+        std::string swversion;
     };
 
 }  // namespace huesdk

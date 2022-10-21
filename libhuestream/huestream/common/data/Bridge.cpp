@@ -297,7 +297,7 @@ void Bridge::DeleteGroup(std::string id) {
     GroupListPtr groupList = _groups;
     for (auto i = groupList->begin(); i != groupList->end(); ++i) {
         if ((*i)->GetId() == id) {
-            _groups->erase(i);
+            groupList->erase(i);
             break;
         }
     }

@@ -13,9 +13,9 @@ Note that the library contains statically linked STL. This will not work if ther
 The library source code and documentation can be found in the EDK repository.
 
 ### Facade
-Since the EDK is rather generic, this example contains a HueHandler facade which provides a better abstraction, by only wrapping the neccesary APIs and providing some addtional handling for the lights synchronization use case.
+Since the EDK is rather generic, this example contains a HueHandler facade which provides a better abstraction, by only wrapping the necessary APIs and providing some additional handling for the lights synchronization use case.
 It is probably a good starting point to copy HueHandler, and just adapt where needed.
-Make sure to pass a short user recognizable appName for your application (instead of "Dummy Example"), so the user can be infomed which app is controlling the lights.
+Make sure to pass a short user recognizable appName for your application (instead of "Dummy Example"), so the user can be informed which app is controlling the lights.
 Also make sure to pass the Application Context, and not an Activity Context, to prevent any leaking.
 
 ### User Interface

@@ -49,6 +49,8 @@ class IConnectionFlow {
 
     virtual void SetManual(BridgePtr bridge) = 0;
 
+    virtual void ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) = 0;
+
     virtual void ResetBridge() = 0;
 
     virtual void ResetAll() = 0;

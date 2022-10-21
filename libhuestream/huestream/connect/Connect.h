@@ -57,6 +57,8 @@ namespace huestream {
 
         virtual void SetManual(BridgePtr bridge) = 0;
 
+        virtual void ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) = 0;
+
         virtual void ResetBridge() = 0;
 
         virtual void ResetAllData() = 0;
@@ -109,6 +111,8 @@ namespace huestream {
         void ConnectToNewBridge() override;
 
         void SetManual(BridgePtr bridge) override;
+
+        void ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) override;
 
         void ResetBridge() override;
 

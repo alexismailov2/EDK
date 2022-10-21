@@ -60,7 +60,7 @@ namespace huesdk {
                     get_ips_to_check(), _stopped_by_user, ip_found_cb);
 
             auto check_ip_array_job = create_job<BridgeDiscoveryCheckIpArrayTask>(filtered_ips, [this](const BridgeDiscoveryIpCheckResult &result) {
-                _results.emplace_back(std::make_shared<BridgeDiscoveryResult>(result.unique_id, result.ip, result.api_version, result.model_id));
+                _results.emplace_back(std::make_shared<BridgeDiscoveryResult>(result.unique_id, result.ip, result.api_version, result.model_id, result.name, result.swversion));
 
                 if (_task_events_data.notifier != nullptr) {
                     BridgeDiscovered bridge_discovered_event{

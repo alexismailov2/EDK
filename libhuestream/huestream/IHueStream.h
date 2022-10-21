@@ -131,6 +131,24 @@ class IHueStream {
     virtual void ConnectManualBridgeInfoAsync(BridgePtr bridge) = 0;
 
     /**
+    connect to a bridge with manually set id, username and clientkey (blocking execution)
+    @note this can be used to manually switch to another bridge with known credentials but unknown ip.
+    @param id Id of the bridge to connect to
+    @param user Bridge user to use
+    @param clientKey Client key associated with this user
+    */
+    virtual void ConnectBridgeManualIdKey(const std::string& id, const std::string& user, const std::string& clientKey) = 0;
+
+    /**
+     connect to a bridge with manually set id, username and clientkey (non blocking execution)
+     @note this can be used to manually switch to another bridge with known credentials but unknown ip.
+     @param id Id of the bridge to connect to
+    @param user Bridge user to use
+    @param clientKey Client key associated with this user
+     */
+    virtual void ConnectBridgeManualIdKeyAsync(const std::string& id, const std::string& user, const std::string& clientKey) = 0;
+
+    /**
      connect to a new bridge, even if a valid bridge is already active (blocking execution)
      */
     virtual void ConnectNewBridge() = 0;

@@ -28,7 +28,8 @@ namespace support {
         _log_component(HUE_NETWORK),
         _security_level(security_level),
         _verify_ssl(true),
-        _is_external(false) {
+        _is_external(false),
+        _generate_md5_digest(false) {
         if (!enable_logging) {
             _log_component = HUE_IGNORE;
         }

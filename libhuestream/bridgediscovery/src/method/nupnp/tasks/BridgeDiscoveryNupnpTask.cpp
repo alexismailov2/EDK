@@ -46,7 +46,7 @@ namespace {
                         HUE_LOG << HUE_CORE << HUE_ERROR
                                 << "BridgeDiscoveryNupnpTask: missing internalipaddress node" << HUE_ENDL;
                     } else {
-                        return_value.emplace_back(std::make_shared<BridgeDiscoveryResult>("", it->as_string(), "", ""));
+                        return_value.emplace_back(std::make_shared<BridgeDiscoveryResult>("", it->as_string(), "", "", "", ""));
                     }
                 }
             } else {
@@ -106,7 +106,7 @@ namespace huesdk {
                 for (const auto &result_entry : task->get_result()) {
                     _results.emplace_back(
                             std::make_shared<BridgeDiscoveryResult>(
-                                    result_entry.unique_id, result_entry.ip, result_entry.api_version, result_entry.model_id));
+                                    result_entry.unique_id, result_entry.ip, result_entry.api_version, result_entry.model_id, result_entry.name, result_entry.swversion));
                 }
 
                 if (_task_events_data.notifier != nullptr) {

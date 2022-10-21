@@ -70,6 +70,15 @@ namespace support {
                 _is_writing_header = false;
     }
 
+    CurlRequest::~CurlRequest()
+    {
+      // In case cleanup wasn't called by the http client
+      if (_curl != nullptr)
+      {
+        cleanup();
+      }
+    }
+
     CURL* CurlRequest::get_handle() const {
         return _curl;
     }

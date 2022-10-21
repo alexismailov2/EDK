@@ -6,7 +6,7 @@
 #include <huestream/stream/DtlsUdpClient.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/ssl.h>
-#include <mbedtls/net.h>
+#include <mbedtls/net_sockets.h>
 
 #include <assert.h>
 

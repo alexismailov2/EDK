@@ -42,7 +42,7 @@ BridgeConfigRetriever::BridgeConfigRetriever(const BridgeHttpClientPtr http, boo
 
 BridgeConfigRetriever::~BridgeConfigRetriever()
 {
-    _executor->shutdown();
+    _executor->shutdown();    
 
     Abort();
 }
@@ -143,15 +143,17 @@ void BridgeConfigRetriever::OnBridgeMonitorEvent(const FeedbackMessage& message)
     {
         OnBridgeDisconnect();
     }
-    else if (message.GetId() == FeedbackMessage::ID_USERPROCEDURE_STARTED && message.GetRequestType() == FeedbackMessage::REQUEST_TYPE_DEACTIVATE)
+    else if (message.GetId() == FeedbackMessage::ID_USERPROCEDURE_STARTED && (message.GetRequestType() == FeedbackMessage::REQUEST_TYPE_DEACTIVATE || message.GetRequestType() == FeedbackMessage::REQUEST_TYPE_ACTIVATE))
     {
-        // Don't send streaming disconnect event in case a manual procedure has been started, otherwise there's a risk that a duplicate event might be sent
-        _canSendStreamingDisconnectedEvent = false;
+      // Don't send streaming disconnect event in case a manual procedure has been started, otherwise there's a risk that a duplicate event might be sent. 
+      // Also in case of an activate, when a previous session was not cleanly closed (ex crash), we don't want to throw a streaming stop event since
+      // we're going to start streaming immediately. If streaming start failed for whatever reason, the streaming stop event is going to get thrown by the "Final" function of "ConnectionFlow".
+      _canSendStreamingDisconnectedEvent = false;
     }
-    else if (message.GetId() == FeedbackMessage::ID_USERPROCEDURE_FINISHED && message.GetRequestType() == FeedbackMessage::REQUEST_TYPE_DEACTIVATE)
+    else if (message.GetId() == FeedbackMessage::ID_USERPROCEDURE_FINISHED && (message.GetRequestType() == FeedbackMessage::REQUEST_TYPE_DEACTIVATE || message.GetRequestType() == FeedbackMessage::REQUEST_TYPE_ACTIVATE))
     {
-        // Allow sending of streaming disconnect event when manual procedure is finished
-        _canSendStreamingDisconnectedEvent = true;
+      // Allow sending of streaming disconnect event when manual procedure is finished
+      _canSendStreamingDisconnectedEvent = true;
     }
 }
 
@@ -604,58 +606,62 @@ bool BridgeConfigRetriever::ParseJsonEvent(JSONNode& root)
         }
 
         std::string typeId = "";
-        JSONNode dataNode = data->as_array()[0];
-        Serializable::DeserializeValue(&dataNode, "type", &typeId, "");
+        JSONNode dataArray = data->as_array();
+        for (auto dataIt = dataArray.begin(); dataIt != dataArray.end(); ++dataIt)
+        {
+            JSONNode dataNode = dataIt->as_node();
+            Serializable::DeserializeValue(&dataNode, "type", &typeId, "");
 
-        if (typeId.empty())
-        {
-            continue;
-        }
+            if (typeId.empty())
+            {
+                continue;
+            }
 
-        std::string dataId = "";
-        Serializable::DeserializeValue(&dataNode, "id", &dataId, "");
+            std::string dataId = "";
+            Serializable::DeserializeValue(&dataNode, "id", &dataId, "");
 
-        if (dataId.empty())
-        {
-            continue;
-        }
+            if (dataId.empty())
+            {
+                continue;
+            }
 
-        if (typeId == "entertainment_configuration")
-        {
-            ecList.push_back({type, dataNode});
-        }
-        else if (typeId == "light")
-        {
-            lightList.push_back({type, dataNode});
-        }
-        else if (typeId == "device")
-        {
-            deviceList.push_back({type, dataNode});
-        }
-        else if (typeId == "zigbee_connectivity")
-        {
-            zcList.push_back({type, dataNode});
-        }
-        else if (typeId == "bridge")
-        {
-            bridge = dataNode;
-            bridgeEventType = type;
-        }
-        else if (typeId == "zone")
-        {
-            zoneList.push_back({type, dataNode});
-        }
-        else if (typeId == "entertainment")
-        {
-            entertainmentList.push_back({type, dataNode});
-        }
-        else if (typeId == "grouped_light")
-        {
-            groupedLightList.push_back({type, dataNode});
-        }
-        else if (typeId == "scene")
-        {
-            sceneList.push_back({type, dataNode});
+            if (typeId == "entertainment_configuration")
+            {
+               ecList.push_back({ type, dataNode });
+            }
+            else if (typeId == "light")
+            {
+                lightList.push_back({ type, dataNode });
+            }
+            else if (typeId == "device")
+            {
+               deviceList.push_back({ type, dataNode });
+            }
+            else if (typeId == "zigbee_connectivity")
+            {
+                zcList.push_back({ type, dataNode });
+            }
+            else if (typeId == "bridge")
+            {
+                bridge = dataNode;
+                bridgeEventType = type;
+            }
+            else if (typeId == "zone")
+            {
+               zoneList.push_back({ type, dataNode });
+            }
+            else if (typeId == "entertainment")
+            {
+                entertainmentList.push_back({ type, dataNode });
+            }
+            else if (typeId == "grouped_light")
+            {
+                groupedLightList.push_back({ type, dataNode });
+            }
+            else if (typeId == "scene")
+            {
+                sceneList.push_back({ type, dataNode });
+            }
         }
     }
 
@@ -774,7 +780,12 @@ bool BridgeConfigRetriever::ParseJsonEvent(JSONNode& root)
         }
     }
 
-    // Parse all entertainment configuration by event category
+    // Check bridge disconnection here because there could more than one update for the same ec but with different 
+    // status (inactive first and active second). If we were to check the streaming status in the update method we could end
+    // up firing a wrong ID_STREAMING_DISCONNECTED.
+    bool bridgeWasStreaming = _bridge->IsStreaming();
+
+    // Parse all entertainment configuration by event category    
     for (auto it = ecList.begin(); it != ecList.end(); ++it)
     {
         const std::string& eventType = std::get<0>(*it);
@@ -791,6 +802,13 @@ bool BridgeConfigRetriever::ParseJsonEvent(JSONNode& root)
         {
             DeleteEntertainmentConfiguration(std::get<1>(*it));
         }
+    }
+
+    // Streaming disconnected can happen here when there's been an override by another client.
+    // We don't check for streaming connected event here because the event is always the result of an action from the user and the event is always fired elsewhere.
+    if (_canSendStreamingDisconnectedEvent && bridgeWasStreaming && !_bridge->IsStreaming())
+    {
+      _fh(FeedbackMessage(FeedbackMessage::REQUEST_TYPE_INTERNAL, FeedbackMessage::ID_STREAMING_DISCONNECTED, _bridge));
     }
 
     // Parse all grouped light by event category
@@ -1059,7 +1077,11 @@ bool BridgeConfigRetriever::ParseLights(const JSONNode &node, GroupPtr group, Li
 
         std::string lightId = GetLightIdFromEntertainmentId(refId);
 
-        auto& lightNode = _allLightMap[lightId];
+        JSONNode lightNode;
+        if (!GetLightNodeById(lightId, lightNode))
+        {
+            continue;
+        }
 
         LightPtr light = ParseLightInfo(lightNode);
 
@@ -1118,7 +1140,7 @@ LightPtr BridgeConfigRetriever::ParseLightInfo(const JSONNode& node)
         brightness = node["dimming"].as_node()["brightness"].as_float();
     }
 
-    auto on = node["on"].as_node()["on"].as_bool(); // TODO remove when zones become available
+    auto on = node.at("on").as_node()["on"].as_bool(); // TODO remove when zones become available
 
     // Retrieve xy color
     double xy[2] = { 0.0, 0.0 };
@@ -1353,13 +1375,13 @@ bool BridgeConfigRetriever::ParseScene(const JSONNode& node, ScenePtr& scene)
                 continue;
             }
 
-            auto lightNode = _allLightMap.find(rid.as_string());
-            if (lightNode == _allLightMap.end())
+            JSONNode lightNode;
+            if (!GetLightNodeById(rid.as_string(), lightNode))
             {
                 continue;
             }
 
-            LightPtr light = ParseLightInfo(lightNode->second);
+            LightPtr light = ParseLightInfo(lightNode);
 
             double bri = 0.0;
             bool on = false;
@@ -1497,7 +1519,13 @@ bool BridgeConfigRetriever::ParseZoneLights(const JSONNode &node, LightListPtr l
         {
             // Parse full light info
             std::string lightId = lightArr[i].as_node()["rid"].as_string();
-            JSONNode& lightNode = _allLightMap[lightId];
+            JSONNode lightNode;
+
+            if (!GetLightNodeById(lightId, lightNode))
+            {
+                continue;
+            }
+
             LightPtr light = ParseLightInfo(lightNode);
             lightList->push_back(light);
         }
@@ -1844,15 +1872,14 @@ void BridgeConfigRetriever::UpdateLight(const JSONNode& lightUpdateNode)
 {
     // Updates only contain a single updated attribute so look for it and update current light json data.
     std::string id = lightUpdateNode["id"].as_string();
-    std::unordered_map<std::string, JSONNode>::iterator it = _allLightMap.find(id);
+    JSONNode curLightNode;
 
-    if (it == _allLightMap.end())
+    if (!GetLightNodeById(id, curLightNode))
     {
         HUE_LOG << HUE_CORE << HUE_WARN << "UpdateLight: light not found: " << id << HUE_ENDL;
         return;
     }
-
-    JSONNode& curLightNode = _allLightMap[id];
+    
     std::string newName;
     bool newOnState;
     bool newDynamicEnabled;
@@ -2121,15 +2148,7 @@ void BridgeConfigRetriever::UpdateEntertainmentConfiguration(JSONNode& ec)
     bool groupChanged = ParseName(ec, group);
     groupChanged |= ParseClass(ec, group);
     groupChanged |= ParseStreamActive(ec, group);
-    groupChanged |= ParseStreamProxy(ec, group);
-
-    // Streaming disconnected can happen here when there's been an override by another client
-    if (_canSendStreamingDisconnectedEvent && bridgeWasStreaming && !_bridge->IsStreaming())
-    {
-        _fh(FeedbackMessage(FeedbackMessage::REQUEST_TYPE_INTERNAL, FeedbackMessage::ID_STREAMING_DISCONNECTED, _bridge));
-    }
-
-    // We don't check for streaming connected event here because the event is always the result of an action from the user and the event is always fired elsewhere.
+    groupChanged |= ParseStreamProxy(ec, group);    
 
     if (_sendFeedback && groupChanged)
     {
@@ -2856,11 +2875,25 @@ bool BridgeConfigRetriever::UpdateGroupBrightness(GroupPtr group)
             }
         }
 
-        averageBrightness /= numReachableLights;
+        averageBrightness /= (numReachableLights > 0 ? numReachableLights : 1);
     }
 
     bool updated = std::abs((group->GetBrightnessState() * 100.0) - averageBrightness) > 0.1;
     group->SetBrightnessState(averageBrightness /= 100.0);
 
     return updated;
+}
+
+bool BridgeConfigRetriever::GetLightNodeById(const string& id, JSONNode& lightNode)
+{
+    std::unordered_map<std::string, JSONNode>::iterator it = _allLightMap.find(id);
+
+    if (it == _allLightMap.end())
+    {
+        HUE_LOG << HUE_CORE << HUE_WARN << "GetLightNodeById: light not found: " << id << HUE_ENDL;
+        return false;
+    }
+
+    lightNode = it->second;
+    return true;
 }

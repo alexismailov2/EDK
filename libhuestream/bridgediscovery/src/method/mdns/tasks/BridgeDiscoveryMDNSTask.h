@@ -94,7 +94,7 @@ namespace huesdk {
                     found_ips, [this](const BridgeDiscoveryIpCheckResult &result) {
                         _results.emplace_back(
                                 std::make_shared<BridgeDiscoveryResult>(
-                                        result.unique_id, result.ip, result.api_version, result.model_id));
+                                        result.unique_id, result.ip, result.api_version, result.model_id, result.name, result.swversion));
 
                         if (_task_events_data.notifier != nullptr) {
                             huesdk::bridge_discovery_events::BridgeDiscovered bridge_discovered_event{

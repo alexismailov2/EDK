@@ -162,6 +162,33 @@ void ConnectionFlow::DoSetManual(BridgePtr bridge) {
     });
 }
 
+void ConnectionFlow::ConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) {
+  DISPATCH_P3(DoConnectoToBridgeWithIdKey, id, user, clientKey);
+}
+
+void ConnectionFlow::DoConnectoToBridgeWithIdKey(const std::string& id, const std::string& user, const std::string& clientKey) {
+  if (!Start(FeedbackMessage::REQUEST_TYPE_CONNECT_ID_KEY))
+    return;
+
+  if (_persistentData->GetActiveBridge()->IsStreaming()) {
+    _stream->Stop(_persistentData->GetActiveBridge());
+  }
+
+  auto bridge = std::make_shared<Bridge>(_bridgeSettings);
+  bridge->SetId(id);
+  bridge->SetUser(user);
+  bridge->SetClientKey(clientKey);
+  bridge->SetIpAddress("127.0.0.1"); // Can be anything as long as it is a valid address.
+  bridge->SetModelId("BSB002"); // We need that otherwise validation will fail.
+  bridge->SetIsValidIp(true);
+  bridge->SetIsAuthorized(true);
+
+  StartLoading([this, bridge]() {
+    _persistentData->SetActiveBridge(bridge);
+    StartRetrieveSmallConfig(bridge);
+    });
+}
+
 void ConnectionFlow::ResetBridge() {
     DISPATCH_P1(DoReset, true);
 }
@@ -481,8 +508,7 @@ void ConnectionFlow::AuthenticationCompleted(BridgePtr bridge) {
         NewMessage(FeedbackMessage(_request, FeedbackMessage::ID_FINISH_AUTHORIZING_AUTHORIZED, _persistentData->GetActiveBridge(), _persistentData->GetAllKnownBridges()));
         _scheduler->remove_all_tasks();
         _scheduler->stop();
-        // We still need to retrieve the small config at this point because we still don't know about clipv2 support and we need to know before retrieving the full config.
-        StartRetrieveSmallConfig(_persistentData->GetActiveBridge());
+        StartRetrieveFullConfig();
     } else {
         support::SchedulerTask scheduler_task;
         scheduler_task.set_id(authenticationProcessInfo.bridgeNumber);

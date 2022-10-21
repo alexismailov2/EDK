@@ -26,6 +26,7 @@ namespace support {
     class CurlRequest {
     public:
         CurlRequest(const HttpRequestParams &data, HttpRequestCallback callback);
+        ~CurlRequest();
 
         CURL *get_handle() const;
 
