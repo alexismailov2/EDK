@@ -46,4 +46,18 @@ index 2ab2e01eb..68c43a24c 100644
      endif()
      set(CMAKE_C_FLAGS_RELEASE     "-O2")
      set(CMAKE_C_FLAGS_DEBUG       "-O0 -g3")
+	 
+diff --git a/library/bn_mul.h b/library/bn_mul.h
+index 962d7a97b..478d472df 100644
+--- a/library/bn_mul.h
++++ b/library/bn_mul.h
+@@ -707,7 +707,7 @@
+            "r6", "r7", "r8", "r9", "cc"         \
+          );
 
+-#elif (__ARM_ARCH >= 6) && \
++#elif (__ARM_ARCH >= 8) && \
+     defined (__ARM_FEATURE_DSP) && (__ARM_FEATURE_DSP == 1)
+
+ #define MULADDC_X1_INIT                            \
+ 

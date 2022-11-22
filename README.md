@@ -459,6 +459,9 @@ The following external libraries are used in certain build variants:
   * Package is automatically downloaded during compilation
 
 ### Changelog
+2.1.1
+- Fix mdns download link
+
 2.1.0
 - Update external libraries
 - Add bridge name to discovery result
