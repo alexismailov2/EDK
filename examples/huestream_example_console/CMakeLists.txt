@@ -29,8 +29,8 @@ include_directories(
 if(APPLE)
 	target_link_libraries(huestream_example_console
 			huestream
-			-framework Foundation
-			-framework SystemConfiguration)
+			"-framework SystemConfiguration"
+			"-Wl,-F/Library/Frameworks")
 else()
 	target_link_libraries(huestream_example_console
 			huestream)

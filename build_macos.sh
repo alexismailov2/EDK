@@ -12,5 +12,5 @@ else
   additional_cmake_options=$2
 fi
 
-cmake -Bbuild -DBUILD_TEST=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=$build_type $additional_cmake_options
+cmake -Bbuild -DBUILD_TEST=OFF -DCMAKE_BUILD_TYPE=$build_type $additional_cmake_options
 cmake --build build --target install
