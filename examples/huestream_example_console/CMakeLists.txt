@@ -26,6 +26,13 @@ add_executable (huestream_example_console ${files})
 include_directories(
 		..
 )
-target_link_libraries(huestream_example_console huestream)
-
+if(APPLE)
+	target_link_libraries(huestream_example_console
+			huestream
+			-framework Foundation
+			-framework SystemConfiguration)
+else()
+	target_link_libraries(huestream_example_console
+			huestream)
+endif()
 
