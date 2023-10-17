@@ -6,7 +6,7 @@ else
   echo "build_type='$build_type'";
 fi
 
-ios_sdk_version=14.5
+ios_sdk_version="17.0"
 
 # Build for native macos(x86_64 or arm64) on M1 use terminal for x86_64 or comment this part
 #cmake -Bbuild_macos \
@@ -48,6 +48,7 @@ cmake -Bbuild_ios_sim \
       -DFOUNDATION="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$ios_sdk_version.sdk/System/Library/Frameworks/Foundation.framework" \
       -DSECURITY="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$ios_sdk_version.sdk/System/Library/Frameworks/Security.framework"
 cmake --build build_ios_sim --target huestream -- -j 6
+#cmake --build build_ios_sim --target external_mdns_responder
 
 # # building for simulator arm64
 #cmake -Bbuild_ios_sim_arm64 \
@@ -103,8 +104,8 @@ lipo -create "./build_ios_sim/bin/huestream.framework/huestream" "./build_ios_si
 
 # combine everything info XCFramework
 # NOTE: XCFramework does not want create with combined macos framework that is why used only ./build_macos_arm64/bin/huestream.framework)
-xcodebuild -create-xcframework \
-        -framework "./install_ios_combined/huestream.framework" \
-        -framework "./build_ios/bin/huestream.framework" \
-        -framework "./build_macos_arm64/bin/huestream.framework" \
-        -output "./install_ios_combined/huestream.xcframework"
+#xcodebuild -create-xcframework \
+#        -framework "./install_ios_combined/huestream.framework" \
+#        -framework "./build_ios/bin/huestream.framework" \
+#        -framework "./build_macos_arm64/bin/huestream.framework" \
+#        -output "./install_ios_combined/huestream.xcframework"
