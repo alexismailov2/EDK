@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..8498481
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,148 @@
+@@ -0,0 +1,149 @@
 +cmake_minimum_required(VERSION 3.6)
 +
 +project(mdns_responder)
@@ -29,6 +29,7 @@ index 0000000..8498481
 +        ${CMAKE_CURRENT_SOURCE_DIR}/mDNSShared/
 +        ${CMAKE_CURRENT_SOURCE_DIR}/mDNSCore/)
 +
++add_definitions(-DTARGET_OS_EMBEDDED=0)
 +
 +if(WIN32)
 +    list(APPEND MDNS_RESPONDER_SOURCES
@@ -88,6 +89,7 @@ index 0000000..8498481
 +            USE_TCP_LOOPBACK
 +            )
 +    set_source_files_properties(${MDNS_RESPONDER_SOURCES} PROPERTIES COMPILE_FLAGS "-no-cpp-precomp -Werror -Wdeclaration-after-statement")
++    set_source_files_properties(mDNSPosix/mDNSPosix.c PROPERTIES COMPILE_FLAGS "-std=c99")
 +elseif(WIN32)
 +    set(MDNS_RESPONDER_COMPILE_DEFINITIONS
 +            WIN32
